@@ -1,0 +1,92 @@
+# MODEL_SPEC.md: how the model must work
+
+The model outputs a probability between 0 and 1 that a merchant repays. After calibration, score = round(100 x probability). The 0 and 1 values are only training labels. All numbers below come from `config/default.yaml`; all example figures are illustrative.
+
+## Pipeline (build in this order)
+1. Join and clean data by merchant_id.
+2. Build labels.
+3. Build features as of each loan's cutoff.
+4. Split by time.
+5. Train Logistic Regression and LightGBM.
+6. Calibrate.
+7. Score, coverage, band.
+8. Explain (SHAP + dictionary).
+9. Evaluate.
+10. Ablation (A to D) at signal strengths 0, 0.5, 1.
+11. Fairness by group.
+12. Model card and versioning.
+
+## 1. Join and clean
+- Every order, delivery, payment, loan points to one valid merchant_id; reject and count orphans.
+- Dates valid and ordered (a delivery cannot precede its order). Remove duplicates.
+- Missing data stays missing. Never fill silently; gaps reduce coverage.
+
+## 2. Labels
+- label = 1 if repaid within `good_if_days_late_at_most` (30) days of the due date; 0 if later or default.
+- Exclude loans younger than `min_loan_age_days` (60): outcome unknown.
+- Example: 50,000 BDT repaid 10 days late -> 1. Unpaid 60 days after due date -> 0. Issued 35 days ago -> excluded.
+
+## 3. Features (as-of cutoff = loan issue date, strictly earlier data only)
+See `docs/FEATURE_DICTIONARY.md`. Feature groups: A orders, B payments, C deliveries, D questionnaire. Coverage features (history months, counts) are separate. Test: no feature may read any row dated on or after the cutoff.
+
+## 4. Split by loan issue date
+Train first 12 months, validation next 3, test last 3. The same merchant may appear in several periods with features computed at each loan's own cutoff. Tune only on validation. Touch test once for the final report. Any random split is a bug.
+
+## 5. Models
+- Logistic Regression: regularised, features scaled, missing handled with imputation plus missing-indicator columns. Transparent baseline.
+- LightGBM: gradient-boosted trees; handles missing natively. Tune trees/depth/learning rate/min samples per leaf on validation. Watch overfitting.
+- Choose by validation AUC, Brier and calibration. If LightGBM gains less than `prefer_simple_if_auc_gain_below`, keep Logistic Regression. Report both in the model card.
+- If defaults are rare, also look at PR-AUC and use class weights in training only. Never rebalance validation or test.
+
+## 6. Calibration
+- Check: bin validation predictions (0-0.1 ... 0.9-1.0), plot predicted mean vs actual repayment rate.
+- Fix with Platt scaling or isotonic regression, fitted on validation only, then frozen. Re-check on test.
+- Calibration preserves ranking; it fixes the meaning of the number.
+
+## 7. Score, coverage, band
+- score = round(100 x calibrated probability).
+- coverage (0-100%) = weighted checklist from `coverage_weights`: history of at least 6 months, orders present for most months, payments present, deliveries present, questionnaire done, activity in last 30 days.
+- Band:
+  - coverage < `band_min_coverage` -> "Needs more info" (regardless of score)
+  - else score >= `band_strong_min_score` -> "Strong"
+  - else "Review"; if score is also low (for example < 40), attach a low-score warning.
+- Example: probability 0.72, coverage 85% -> score 72, band Strong. Probability 0.66, coverage 35% -> score 66, band Needs more info.
+
+## 8. Explanations
+- SHAP (tree explainer) for LightGBM; coefficient x standardised value for Logistic Regression.
+- Take the top 3 contributions that raise the score and top 3 that lower it. Map each feature to its dictionary sentence (Bangla and English). Group the remainder into "all other features" so contributions sum to the final score.
+- Sentences are observations ("delivery returns are higher than similar shops"), never accusations or causes.
+- Example (mean score 60): sales trend +8, payment delay +5, repeat customers +4, returns -6, one late payment -4, thin delivery data -2, others +7 = 72.
+
+## 9. Evaluation (test period only)
+- ROC-AUC, PR-AUC, Brier score, calibration curve, top-k precision (k=20), reviewable share at the chosen threshold.
+- Bootstrap ranges (`bootstrap_resamples`). Report ranges, not third decimals.
+- Baselines to beat: always predict the average repayment rate; orders-only model.
+- If AUC > `suspicious_auc` on synthetic data, treat as leakage until proven otherwise.
+
+## 10. Ablation
+| Run | Features | Gain measured |
+|---|---|---|
+| A | orders | baseline |
+| B | A + payments | AUC(B) - AUC(A) |
+| C | B + deliveries (REDX) | AUC(C) - AUC(B) |
+| D | C + questionnaire | AUC(D) - AUC(C) |
+
+Repeat for `delivery_signal_strength` = 0, 0.5, 1 (regenerate data each time).
+- Strength 0: C must not beat B by more than `zero_signal_max_auc_gain`. If it does, stop: bug or leakage. This is the negative control.
+- Strength 0.5 and 1: expect small then clear gain, growing with strength.
+- Keep a feature group only if its gain exceeds the bootstrap range and does not worsen group gaps.
+- Meaning: proves the pipeline can detect a signal if present; does NOT prove REDX data predicts repayment in the real world.
+
+## 11. Fairness by group
+Group columns: town_tier, shop_type, has_trade_license (audit only, not features). For each group report AUC, mean score, band shares and calibration. Flag AUC gaps above `flag_gap_points`. Also compare calibration by group. Report what was measured; do not claim "fair".
+
+## 12. Model card and versioning
+Model card (`docs/model_card.md` plus JSON at `/model/card`): intended use (decision support only), data (synthetic, generator settings, signal strengths), label definition and exclusions, split dates and counts, models compared and chosen, metrics with ranges and calibration plot, ablation results, group results and flagged gaps, limitations and out-of-scope uses (no automatic approval, no real-world validity claim).
+Versioning: each trained model gets a version id storing commit, data seed, config, metrics, calibrator. Every score and decision records it.
+
+## Files (suggested)
+`src/model/labels.py, split.py, train.py, calibrate.py, score.py, explain.py, evaluate.py, ablation.py, fairness.py, model_card.py`
+
+## Common mistakes to avoid
+Random split; features after the cutoff; counting young loans as defaults; tuning on test; trusting a huge AUC on synthetic data; skipping calibration; showing score without coverage; showing code feature names to officers; using group columns as features; claiming REDX "proves" anything; missing seeds/versions; letting the score auto-decide.

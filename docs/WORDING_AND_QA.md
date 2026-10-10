@@ -1,0 +1,26 @@
+# WORDING_AND_QA.md: what we may claim, and answers to likely questions
+
+## Say
+- "Decision support for staff; the officer decides and records why."
+- "Prototype on synthetic data. Results show our pipeline works and is honest; they say nothing about real merchants."
+- "We treat REDX delivery data as a hypothesis, test it with an ablation and a zero-signal control, and report the result."
+- "The design and code are reusable; each platform adds its own adapter, retrains and publishes its own model card."
+- "We learned from Kaleidofin's approach." (no claims about its outcomes)
+- "Mifos X-style data model with an export adapter; integration spike result: <state honestly>."
+
+## Do not say
+- "Automated approval", "AI decides", "proven", "works for all of Asia", "fair" (say "we measured gaps and report them"), "REDX data predicts repayment" (as fact), any outcome for other organisations.
+
+## Q&A
+- Are we building only for ShopUp? The demo uses ShopUp as the partner FSP, but the core is reusable: adapters, dictionary, thresholds and consent method change per platform.
+- Do we need REDX data? Not to run. It may add signal beyond orders and payments; ablation tests it. Missing REDX data lowers coverage, not the score.
+- Why would REDX help? Parcel volume, returns and cash-on-delivery reliability are behavioural evidence of a working business for merchants with no bank history.
+- Does the model give 0/1? No. It gives a probability; the score is probability x 100 after calibration. 0/1 are only training labels.
+- Why a time-based split? A random split leaks the future into training and inflates results.
+- Why calibration? So a score of 72 means about a 72% chance, not just a rank.
+- Why SHAP and a dictionary? Officers need reasons in plain language, not feature names.
+- How do you avoid unfairness? Group variables are audit-only; we report AUC, calibration and band shares by group and flag gaps above 5 points; we do not claim fairness.
+- What stops over-reliance on the score? Reasons next to the score, coverage warnings, mandatory written reasons for overrides, override-rate monitoring.
+- Why trust synthetic data? We do not. We show the method is sound and ready to re-run on real data.
+- What did you take from Finverse? Core + Context design, consent record and mock consent page, FinHealth-style 10-item questionnaire, Mifos X-style data model, data inventory, master-data test, pilot KPIs.
+- What happens with real data? Request a small anonymised sample under consent; run the same pipeline; revalidate; publish a new model card.

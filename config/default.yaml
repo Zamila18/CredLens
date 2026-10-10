@@ -1,0 +1,48 @@
+# All tunable numbers live here. Code must read them from this file.
+seed: 42
+
+data:
+  n_merchants: 5000
+  months: 18
+  thin_file_share: 0.35          # share of new merchants with very few early orders
+  consent_rate: 0.95
+  questionnaire_rate: 0.40
+  no_delivery_data_share: 0.25   # merchants with no REDX-style records
+  delivery_signal_strength: 0.5  # run ablation at 0, 0.5 and 1
+
+labels:
+  good_if_days_late_at_most: 30
+  min_loan_age_days: 60          # younger loans are excluded (outcome unknown)
+
+split:                           # by loan issue date
+  train_months: 12
+  validation_months: 3
+  test_months: 3
+
+model:
+  candidates: [logistic_regression, lightgbm]
+  calibration: auto              # platt | isotonic | auto (pick on validation)
+  prefer_simple_if_auc_gain_below: 0.01
+  bootstrap_resamples: 500
+
+score:
+  scale: 100
+  band_strong_min_score: 70
+  band_min_coverage: 0.60        # below this: "Needs more info", whatever the score
+  top_reasons_each_side: 3
+
+coverage_weights:                # must sum to 1.0
+  history_6_months: 0.25
+  orders_present: 0.20
+  payments_present: 0.20
+  deliveries_present: 0.15
+  questionnaire_done: 0.10
+  recent_activity_30d: 0.10
+
+fairness:
+  group_columns: [town_tier, shop_type, has_trade_license]
+  flag_gap_points: 0.05          # AUC gap that gets flagged in the model card
+
+sanity:
+  suspicious_auc: 0.95           # synthetic AUC above this => look for leakage
+  zero_signal_max_auc_gain: 0.01 # at signal strength 0, delivery features must not add more than this
