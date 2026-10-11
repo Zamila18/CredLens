@@ -1,0 +1,7 @@
+merchant_id,onboarded_at,district,town_tier,shop_type,has_trade_license,consent_data_use,questionnaire_done
+FIX-M001,2025-01-10,Dhaka,metro,grocery,True,True,True
+FIX-M002,2025-02-15,Chattogram,city,pharmacy,True,True,False
+FIX-M003,2025-03-01,Bogura,small_town,apparel,False,True,False
+FIX-M004,2026-04-20,Dhaka,metro,electronics,True,True,False
+FIX-M005,2025-05-05,Sylhet,city,other,False,False,False
+FIX-M006,2025-06-12,Khulna,small_town,grocery,False,True,True

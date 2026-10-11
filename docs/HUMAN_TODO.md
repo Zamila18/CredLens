@@ -4,7 +4,7 @@
 - [ ] Create a private GitHub repo; add all four teammates; protect `main` (pull request + one review). You do all git work (init, commit, push, branches); Claude Code never does.
 - [ ] Delete the old pack from the repo; copy in v2. Start at Phase 0 in docs/PROMPTS.md.
 - [ ] Python 3.10 or newer (3.10.11 is fine), Git, VS Code, Node.js LTS (for the React dashboard; Claude Code will guide you). Docker only if attempting the optional Mifos X spike. Claude Code on the lead's laptop.
-- [ ] Accounts you will need later (Claude Code will guide you when the time comes): Kaggle (Kiva snapshot mirror; India L&T backup only if needed), UCI repository (Taiwan credit-card data, no account), World Bank Microdata Library (Findex), Kiva data snapshot page, Supabase (database, Pro plan for the demo month), Hostinger (VPS for hosting).
+- [ ] Accounts you will need later (Claude Code will guide you when the time comes): Kaggle (Home Credit: accept the competition rules; Kiva snapshot mirror; India L&T backup only if needed), UCI repository (Taiwan credit-card data, no account), World Bank Microdata Library (Findex), Kiva data snapshot page, Supabase (database, Pro plan for the demo month), Hostinger (VPS for hosting).
 - [ ] Decide roles A, B, C, D and put names in PROJECT_BRIEF.md section 11.
 - [x] UI decided Oct 12: React + Vite + TypeScript + Tailwind. Database: Supabase Postgres (SQLite locally). Hosting: Hostinger VPS.
 - [ ] Read CGAP's Kaleidofin case in "Banking in Layers" (the source our Finverse result cites) before quoting any outcome from it.

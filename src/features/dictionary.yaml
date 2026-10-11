@@ -1,0 +1,254 @@
+# Feature dictionary: every feature, its meaning and its reason sentences.
+# Source of truth for the wording: docs/FEATURE_DICTIONARY.md. Keep the two in step.
+# Owner role: B (data engineer) for features, A (lead) for wording.
+#
+# Rules (docs/FEATURE_DICTIONARY.md):
+# - Sentences are observations, never accusations or causes.
+# - Officers see the sentence, never the feature name.
+# - Questionnaire sentences must carry "directional" / "ইঙ্গিতমাত্র" and appear only in the
+#   questionnaire panel; group D is not part of the headline model.
+# - If a feature is missing for a merchant, no reason is generated for it.
+# - The Bangla text must be reviewed by a native speaker before the demo.
+# - Public-data modes (kiva_asia, taiwan_cc) add their own entries in Phase 7.
+
+groups:
+  A: purchases
+  B: payments
+  C: deliveries
+  D: questionnaire
+
+features:
+  purchases_90d:
+    group: A
+    definition: Mokam purchase orders placed by the merchant in the 90 days before cutoff
+    higher_means: active restocking
+    positive:
+      en: "The shop restocks regularly, with many recent purchases."
+      bn: "দোকানটি নিয়মিত মাল কেনে, সাম্প্রতিক কেনাকাটা অনেক।"
+    negative:
+      en: "Recent restocking activity is low."
+      bn: "সাম্প্রতিক মাল কেনা কম।"
+
+  purchase_value_90d:
+    group: A
+    definition: Total purchase value, 90 days
+    higher_means: larger business
+    positive:
+      en: "Recent stock purchases are healthy in size."
+      bn: "সাম্প্রতিক মাল কেনার পরিমাণ ভালো।"
+    negative:
+      en: "Recent stock purchases are small."
+      bn: "সাম্প্রতিক মাল কেনার পরিমাণ কম।"
+
+  basket_growth:
+    group: A
+    definition: Purchase value last 90 days vs the 90 before, %
+    higher_means: growth
+    positive:
+      en: "Stock purchases are growing compared with the previous three months."
+      bn: "আগের তিন মাসের তুলনায় মাল কেনা বাড়ছে।"
+    negative:
+      en: "Stock purchases are falling compared with the previous three months."
+      bn: "আগের তিন মাসের তুলনায় মাল কেনা কমছে।"
+
+  purchase_volatility:
+    group: A
+    definition: Std. dev. of weekly purchase value / mean
+    higher_means: unstable
+    positive:
+      en: "Weekly restocking is steady."
+      bn: "সাপ্তাহিক মাল কেনা স্থিতিশীল।"
+    negative:
+      en: "Weekly restocking swings a lot."
+      bn: "সাপ্তাহিক মাল কেনায় ওঠানামা বেশি।"
+
+  purchase_regularity:
+    group: A
+    definition: Share of weeks with at least one purchase
+    higher_means: consistent
+    positive:
+      en: "The shop restocks in most weeks."
+      bn: "দোকান বেশিরভাগ সপ্তাহে মাল কেনে।"
+    negative:
+      en: "The shop restocks in few weeks."
+      bn: "দোকান কম সপ্তাহে মাল কেনে।"
+
+  category_diversity:
+    group: A
+    definition: Number of product categories purchased
+    higher_means: diversified
+    positive:
+      en: "Purchases cover several product categories."
+      bn: "কেনাকাটা একাধিক ক্যাটাগরিতে ছড়ানো।"
+    negative:
+      en: "Purchases depend on very few categories."
+      bn: "কেনাকাটা অল্প কয়েকটি ক্যাটাগরির ওপর নির্ভর করে।"
+
+  supplier_repeat_share:
+    group: A
+    definition: Share of purchases from suppliers used before
+    higher_means: stable sourcing
+    positive:
+      en: "The shop buys steadily from familiar suppliers."
+      bn: "দোকান পরিচিত সরবরাহকারীর কাছ থেকে নিয়মিত কেনে।"
+    negative:
+      en: "Sourcing changes often between suppliers."
+      bn: "সরবরাহকারী প্রায়ই বদলায়।"
+
+  parcel_volume_90d:
+    group: C
+    sales_proxy: true
+    definition: Outgoing REDX parcels, 90 days (only for merchants who sell online)
+    higher_means: more sales
+    positive:
+      en: "The shop sends many parcels to its customers."
+      bn: "দোকান তার ক্রেতাদের কাছে অনেক পার্সেল পাঠায়।"
+    negative:
+      en: "Few parcels sent to customers recently."
+      bn: "সাম্প্রতিক সময়ে ক্রেতাদের কাছে পার্সেল কম গেছে।"
+
+  avg_pay_delay_days:
+    group: B
+    definition: Mean days late over past payments
+    higher_means: worse
+    positive:
+      en: "Past payments were made close to the due date."
+      bn: "আগের পেমেন্ট প্রায় নির্ধারিত সময়ে হয়েছে।"
+    negative:
+      en: "Past payments were often late."
+      bn: "আগের পেমেন্ট প্রায়ই দেরিতে হয়েছে।"
+
+  late_pay_count_90d:
+    group: B
+    definition: Payments over 7 days late, 90 days
+    higher_means: worse
+    positive:
+      en: "No recent late payments."
+      bn: "সাম্প্রতিক কোনো দেরির পেমেন্ট নেই।"
+    negative:
+      en: "There were late payments recently."
+      bn: "সাম্প্রতিক সময়ে পেমেন্টে দেরি হয়েছে।"
+
+  ontime_payment_rate:
+    group: B
+    definition: Share of payments within 3 days of due
+    higher_means: reliable
+    positive:
+      en: "Most payments arrive on time."
+      bn: "বেশিরভাগ পেমেন্ট সময়মতো আসে।"
+    negative:
+      en: "Few payments arrive on time."
+      bn: "কম পেমেন্ট সময়মতো আসে।"
+
+  credit_utilisation:
+    group: B
+    definition: Used limit / limit
+    higher_means: stretched
+    positive:
+      en: "Credit use is moderate."
+      bn: "ঋণের ব্যবহার মাঝারি।"
+    negative:
+      en: "Credit use is close to the limit."
+      bn: "ঋণের ব্যবহার সীমার কাছাকাছি।"
+
+  delivered_rate:
+    group: C
+    definition: Delivered parcels / dispatched, 90 days
+    higher_means: reliable fulfilment
+    positive:
+      en: "Most parcels are delivered successfully."
+      bn: "বেশিরভাগ পার্সেল সফলভাবে পৌঁছায়।"
+    negative:
+      en: "Many parcels are not delivered."
+      bn: "অনেক পার্সেল পৌঁছায় না।"
+
+  return_rate_90d:
+    group: C
+    definition: >-
+      Merchant-attributable returns (refused, wrong item) / total, 90 days;
+      address/rider returns excluded when return_reason is known
+    higher_means: worse
+    positive:
+      en: "Delivery returns are lower than similar shops."
+      bn: "সমান ধরনের দোকানের তুলনায় ডেলিভারি ফেরত কম।"
+    negative:
+      en: "Returns are higher than similar shops; this may reflect delivery conditions."
+      bn: "সমান ধরনের দোকানের তুলনায় ফেরত বেশি; এটা ডেলিভারির পরিস্থিতির কারণেও হতে পারে।"
+
+  failed_rate_90d:
+    group: C
+    definition: Failed parcels / total
+    higher_means: worse
+    positive:
+      en: "Few delivery failures."
+      bn: "ডেলিভারি ব্যর্থতা কম।"
+    negative:
+      en: "Delivery failures are higher than usual; this may reflect address or rider issues."
+      bn: "ডেলিভারি ব্যর্থতা বেশি; ঠিকানা বা রাইডারের সমস্যার কারণেও হতে পারে।"
+
+  cod_remit_ontime_rate:
+    group: C
+    definition: Share of cash-on-delivery money passed back on time
+    higher_means: reliable
+    positive:
+      en: "Cash-on-delivery money is passed back on time."
+      bn: "ক্যাশ-অন-ডেলিভারির টাকা সময়মতো ফেরত আসে।"
+    negative:
+      en: "Cash-on-delivery money is often late."
+      bn: "ক্যাশ-অন-ডেলিভারির টাকা প্রায়ই দেরিতে আসে।"
+
+  dispatch_to_delivery_hours:
+    group: C
+    definition: Median hours from dispatch to delivery
+    higher_means: slower
+    positive:
+      en: "Parcels reach customers quickly."
+      bn: "পার্সেল দ্রুত ক্রেতার কাছে পৌঁছায়।"
+    negative:
+      en: "Parcels take long to reach customers."
+      bn: "পার্সেল পৌঁছাতে বেশি সময় লাগে।"
+
+  delivery_data_thin:
+    group: C
+    definition: Fewer than 20 parcels in 90 days (flag)
+    higher_means: less certain
+    positive: null
+    negative:
+      en: "Delivery history is thin, so the picture is less certain."
+      bn: "ডেলিভারির ইতিহাস কম, তাই চিত্রটি কম নিশ্চিত।"
+
+  q_spend: &questionnaire_subscore
+    group: D
+    directional: true
+    definition: Subscore (1-5) from the 10 questionnaire items
+    higher_means: healthier habits
+    positive:
+      en: "Self-reported habits look healthy (directional)."
+      bn: "নিজের দেওয়া তথ্য অনুযায়ী অভ্যাস ভালো (ইঙ্গিতমাত্র)।"
+    negative:
+      en: "Self-reported habits suggest some strain (directional)."
+      bn: "নিজের দেওয়া তথ্য অনুযায়ী কিছু চাপ আছে (ইঙ্গিতমাত্র)।"
+  q_save: *questionnaire_subscore
+  q_borrow: *questionnaire_subscore
+  q_plan: *questionnaire_subscore
+
+  q_stress: &questionnaire_context
+    group: D
+    directional: true
+    definition: Context item from the questionnaire
+    higher_means: null
+    positive:
+      en: "Self-reported habits look healthy (directional)."
+      bn: "নিজের দেওয়া তথ্য অনুযায়ী অভ্যাস ভালো (ইঙ্গিতমাত্র)।"
+    negative:
+      en: "Self-reported habits suggest some strain (directional)."
+      bn: "নিজের দেওয়া তথ্য অনুযায়ী কিছু চাপ আছে (ইঙ্গিতমাত্র)।"
+  q_confidence: *questionnaire_context
+
+# Used for the coverage number only, never for score reasons.
+coverage_only:
+  - history_months
+  - n_purchases_total
+  - n_deliveries_total
+  - n_payments_total
+  - share_of_groups_present

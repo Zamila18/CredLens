@@ -22,7 +22,8 @@ Tick before the demo. Claude Code should help produce evidence for each item (te
 - [ ] Every score returns probability, score, band, coverage, 3 up + 3 down reasons, model version.
 
 ## Public data
-- [ ] kiva_asia and taiwan_cc adapters pass test_adapters with fixtures.
+- [ ] kiva_asia, taiwan_cc and homecredit adapters pass test_adapters with fixtures.
+- [ ] Home Credit is labelled "country not stated" on its banner and model card.
 - [ ] Real-label runs done; metrics with ranges compared to 0.70 benchmark and 0.95 alarm.
 - [ ] Audit-only columns never in the feature matrix (leakage whitelist test).
 - [ ] Raw public data not in git; docs/DATA_SOURCES.md lists links and licences.

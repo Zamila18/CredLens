@@ -1,0 +1,7 @@
+consent_id,merchant_id,purpose,data_categories,granted_at,expires_at,revoked_at
+FIX-C001,FIX-M001,credit_readiness_assessment,purchases|deliveries|payments|questionnaire,2025-01-10,2027-01-10,
+FIX-C002,FIX-M002,credit_readiness_assessment,purchases|deliveries|payments,2025-02-15,2027-02-15,
+FIX-C003,FIX-M003,credit_readiness_assessment,purchases|deliveries|payments,2025-03-01,2027-03-01,
+FIX-C004,FIX-M004,credit_readiness_assessment,purchases|deliveries|payments,2026-04-20,2028-04-20,
+FIX-C005,FIX-M005,credit_readiness_assessment,purchases|deliveries|payments,2025-05-05,2027-05-05,2025-07-01
+FIX-C006,FIX-M006,credit_readiness_assessment,purchases|deliveries|payments|questionnaire,2025-06-12,2027-06-12,

@@ -1,0 +1,30 @@
+# Pinned to the minor versions installed and tested on Python 3.10.11 (Oct 12, 2026).
+# "~=X.Y.Z" allows patch updates only. Change a pin only with the lead's agreement.
+
+# Data
+pandas~=2.3.3
+numpy~=2.2.6
+faker~=40.43.0
+pyyaml~=6.0.3
+
+# Database
+sqlalchemy~=2.0.54
+psycopg2-binary~=2.9.13
+python-dotenv~=1.2.4
+
+# Model
+scikit-learn~=1.7.2
+lightgbm~=4.7.0
+shap~=0.49.1
+joblib~=1.6.0
+matplotlib~=3.10.9
+
+# API
+fastapi~=0.143.0
+pydantic~=2.14.1
+uvicorn~=0.54.0
+httpx~=0.28.1
+
+# Tests and lint
+pytest~=9.1.1
+ruff~=0.17.0

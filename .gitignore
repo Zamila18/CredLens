@@ -1,0 +1,32 @@
+# Data: raw public downloads, generated CSVs and local databases never go to git
+data/raw/
+data/*.db
+data/backups/
+*.zip
+*.parquet
+
+# Model artifacts and report images are rebuilt by `python tasks.py train`
+src/model/artifacts/*
+!src/model/artifacts/.gitkeep
+reports/*.png
+reports/**/*.png
+
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# React dashboard
+web/node_modules/
+web/dist/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

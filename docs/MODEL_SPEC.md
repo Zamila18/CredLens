@@ -30,7 +30,7 @@ The model outputs a probability between 0 and 1 that a merchant repays. After ca
 See `docs/FEATURE_DICTIONARY.md`. Feature groups: A purchases, B payments, C deliveries, D questionnaire (D is NOT in the headline model; shown beside the score and tested only in ablation). Public modes use their own source-specific features. Coverage features (history months, counts) are separate. Test: no feature may read any row dated on or after the cutoff.
 
 ## 4. Split by loan issue date
-(Kiva: posted_time. the Taiwan data has no per-row dates: stratified random split, marked weaker in its model card; this is the only allowed exception.) Train first 12 months, validation next 3, test last 3. The same merchant may appear in several periods with features computed at each loan's own cutoff. Tune only on validation. Touch test once for the final report. Any other random split is a bug.
+(Kiva: posted_time. The Taiwan and Home Credit data have no usable per-row dates: stratified random split, marked weaker in its model card; these are the only allowed exceptions.) Train first 12 months, validation next 3, test last 3. The same merchant may appear in several periods with features computed at each loan's own cutoff. Tune only on validation. Touch test once for the final report. Any other random split is a bug.
 
 ## 5. Models
 - Logistic Regression: regularised, features scaled, missing handled with imputation plus missing-indicator columns. Transparent baseline.
@@ -93,9 +93,10 @@ Versioning: each trained model gets a version id storing commit, data seed, conf
 Random split; features after the cutoff; counting young loans as defaults; tuning on test; trusting a huge AUC on synthetic data; skipping calibration; showing score without coverage; showing code feature names to officers; using group columns as features; treating Mokam purchases as sales; putting the questionnaire inside the score; claiming REDX "proves" anything; missing seeds/versions; letting the score auto-decide.
 
 ## v2 additions: data modes and real-label checks
-- data.mode in config selects the adapter: synthetic_bd | kiva_asia | taiwan_cc. Same pipeline for all.
+- data.mode in config selects the adapter: synthetic_bd | kiva_asia | taiwan_cc | homecredit. Same pipeline for all.
 - kiva_asia: label paid=1, defaulted=0; drop unknown outcomes; time split on posted_time. Very imbalanced: report PR-AUC and top-k next to AUC. Purchase/delivery/payment groups are null, so coverage is low by design.
 - taiwan_cc: one fixed observation window with no per-row dates, so use a stratified random split and mark it "weaker split" in the model card. Label = 1 − default.
+- homecredit: relative days only, so use a stratified random split marked "weaker split". Label = 1 − TARGET. The data does not state its country: the model card says "country not stated" and makes no Asian claim from it.
 - Difficulty target for synthetic_bd: tune generator noise so test AUC is about 0.72 to 0.82 at signal strength 0.5. Report metrics across at least 3 seeds.
 - Explanation check: top reasons plus "all other features" must sum to the final score, tested.
 - Leakage guard per source: a whitelist of decision-time columns; a test fails if any other column reaches the feature matrix.

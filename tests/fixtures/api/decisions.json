@@ -1,0 +1,32 @@
+[
+  {
+    "decision_id": "FIX-DEC001",
+    "merchant_id": "FIX-M003",
+    "officer_id": "FIX-OFFICER-1",
+    "model_version": "fixture-0",
+    "score_shown": 48,
+    "officer_action": "override_up",
+    "reason_text": "Visited the shop; the late payment followed a flood and has since been cleared.",
+    "decided_at": "2026-06-11T10:42:00"
+  },
+  {
+    "decision_id": "FIX-DEC002",
+    "merchant_id": "FIX-M002",
+    "officer_id": "FIX-OFFICER-2",
+    "model_version": "fixture-0",
+    "score_shown": 81,
+    "officer_action": "accept",
+    "reason_text": null,
+    "decided_at": "2026-06-11T11:05:00"
+  },
+  {
+    "decision_id": "FIX-DEC003",
+    "merchant_id": "FIX-M006",
+    "officer_id": "FIX-OFFICER-1",
+    "model_version": "fixture-0",
+    "score_shown": 39,
+    "officer_action": "needs_more_info",
+    "reason_text": "Asked for recent purchase receipts before deciding.",
+    "decided_at": "2026-06-12T09:15:00"
+  }
+]

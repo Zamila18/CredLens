@@ -2,15 +2,17 @@
 seed: 42
 
 data:
-  mode: synthetic_bd             # synthetic_bd | kiva_asia | taiwan_cc
+  mode: synthetic_bd             # synthetic_bd | kiva_asia | taiwan_cc | homecredit
   raw_dir: data/raw              # gitignored; humans download public files here
   kiva:
     regions: [Asia]
     sectors: [Retail, Food, Services]
   taiwan_cc:
     sample_size: null            # null = all rows (about 30,000)
+  homecredit:
+    sample_size: 50000           # applicants sampled with the seed; null = all rows
   backup_mode: india_ltfs        # used only if Kiva cannot be downloaded or labelled; not built unless needed
-  n_merchants: 5000
+  n_merchants: 20000
   months: 18
   thin_file_share: 0.35          # share of new merchants with very few early purchases
   consent_rate: 0.95
@@ -57,6 +59,11 @@ coverage_weights_by_mode:        # public modes: coverage = how much of what the
     repayment_status_history: 0.35
     bill_history: 0.25
     payment_history: 0.25
+  homecredit:                    # provisional until the real columns are inspected; must sum to 1.0
+    application_data_present: 0.20
+    instalment_history_present: 0.35
+    enough_past_instalments: 0.25
+    pos_cash_history_present: 0.20
 
 coverage_weights:                # synthetic_bd; must sum to 1.0
   history_6_months: 0.25
@@ -72,6 +79,7 @@ fairness:
   audit_only_columns:
     kiva_asia: [borrower_genders, country]
     taiwan_cc: [SEX, EDUCATION, MARRIAGE, age_band]   # confirm names on the real file
+    homecredit: [CODE_GENDER, age_band, REGION_RATING_CLIENT]   # confirm names on the real file
 
 sanity:
   useful_auc_benchmark: 0.70     # CGAP: transactional MSE models around 0.70+ are useful

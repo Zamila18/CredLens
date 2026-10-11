@@ -15,7 +15,7 @@ Project: CredLens, a Merchant Readiness Dashboard, Team 4Bytes (2026 Data, AI & 
 - Asian context only. Never add generated purchases, deliveries or payments to real public rows. Coverage is per data mode (`coverage_weights_by_mode`).
 - The build must stay consistent with the team's Phase 2 submission (summarised in PROJECT_BRIEF section 18). If a change would drift from it, say so before making it.
 - Stack: Python for data, model and FastAPI; React + Vite + TypeScript + Tailwind dashboard in `web/`; Supabase PostgreSQL as the shared database with SQLite for local development and tests; Hostinger VPS for hosting.
-- ShopUp data was not obtained. Three data modes run through one pipeline: `synthetic_bd` (main demo), `kiva_asia` and `taiwan_cc` (public real-label checks). ShopUp can plug in later through `src/adapters/shopup_real.py`.
+- ShopUp data was not obtained. Four data modes run through one pipeline: `synthetic_bd` (main demo, 20,000 merchants), and the public real-label checks `kiva_asia`, `taiwan_cc` and `homecredit`. Kiva and Taiwan are Asian sources; Home Credit does not state its country and is always labelled "country not stated". ShopUp can plug in later through `src/adapters/shopup_real.py`.
 - Every data source sits behind an adapter in `src/adapters/`. Never hard-wire the pipeline to one source.
 
 ## HUMAN STEP protocol (strict)
@@ -25,7 +25,7 @@ Some things only the human can do: create accounts, accept dataset terms, downlo
 3. Say why it is needed and what you will do next once it is done.
 4. If a link may have changed, say so and tell the human what to search for on the site.
 5. After the human replies, verify (list the folder, read headers) before continuing.
-Also use a HUMAN STEP for: Bangladesh calibration figures (Findex, Bangladesh Bank), Kiva snapshot download (official page or Kaggle mirror, which needs a Kaggle account), Taiwan credit-card file download from UCI, Node.js installation for the dashboard, creating the Supabase project and putting its connection string in `.env`, buying and setting up the Hostinger VPS, Docker installation if the optional Mifos spike is attempted, the Bangla sentence review by a native speaker, and every commit point.
+Also use a HUMAN STEP for: Bangladesh calibration figures (Findex, Bangladesh Bank), Kiva snapshot download (official page or Kaggle mirror, which needs a Kaggle account), Taiwan credit-card file download from UCI, Home Credit download from Kaggle (account and competition-rules acceptance), Node.js installation for the dashboard, creating the Supabase project and putting its connection string in `.env`, buying and setting up the Hostinger VPS, Docker installation if the optional Mifos spike is attempted, the Bangla sentence review by a native speaker, and every commit point.
 
 ## HANDOVER POINT protocol
 At the end of Phase 0, 1, 3, 7, 6+9 (whichever finishes second) and 11 (see the table in docs/PROMPTS.md), after the phase summary, print a block titled `HANDOVER POINT` with:
@@ -37,12 +37,12 @@ At the end of Phase 0, 1, 3, 7, 6+9 (whichever finishes second) and 11 (see the 
 When a session starts and the human says they are a teammate taking over, check the repo state against the last committed phase before doing anything.
 
 ## Non-negotiable rules
-- No real partner data. Every screen names its data source ("Synthetic demo data" or "Public data: Kiva / Taiwan credit cards, not ShopUp data") and says "Decision support only."
+- No real partner data. Every screen names its data source ("Synthetic demo data" or "Public data: <source>, not ShopUp data", per data mode as in PROJECT_BRIEF section 18) and says "Decision support only."
 - The model outputs a calibrated probability; score = round(100 x probability). Never present a bare 0/1.
 - No code path may approve or decline credit. Humans decide; overrides need a written reason; decisions are append-only.
-- Features use only data available before each loan's decision date. Split by time where dates exist (Taiwan: stratified random, marked weaker).
+- Features use only data available before each loan's decision date. Split by time where dates exist (Taiwan and Home Credit: stratified random, marked weaker).
 - Mokam data = the merchant's wholesale PURCHASES, never sales. No repeat-customer or sales-growth features.
-- Group columns (town_tier, shop_type, has_trade_license; Kiva gender/country; Taiwan sex/education/marital status/age band) are audit-only, never model inputs.
+- Group columns (town_tier, shop_type, has_trade_license; Kiva gender/country; Taiwan sex/education/marital status/age band; Home Credit gender/age band/region rating) are audit-only, never model inputs.
 - Questionnaire is shown beside the score, not inside the headline model.
 - Missing REDX/delivery data lowers coverage, never the score by itself. Low coverage gives "Needs more info", regardless of score. Delivery reasons are neutral observations.
 - Raw public data stays in `data/raw/` (gitignored). Never commit or redistribute Findex microdata or Kaggle data. No secrets in the repo.

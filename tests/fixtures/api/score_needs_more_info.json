@@ -1,0 +1,37 @@
+{
+  "merchant_id": "FIX-M004",
+  "data_mode": "synthetic_bd",
+  "model_version": "fixture-0",
+  "probability": 0.66,
+  "score": 66,
+  "coverage": 0.35,
+  "band": "Needs more info",
+  "low_score_warning": false,
+  "baseline_score": 60.0,
+  "reasons_positive": [
+    {
+      "code": "purchase_value_90d",
+      "sentence_en": "Recent stock purchases are healthy in size.",
+      "sentence_bn": "সাম্প্রতিক মাল কেনার পরিমাণ ভালো।",
+      "contribution": 3.0,
+      "detail": null
+    }
+  ],
+  "reasons_negative": [
+    {
+      "code": "purchases_90d",
+      "sentence_en": "Recent restocking activity is low.",
+      "sentence_bn": "সাম্প্রতিক মাল কেনা কম।",
+      "contribution": -4.0,
+      "detail": null
+    },
+    {
+      "code": "purchase_regularity",
+      "sentence_en": "The shop restocks in few weeks.",
+      "sentence_bn": "দোকান কম সপ্তাহে মাল কেনে।",
+      "contribution": -3.0,
+      "detail": null
+    }
+  ],
+  "other_contribution": 10.0
+}
