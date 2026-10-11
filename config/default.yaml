@@ -2,13 +2,22 @@
 seed: 42
 
 data:
+  mode: synthetic_bd             # synthetic_bd | kiva_asia | homecredit
+  raw_dir: data/raw              # gitignored; humans download public files here
+  kiva:
+    regions: [Asia]
+    sectors: [Retail, Food, Services]
+  homecredit:
+    sample_size: 50000           # null = all rows
   n_merchants: 5000
   months: 18
-  thin_file_share: 0.35          # share of new merchants with very few early orders
+  thin_file_share: 0.35          # share of new merchants with very few early purchases
   consent_rate: 0.95
   questionnaire_rate: 0.40
   no_delivery_data_share: 0.25   # merchants with no REDX-style records
   delivery_signal_strength: 0.5  # run ablation at 0, 0.5 and 1
+  logistics_noise_share: 0.4     # share of returns/failures caused by address or rider issues
+  questionnaire_in_model: false  # questionnaire shown beside the score, not inside it
 
 labels:
   good_if_days_late_at_most: 30
@@ -33,16 +42,20 @@ score:
 
 coverage_weights:                # must sum to 1.0
   history_6_months: 0.25
-  orders_present: 0.20
+  purchases_present: 0.20
   payments_present: 0.20
   deliveries_present: 0.15
-  questionnaire_done: 0.10
+  questionnaire_done: 0.10        # coverage only; questionnaire is not in the score
   recent_activity_30d: 0.10
 
 fairness:
   group_columns: [town_tier, shop_type, has_trade_license]
-  flag_gap_points: 0.05          # AUC gap that gets flagged in the model card
+  flag_gap_points: 0.05          # candidate gap; flagged only if bootstrap ranges do not overlap or it persists across seeds
+  audit_only_columns:
+    kiva_asia: [borrower_genders, country]
+    homecredit: [CODE_GENDER, age_band, REGION_RATING_CLIENT]
 
 sanity:
+  useful_auc_benchmark: 0.70     # CGAP: transactional MSE models around 0.70+ are useful
   suspicious_auc: 0.95           # synthetic AUC above this => look for leakage
   zero_signal_max_auc_gain: 0.01 # at signal strength 0, delivery features must not add more than this

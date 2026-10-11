@@ -17,8 +17,8 @@ The model outputs a probability between 0 and 1 that a merchant repays. After ca
 12. Model card and versioning.
 
 ## 1. Join and clean
-- Every order, delivery, payment, loan points to one valid merchant_id; reject and count orphans.
-- Dates valid and ordered (a delivery cannot precede its order). Remove duplicates.
+- Every purchase, delivery, payment, loan points to one valid merchant_id; reject and count orphans.
+- Dates valid and ordered (no event before the merchant's onboarding date). Remove duplicates.
 - Missing data stays missing. Never fill silently; gaps reduce coverage.
 
 ## 2. Labels
@@ -27,10 +27,10 @@ The model outputs a probability between 0 and 1 that a merchant repays. After ca
 - Example: 50,000 BDT repaid 10 days late -> 1. Unpaid 60 days after due date -> 0. Issued 35 days ago -> excluded.
 
 ## 3. Features (as-of cutoff = loan issue date, strictly earlier data only)
-See `docs/FEATURE_DICTIONARY.md`. Feature groups: A orders, B payments, C deliveries, D questionnaire. Coverage features (history months, counts) are separate. Test: no feature may read any row dated on or after the cutoff.
+See `docs/FEATURE_DICTIONARY.md`. Feature groups: A purchases, B payments, C deliveries, D questionnaire (D is NOT in the headline model; shown beside the score and tested only in ablation). Public modes use their own source-specific features. Coverage features (history months, counts) are separate. Test: no feature may read any row dated on or after the cutoff.
 
 ## 4. Split by loan issue date
-Train first 12 months, validation next 3, test last 3. The same merchant may appear in several periods with features computed at each loan's own cutoff. Tune only on validation. Touch test once for the final report. Any random split is a bug.
+(Kiva: posted_time. Home Credit has no dates: stratified random split, marked weaker in its model card; this is the only allowed exception.) Train first 12 months, validation next 3, test last 3. The same merchant may appear in several periods with features computed at each loan's own cutoff. Tune only on validation. Touch test once for the final report. Any other random split is a bug.
 
 ## 5. Models
 - Logistic Regression: regularised, features scaled, missing handled with imputation plus missing-indicator columns. Transparent baseline.
@@ -45,7 +45,7 @@ Train first 12 months, validation next 3, test last 3. The same merchant may app
 
 ## 7. Score, coverage, band
 - score = round(100 x calibrated probability).
-- coverage (0-100%) = weighted checklist from `coverage_weights`: history of at least 6 months, orders present for most months, payments present, deliveries present, questionnaire done, activity in last 30 days.
+- coverage (0-100%) = weighted checklist from `coverage_weights`: history of at least 6 months, purchases present for most months, payments present, deliveries present, questionnaire done, activity in last 30 days.
 - Band:
   - coverage < `band_min_coverage` -> "Needs more info" (regardless of score)
   - else score >= `band_strong_min_score` -> "Strong"
@@ -55,22 +55,22 @@ Train first 12 months, validation next 3, test last 3. The same merchant may app
 ## 8. Explanations
 - SHAP (tree explainer) for LightGBM; coefficient x standardised value for Logistic Regression.
 - Take the top 3 contributions that raise the score and top 3 that lower it. Map each feature to its dictionary sentence (Bangla and English). Group the remainder into "all other features" so contributions sum to the final score.
-- Sentences are observations ("delivery returns are higher than similar shops"), never accusations or causes.
-- Example (mean score 60): sales trend +8, payment delay +5, repeat customers +4, returns -6, one late payment -4, thin delivery data -2, others +7 = 72.
+- Sentences are observations ("returns are higher than similar shops; this may reflect delivery conditions"), never accusations or causes.
+- Example (mean score 60): purchase growth +8, payment delay +5, supplier repeat share +4, returns -6, one late payment -4, thin delivery data -2, others +7 = 72.
 
 ## 9. Evaluation (test period only)
 - ROC-AUC, PR-AUC, Brier score, calibration curve, top-k precision (k=20), reviewable share at the chosen threshold.
 - Bootstrap ranges (`bootstrap_resamples`). Report ranges, not third decimals.
-- Baselines to beat: always predict the average repayment rate; orders-only model.
+- Baselines to beat: always predict the average repayment rate; purchases-only model.
 - If AUC > `suspicious_auc` on synthetic data, treat as leakage until proven otherwise.
 
 ## 10. Ablation
 | Run | Features | Gain measured |
 |---|---|---|
-| A | orders | baseline |
+| A | purchases | baseline |
 | B | A + payments | AUC(B) - AUC(A) |
 | C | B + deliveries (REDX) | AUC(C) - AUC(B) |
-| D | C + questionnaire | AUC(D) - AUC(C) |
+| D | C + questionnaire | AUC(D) - AUC(C), reported as a separate finding; the headline model is C (or the best of A to C) |
 
 Repeat for `delivery_signal_strength` = 0, 0.5, 1 (regenerate data each time).
 - Strength 0: C must not beat B by more than `zero_signal_max_auc_gain`. If it does, stop: bug or leakage. This is the negative control.
@@ -79,14 +79,23 @@ Repeat for `delivery_signal_strength` = 0, 0.5, 1 (regenerate data each time).
 - Meaning: proves the pipeline can detect a signal if present; does NOT prove REDX data predicts repayment in the real world.
 
 ## 11. Fairness by group
-Group columns: town_tier, shop_type, has_trade_license (audit only, not features). For each group report AUC, mean score, band shares and calibration. Flag AUC gaps above `flag_gap_points`. Also compare calibration by group. Report what was measured; do not claim "fair".
+Group columns: town_tier, shop_type, has_trade_license (audit only, not features); in public modes the audit columns from config `fairness.audit_only_columns`. For each group report AUC, mean score, band shares and calibration, each with a bootstrap range. Flag a gap above `flag_gap_points` only when the ranges do not overlap or it persists across seeds; small groups are noisy. Also compare calibration by group. Report what was measured; do not claim "fair".
 
 ## 12. Model card and versioning
-Model card (`docs/model_card.md` plus JSON at `/model/card`): intended use (decision support only), data (synthetic, generator settings, signal strengths), label definition and exclusions, split dates and counts, models compared and chosen, metrics with ranges and calibration plot, ablation results, group results and flagged gaps, limitations and out-of-scope uses (no automatic approval, no real-world validity claim).
+Model card per data mode (`docs/model_card_<mode>.md` plus JSON at `/model/card?mode=`): intended use (decision support only), data (synthetic with generator settings and signal strengths, or the public source with filters and licence), label definition and exclusions, split dates and counts, models compared and chosen, metrics with ranges and calibration plot, ablation results, group results and flagged gaps, limitations and out-of-scope uses (no automatic approval, no real-world validity claim), selection bias, and "public data is not ShopUp data".
 Versioning: each trained model gets a version id storing commit, data seed, config, metrics, calibrator. Every score and decision records it.
 
 ## Files (suggested)
 `src/model/labels.py, split.py, train.py, calibrate.py, score.py, explain.py, evaluate.py, ablation.py, fairness.py, model_card.py`
 
 ## Common mistakes to avoid
-Random split; features after the cutoff; counting young loans as defaults; tuning on test; trusting a huge AUC on synthetic data; skipping calibration; showing score without coverage; showing code feature names to officers; using group columns as features; claiming REDX "proves" anything; missing seeds/versions; letting the score auto-decide.
+Random split; features after the cutoff; counting young loans as defaults; tuning on test; trusting a huge AUC on synthetic data; skipping calibration; showing score without coverage; showing code feature names to officers; using group columns as features; treating Mokam purchases as sales; putting the questionnaire inside the score; claiming REDX "proves" anything; missing seeds/versions; letting the score auto-decide.
+
+## v2 additions: data modes and real-label checks
+- data.mode in config selects the adapter: synthetic_bd | kiva_asia | homecredit. Same pipeline for all.
+- kiva_asia: label paid=1, defaulted=0; drop unknown outcomes; time split on posted_time. Very imbalanced: report PR-AUC and top-k next to AUC. Purchase/delivery/payment groups are null, so coverage is low by design.
+- homecredit: no absolute dates, so use a stratified random split and mark it "weaker split" in the model card.
+- Leakage guard per source: a whitelist of decision-time columns; a test fails if any other column reaches the feature matrix.
+- Questionnaire (group D) is excluded from the headline model; D is reported as a separate ablation finding.
+- Group audit: bootstrap range per group; flag only when ranges do not overlap or the gap persists across seeds.
+- Model card "Known limits": copy from docs/DATASET_PLAN.md section 4 and the review list, and add one card per data mode.

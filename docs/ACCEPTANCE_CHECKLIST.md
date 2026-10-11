@@ -14,16 +14,25 @@ Tick before the demo. Claude Code should help produce evidence for each item (te
 - [ ] Both models trained; chosen one justified in the model card.
 - [ ] Calibration plot exists and is acceptable on test; calibrator fitted on validation only.
 - [ ] Metrics with bootstrap ranges; baselines beaten.
-- [ ] Ablation A to D at strengths 0, 0.5, 1; zero-signal test passes.
-- [ ] Group table by town_tier, shop_type, licence; gaps above 5 points flagged.
+- [ ] Ablation A to D at strengths 0, 0.5, 1; zero-signal test passes; D reported separately.
+- [ ] Questionnaire shown beside the score, not inside it.
+- [ ] Logistics-noise returns present; delivery reasons worded neutrally.
+- [ ] No sales or repeat-customer features from Mokam purchases.
+- [ ] Group table by town_tier, shop_type, licence (and public-data audit columns) with bootstrap ranges; gaps flagged only when ranges do not overlap or persist across seeds.
 - [ ] Every score returns probability, score, band, coverage, 3 up + 3 down reasons, model version.
+
+## Public data
+- [ ] kiva_asia and homecredit adapters pass test_adapters with fixtures.
+- [ ] Real-label runs done; metrics with ranges compared to 0.70 benchmark and 0.95 alarm.
+- [ ] Audit-only columns never in the feature matrix (leakage whitelist test).
+- [ ] Raw public data not in git; docs/DATA_SOURCES.md lists links and licences.
 
 ## System
 - [ ] No auto-approve/decline path (test_no_autodecision).
 - [ ] Consent missing or revoked -> scoring refused.
 - [ ] Roles enforced; audit entry on every profile read and decision.
 - [ ] Decisions append-only; override requires reason.
-- [ ] "Synthetic demo data. Decision support only." banner on every page.
+- [ ] Banner names the data source and says "Decision support only." on every page.
 
 ## Demo
 - [ ] Walk-through: thin-file merchant -> low coverage -> "Needs more info"; strong merchant -> reasons; override with reason; appears in decision log and audit.
