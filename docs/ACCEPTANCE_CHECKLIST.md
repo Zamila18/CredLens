@@ -22,7 +22,7 @@ Tick before the demo. Claude Code should help produce evidence for each item (te
 - [ ] Every score returns probability, score, band, coverage, 3 up + 3 down reasons, model version.
 
 ## Public data
-- [ ] kiva_asia and homecredit adapters pass test_adapters with fixtures.
+- [ ] kiva_asia and taiwan_cc adapters pass test_adapters with fixtures.
 - [ ] Real-label runs done; metrics with ranges compared to 0.70 benchmark and 0.95 alarm.
 - [ ] Audit-only columns never in the feature matrix (leakage whitelist test).
 - [ ] Raw public data not in git; docs/DATA_SOURCES.md lists links and licences.
@@ -33,6 +33,9 @@ Tick before the demo. Claude Code should help produce evidence for each item (te
 - [ ] Roles enforced; audit entry on every profile read and decision.
 - [ ] Decisions append-only; override requires reason.
 - [ ] Banner names the data source and says "Decision support only." on every page.
+- [ ] The React dashboard calls only the API; no database keys or connection strings in the browser bundle or the repo.
+- [ ] Tests pass on SQLite with no network; the same loader works against Supabase Postgres via `DATABASE_URL`.
+- [ ] The app runs locally without the internet (fallback for the venue), and the hosted copy on Hostinger works.
 
 ## Demo
 - [ ] Walk-through: thin-file merchant -> low coverage -> "Needs more info"; strong merchant -> reasons; override with reason; appears in decision log and audit.

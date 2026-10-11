@@ -14,7 +14,7 @@ No public dataset contains what our design needs in one place: per-merchant whol
 |---|---|---|---|---|
 | `synthetic_bd` (main demo) | Full dashboard with all four streams, ShopUp-shaped | No (generated) | Bangladesh-calibrated | The complete product and the REDX hypothesis test (ablation incl. zero-signal control) |
 | `kiva_asia` (real-label check, small business) | Same pipeline on real Asian micro-entrepreneur loans | Yes (paid vs defaulted) | Yes (filter to Asia) | The method works on real repayment outcomes of small Asian businesses |
-| `homecredit` (real-label check, behaviour) | Same pipeline on real repayment-behaviour features | Yes (TARGET) | Lender operates mainly in Asia; country not stated in data | Payment-behaviour features (on-time ratio, days late, regularity) carry signal on real data |
+| `taiwan_cc` (real-label check, behaviour) | Same pipeline on real repayment-behaviour features | Yes (default next month) | Yes (Taiwan) | Payment-behaviour features carry signal on real Asian data |
 
 Pitch line: "Full design on Bangladesh-calibrated synthetic data; method validated on real Asian repayment labels; ShopUp's data plugs in through the same adapter."
 
@@ -39,14 +39,18 @@ Selection rules (apply to any new link a teammate finds):
 - Usable pre-decision features: loan_amount, term_in_months, repayment_interval (monthly/irregular/bullet), sector and activity (filter to Retail, Food, Services), borrower_count, partner (field partner) ID and its historical stats computed as-of date, posted_time, currency/country.
 - Audit-only (never model inputs): gender, country/region, rural flag if present. Same rule as town tier/shop type/licence.
 - Drop (leakage): funded_amount if it is filled after posting, paid_amount, any repayment-schedule outcome, lender count if recorded after funding.
+- Download risk: the official snapshot links were reported broken in 2022. Try the official page first, then the Kaggle mirror "additional kiva snapshot" (about 1.4 million loans). Check that the status column really has a "defaulted" value before building on it; if not, switch to the India L&T backup below.
 - Limits to state: defaults are rare (very imbalanced; report PR-AUC and top-k, not just AUC); no per-borrower transaction history, so purchase/delivery features are unavailable and coverage will be low; default is partly driven by field partner behaviour; Kiva lenders are not the FSP. Claim only "the method holds up on real Asian small-business repayment labels".
 
-**Home Credit Default Risk (Kaggle)**: https://www.kaggle.com/competitions/home-credit-default-risk/data
-- Why: real labels plus rich repayment history tables that map directly onto our payment features.
-- Map: `installments_payments` → on_time_payment_ratio, mean_days_late, max_days_late, payment_regularity; `POS_CASH_balance` / `credit_card_balance` → transaction regularity, balance trend; `bureau` → prior credit count and delinquencies; `previous_application` → prior approvals/refusals.
-- Use a subset (e.g. application_train + installments_payments + POS_CASH) to keep it light on a laptop. Sample to ~50k applicants if memory is tight.
-- Audit-only: CODE_GENDER, DAYS_BIRTH-derived age band, region rating. Not inputs.
-- Limits: consumer loans, not merchants; no dates (relative days only), so the time split must use a proxy (state this; or use random split with a clear note that it is weaker than our temporal rule). Kaggle competition data rules apply: VERIFY the rules allow non-commercial demo use; do not redistribute; never commit to git.
+**Taiwan "Default of Credit Card Clients" (UCI)**: https://archive.ics.uci.edu/dataset/350/default+of+credit+card+clients
+- Why: explicitly Asian, real default label, 30,000 clients, 23 features, CC BY 4.0 (cite I-Cheng Yeh, 2009). Small file, no account barrier. Chosen Oct 12 in place of Home Credit, whose data does not state its country.
+- Expected fields (VERIFY on the real file before mapping): credit limit, six months of repayment status, six months of bill amounts, six months of payment amounts, and the "default payment next month" target.
+- Map: repayment-status history → on-time share, worst delay, recent delay trend; bill and payment amounts → payment-to-bill ratio, utilisation against the limit, payment regularity.
+- Label: ours is 1 = repaid, so label = 1 − default.
+- Audit-only: sex, education, marital status, age band. Not inputs.
+- Limits: consumer credit cards, not merchants; one fixed observation window with no per-row dates, so use a stratified random split and mark it "weaker split" in the model card; data is from 2005.
+
+**Backup only, India L&T vehicle loans (Kaggle)**: about 233,000 Indian borrowers, 41 columns, with loan details and bureau history. Use only if Kiva cannot be downloaded or has no usable default label. Licence and exact columns are unverified: VERIFY before any code depends on it; do not redistribute.
 
 ### 2.2 Use to calibrate the synthetic generator (Bangladesh first)
 
@@ -66,20 +70,22 @@ These are surveys and aggregates. They set realistic proportions and ranges; the
 
 ### 2.4 Not chosen (and why), so nobody re-proposes them
 - Country-level tables (Findex download, FAS): no rows per borrower, no labels.
-- Generic consumer credit sets (German Credit, Taiwan credit-card default): tiny or consumer-only; Home Credit already covers behaviour features better.
+- Home Credit Default Risk (Kaggle): the data does not state its country, so it cannot support an Asian claim. Dropped Oct 12.
+- Non-Asian sources (US SBA small-business loans, Czech PKDD'99 bank data, German Credit): the team requires an Asian context.
+- Adding generated purchase or delivery history to real Kiva or Taiwan rows: it would leak the outcome and mislabel public data.
 - E-commerce order sets from other regions (e.g. Brazil): not Asian, no credit label. Optional only as a reference for realistic return-rate ranges.
 
 ---
 
 ## 3. How to modify each dataset to fit our system
 
-All three adapters must output the same data contract (PROJECT_BRIEF section 5). Columns a source cannot fill stay null, and coverage (weighted checklist) drops accordingly. This is the feature, not a bug: thin files go to "Needs more info".
+All three adapters must output the same data contract (PROJECT_BRIEF section 5). Columns a source cannot fill stay null; nothing is invented to fill them. Coverage is measured per data mode (`coverage_weights_by_mode` in config): it asks how much of what that source can provide is present, so public modes get meaningful coverage, bands and reasons from their own real fields, and thin records still go to "Needs more info".
 
-| Contract table | synthetic_bd | kiva_asia | homecredit |
+| Contract table | synthetic_bd | kiva_asia | taiwan_cc |
 |---|---|---|---|
 | merchants | generated (shop type, town tier, licence: audit only) | one row per loan; sector/activity → shop_type; country → audit group | one row per applicant; region rating → audit group |
-| purchases (was "orders") | generated Mokam purchase history | null | null (or POS_CASH as a proxy, flagged) |
-| payments | generated repayment/payment history | null (no history) | installments_payments |
+| purchases (was "orders") | generated Mokam purchase history | null | null |
+| payments | generated repayment/payment history | null (no history) | six months of bill and payment records |
 | deliveries | generated REDX parcels with logistics-noise term | null | null |
 | loans | generated Baki loans | the Kiva loan (amount, term, interval, posted date) | the application (amount, annuity, term) |
 | questionnaire | generated, shown separately | null | null |
@@ -87,10 +93,10 @@ All three adapters must output the same data contract (PROJECT_BRIEF section 5).
 
 Common steps for each real-label adapter:
 1. Download script only (`scripts/fetch_<source>.py` or manual instructions); raw files in `data/raw/<source>/`, gitignored.
-2. Filter (Kiva: Asia + Retail/Food/Services + closed outcomes; Home Credit: optional sample).
+2. Filter (Kiva: Asia + Retail/Food/Services + closed outcomes; Taiwan: all rows).
 3. Build the label with the same rule shape as ours (1 = repaid, 0 = defaulted or 30+ days late where available; drop unknown outcomes).
 4. Leakage guard: whitelist columns known at decision time; unit test fails if a blacklisted column reaches the feature matrix.
-5. Time split on decision date (Kiva posted_time). Home Credit has no absolute date: use a stratified random split and label the run "weaker split" in the model card.
+5. Time split on decision date (Kiva posted_time). The Taiwan data has no per-row dates: use a stratified random split and label the run "weaker split" in the model card.
 6. Feature engineering through the existing dictionary; add new entries (EN/BN reason sentences) for source-specific features like `repayment_interval_irregular`.
 7. Audit columns kept in a separate frame, never passed to the model.
 8. Run baselines, LR, LightGBM, calibration, SHAP reasons, group audit with bootstrap ranges. Save a per-source model card.
@@ -107,16 +113,16 @@ From the teammates' review, checked against our documents, plus our own.
 4. **Delivery returns as merchant fault.** Add `logistics_noise_share` to the generator (part of returns unrelated to repayment). Prefer merchant-attributable events (refused, wrong item). Reword reasons as neutral observations: "Return rate is higher than similar shops; this may reflect delivery conditions."
 5. **Questionnaire inside the model.** Take it out of the headline score. Show it beside the score as its own indicator. Keep ablation set D as a separate finding.
 6. **Account Aggregator wording.** Bangladesh has no AA rail. Say: India's AA, SGFinDex and Open Finance PH are design references; consent here is platform consent recorded in the consents table, and scoring is blocked without it.
-7. **Mifos X promise.** Keep the plain statement: Mifos-style data model, Streamlit + FastAPI + SQLite build, one-day Docker spike as stretch, report the result honestly.
-8. **REDX ablation is circular on synthetic data.** Add the real-label runs (kiva_asia, homecredit). Claim only that the method works on real labels; the REDX question needs partner data.
+7. **Mifos X promise.** Keep the plain statement: Mifos-style data model and export adapter, React + FastAPI + Postgres build, one-day Docker spike only if time allows, report the result honestly.
+8. **REDX ablation is circular on synthetic data.** Add the real-label runs (kiva_asia, taiwan_cc). Claim only that the method works on real labels; the REDX question needs partner data.
 9. **Selection bias not stated.** Labels exist only for people who got credit. Add to known limits; propose a pilot with small starter limits to collect wider labels.
 10. **5-point group gap rule is noisy on small groups.** Report bootstrap ranges per group; flag only when ranges do not overlap or the gap persists across seeds.
 11. **Data plan out of date (our own).** Brief section 16 assumes ShopUp data or labels. Replace with this three-mode plan and the hackathon rule that no proprietary data is required.
 12. **Benchmarks (our own).** Add CGAP's ~0.70 AUC as the realistic usefulness bar; keep AUC > 0.95 as a leakage alarm.
-13. **Group columns on public data (our own).** Kiva gender/country and Home Credit gender/age are audit-only, same as town tier/shop type/licence.
+13. **Group columns on public data (our own).** Kiva gender/country and Taiwan sex/education/marital status/age band are audit-only, same as town tier/shop type/licence.
 14. **Licences (our own).** Findex microdata and Kaggle data must not be redistributed: download scripts only, `data/raw/` gitignored, sources listed in the model card.
 
-Model card "Known limits" text: use section 3 of the teammates' review as written, plus: "Real-label checks use Kiva (Asian micro-entrepreneurs) and Home Credit (consumer loans). Neither is ShopUp data; they test the method, not ShopUp performance."
+Model card "Known limits" text: use section 3 of the teammates' review as written, plus: "Real-label checks use Kiva (Asian micro-entrepreneurs) and Taiwanese credit-card clients (consumer credit, 2005). Neither is ShopUp data; they test the method, not ShopUp performance."
 
 ---
 

@@ -2,13 +2,14 @@
 seed: 42
 
 data:
-  mode: synthetic_bd             # synthetic_bd | kiva_asia | homecredit
+  mode: synthetic_bd             # synthetic_bd | kiva_asia | taiwan_cc
   raw_dir: data/raw              # gitignored; humans download public files here
   kiva:
     regions: [Asia]
     sectors: [Retail, Food, Services]
-  homecredit:
-    sample_size: 50000           # null = all rows
+  taiwan_cc:
+    sample_size: null            # null = all rows (about 30,000)
+  backup_mode: india_ltfs        # used only if Kiva cannot be downloaded or labelled; not built unless needed
   n_merchants: 5000
   months: 18
   thin_file_share: 0.35          # share of new merchants with very few early purchases
@@ -18,6 +19,10 @@ data:
   delivery_signal_strength: 0.5  # run ablation at 0, 0.5 and 1
   logistics_noise_share: 0.4     # share of returns/failures caused by address or rider issues
   questionnaire_in_model: false  # questionnaire shown beside the score, not inside it
+
+database:
+  url_env: DATABASE_URL          # Supabase Postgres connection string lives in this environment variable (.env, never committed)
+  default_url: sqlite:///data/app.db   # used when the variable is not set: local development, tests, CI
 
 labels:
   good_if_days_late_at_most: 30
@@ -40,7 +45,20 @@ score:
   band_min_coverage: 0.60        # below this: "Needs more info", whatever the score
   top_reasons_each_side: 3
 
-coverage_weights:                # must sum to 1.0
+coverage_weights_by_mode:        # public modes: coverage = how much of what the source can provide is present
+  kiva_asia:                     # provisional until the real columns are inspected; must sum to 1.0
+    loan_terms_present: 0.25
+    sector_activity_present: 0.20
+    partner_track_record: 0.30   # enough earlier closed loans for the field partner, as of the posting date
+    borrower_info_present: 0.15
+    description_present: 0.10
+  taiwan_cc:                     # provisional until the real columns are inspected; must sum to 1.0
+    credit_limit_present: 0.15
+    repayment_status_history: 0.35
+    bill_history: 0.25
+    payment_history: 0.25
+
+coverage_weights:                # synthetic_bd; must sum to 1.0
   history_6_months: 0.25
   purchases_present: 0.20
   payments_present: 0.20
@@ -53,7 +71,7 @@ fairness:
   flag_gap_points: 0.05          # candidate gap; flagged only if bootstrap ranges do not overlap or it persists across seeds
   audit_only_columns:
     kiva_asia: [borrower_genders, country]
-    homecredit: [CODE_GENDER, age_band, REGION_RATING_CLIENT]
+    taiwan_cc: [SEX, EDUCATION, MARRIAGE, age_band]   # confirm names on the real file
 
 sanity:
   useful_auc_benchmark: 0.70     # CGAP: transactional MSE models around 0.70+ are useful

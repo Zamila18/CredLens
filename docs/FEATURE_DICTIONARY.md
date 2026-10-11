@@ -32,4 +32,4 @@ Rules
 - Never show raw feature names to officers; show the sentence, with the number when helpful ("Returns 7.5% vs typical 4%").
 - If a feature is missing for a merchant, do not generate a reason for it; mention missing data via coverage.
 - Questionnaire (group D) is shown beside the score, not used in the headline model. Its reasons appear in the questionnaire panel only.
-- Public-data sources add their own entries (e.g. kiva: loan_amount_usd, term_months, repayment_interval_irregular, sector; homecredit: inst_ontime_rate, inst_mean_days_late, pos_months_active). Claude Code adds these to dictionary.yaml with EN/BN sentences when building the adapters.
+- Public-data sources add their own entries (e.g. kiva: loan_amount_usd, term_months, repayment_interval_irregular, sector; taiwan_cc: ontime_share_6m, worst_delay_6m, pay_to_bill_ratio, limit_utilisation). Claude Code adds these to dictionary.yaml with EN/BN sentences when building the adapters.
