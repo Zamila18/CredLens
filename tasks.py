@@ -6,7 +6,7 @@ Implements: the "Commands" list in CLAUDE.md and PROJECT_BRIEF section 12.
 
 Usage:
     python tasks.py setup
-    python tasks.py data [--mode <mode>] [--strength 0|0.5|1] [--all-strengths]
+    python tasks.py data [--mode <mode>] [--strength 0|0.5|1] [--all-strengths] [--reset-db]
     python tasks.py train | api | app | test | lint | backup
 
 This file uses the standard library only, so it runs before the virtual
@@ -76,9 +76,11 @@ def task_data(args: argparse.Namespace) -> int:
     elif args.strength is not None:
         command += ["--strength", str(args.strength)]
     code = run_in_venv(command)
-    if code == 0:
-        print("Loading the tables into the database: not implemented yet (Phase 2).")
-    return code
+    if code != 0:
+        return code
+    # Load the strength set in the config into the database. The loader refuses to
+    # overwrite existing data unless --reset-db is given.
+    return run_in_venv(["-m", "src.db.load"] + (["--reset"] if args.reset_db else []))
 
 
 def task_train(_: argparse.Namespace) -> int:
@@ -111,7 +113,7 @@ def task_lint(_: argparse.Namespace) -> int:
 
 def task_backup(_: argparse.Namespace) -> int:
     """Copy the SQLite file with a timestamp, or export tables from Postgres."""
-    return not_implemented("backup", "Phase 2")
+    return run_in_venv(["-m", "src.db.backup"])
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -128,6 +130,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--strength", type=float, choices=(0.0, 0.5, 1.0), help="delivery signal strength"
     )
     data.add_argument("--all-strengths", action="store_true", help="generate 0, 0.5 and 1")
+    data.add_argument(
+        "--reset-db",
+        action="store_true",
+        help="wipe the database first, including decisions and the audit log",
+    )
     data.set_defaults(func=task_data)
 
     train = tasks.add_parser("train", help="features, training, calibration, reports")

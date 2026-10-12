@@ -1,7 +1,7 @@
 # HANDOVER.md: where the project stands and what each person does next
 
 Kept up to date at the end of every phase, so a handover can happen at any time.
-Last updated: end of Phase 1 (Oct 12, 2026).
+Last updated: end of Phase 2 (Oct 12, 2026).
 
 ## 1. What is finished and tested
 
@@ -9,8 +9,9 @@ Last updated: end of Phase 1 (Oct 12, 2026).
 |---|---|---|
 | 0. Scaffold | Folders, config loading and checks, the seven-table data contract, adapters, feature dictionary (English and Bangla), API contract, sample API responses, `GET /health` | `python tasks.py test` |
 | 1. Synthetic data | Generator for 20,000 Bangladesh-calibrated synthetic merchants at delivery signal strengths 0, 0.5 and 1; the `synthetic_bd` adapter; column dictionary (`src/synth/schemas.md`) | `python tasks.py data --all-strengths`, then `python tasks.py test` |
+| 2. Database | Tables for the data contract plus users, decisions, audit log and model versions (`src/db/models.py`); loader; backup; Mifos X-style export. Decisions and the audit log are append-only, enforced in the application and by database triggers. Tested on SQLite. **Not yet run against Supabase/PostgreSQL** | `python tasks.py data` (generates, then loads `data/app.db`, about 55 seconds, about 350 MB), `python tasks.py backup`, `python -m src.db.mifos_adapter` |
 
-Not built yet: database (Phase 2), features (3), model (4 to 6), public-data adapters (7), real-label runs (8), API endpoints (9), dashboard (10), ablation and model cards (11), deployment (12).
+Not built yet: features (3), model (4 to 6), public-data adapters (7), real-label runs (8), API endpoints (9), dashboard (10), ablation and model cards (11), deployment (12).
 
 Data on the lead's laptop only (never in git): Taiwan, India L&T, Home Credit, Findex, World Bank informal-sector indicators. The Kiva archive is still downloading. Details: `docs/DATA_SOURCES.md`.
 
@@ -19,7 +20,7 @@ Data on the lead's laptop only (never in git): Taiwan, India L&T, Home Credit, F
 1. Clone the repository and pull `main`.
 2. Create your own branch (you run git; Claude Code never does): for example `git checkout -b feat/dashboard`.
 3. Run `python tasks.py setup`, then `python tasks.py test`. Expect all tests to pass, with some skipped.
-4. Run `python tasks.py data` to create the synthetic data (about 15 seconds, about 190 MB).
+4. Run `python tasks.py data` to create the synthetic data and load the local SQLite database (about 55 seconds; about 190 MB of CSV and a 350 MB database file, neither committed). Running it again never overwrites the database; to start afresh use `python tasks.py data --reset-db`, which also removes recorded decisions and the audit log.
 5. Open the repository in VS Code with Claude Code and paste the first message for your role (section 4).
 
 Rules that apply to everyone: read `CLAUDE.md`; two people never work in the same folder at the same time; small pull requests; one teammate reviews; merge only when tests pass.
@@ -29,7 +30,7 @@ Rules that apply to everyone: read `CLAUDE.md`; two people never work in the sam
 ### Lead (with Claude Code): data, then the model
 | Order | Work | Folders |
 |---|---|---|
-| 1 | Phase 2: database tables, loader (SQLite and Supabase), Mifos X-style export, backup | `src/db/` |
+| 1 | Phase 2 follow-up: create the Supabase project, load it, and check the PostgreSQL triggers and backup there | `src/db/` |
 | 2 | Phase 3: feature builder and the leakage test | `src/features/` |
 | 3 | Phases 4 to 6: labels, time split, logistic regression, calibration, score and coverage, LightGBM, reasons | `src/model/` |
 | 4 | Phase 7: adapters for Taiwan, India L&T, Home Credit, and Kiva if it qualifies | `src/adapters/` |
@@ -44,7 +45,7 @@ She can start now. Nothing below waits for the model: the API contract and sampl
 | 2 | App shell: sidebar, role switch (officer / admin / viewer), data-source selector, and the banner taken from `GET /health` | `web/` |
 | 3 | API endpoints that return the sample files in `tests/fixtures/api/`: review queue, profile, score, decisions, model card, audit; roles from a header token | `src/api/` |
 | 4 | Pages against those endpoints: review queue; merchant detail (timeline, score gauge, coverage meter, helps/hurts reasons, questionnaire panel, "Why might this be wrong?", decision form); decision log; model card; consent; audit; portfolio. English/Bangla toggle for reasons | `web/` |
-| 5 | After the lead's Phases 2 and 6: connect the API to the real database and real scores; consent check; audit entry on every profile read; decisions append-only | `src/api/`, `web/` |
+| 5 | The database exists now (`src/db/models.py`, demo users `officer-1`, `officer-2`, `admin-1`, `viewer-1`). After the lead's Phase 6: connect the API to the real database and real scores; consent check; audit entry on every profile read; decisions append-only | `src/api/`, `web/` |
 | 6 | Questionnaire form on the merchant detail page: ten answers from 1 to 5, saved through `POST /merchants/{id}/questionnaire`; the panel updates, the score does not | `src/api/`, `web/` |
 | 7 | Data import page (admin only): upload a CSV for one table, the API checks it against the data contract and reports rows accepted and rejected, then loads the accepted rows (`POST /admin/import/{table}`). Build the check-and-report step first. See PROJECT_BRIEF section 18, item 20 | `src/api/`, `web/` |
 

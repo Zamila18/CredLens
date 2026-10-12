@@ -11,13 +11,14 @@ Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2
 
 ## Status
 
-**Phases 0 (scaffold) and 1 (synthetic data) are done. No model is trained yet.**
+**Phases 0 (scaffold), 1 (synthetic data) and 2 (database) are done. No model is trained yet.**
 
 | Works now | Not built yet |
 |---|---|
-| Project structure, config loading and checks | Database (Phase 2), features (Phase 3) |
+| Project structure, config loading and checks | Features (Phase 3) |
 | Data contract and adapter interface | |
 | Synthetic data generator: 20,000 merchants, three delivery signal strengths | |
+| Database (SQLite locally): tables, loader, backup, Mifos X-style export; append-only decisions and audit log | |
 | Feature dictionary with English and Bangla sentences | Model, calibration, reasons (Phases 4 to 6) |
 | API contract, sample responses, `GET /health` | Public-data adapters (Phase 7), real-label runs (Phase 8) |
 | Lint, tests and CI | API endpoints (Phase 9), React dashboard (Phase 10) |
@@ -54,11 +55,12 @@ You need Python 3.10 or newer. On Windows, use `python`; on Mac or Linux, `pytho
 python tasks.py setup     # create .venv and install dependencies
 python tasks.py test      # run the tests
 python tasks.py lint      # run ruff
-python tasks.py data      # generate the synthetic data (about 15 seconds, about 190 MB, not committed)
+python tasks.py data      # generate the synthetic data and load the local database (about 55 seconds)
+python tasks.py backup    # copy the database with a timestamp
 python tasks.py api       # start the API, then open http://localhost:8000/docs
 ```
 
-`python tasks.py data --all-strengths` generates all three delivery signal strengths. `train`, `app` and `backup` exist as commands and say "not implemented yet" until their phase.
+`python tasks.py data --all-strengths` generates all three delivery signal strengths. `python tasks.py data --reset-db` wipes the database first, including recorded decisions. `train` and `app` exist as commands and say "not implemented yet" until their phase.
 
 To use a shared database, copy `.env.example` to `.env` and fill in `DATABASE_URL`. Without it, a local SQLite file is used. Never commit `.env`.
 
