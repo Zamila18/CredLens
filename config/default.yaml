@@ -2,7 +2,7 @@
 seed: 42
 
 data:
-  mode: synthetic_bd             # synthetic_bd | kiva_asia | taiwan_cc | homecredit
+  mode: synthetic_bd             # synthetic_bd | kiva_asia | taiwan_cc | india_ltfs | homecredit
   raw_dir: data/raw              # gitignored; humans download public files here
   kiva:
     regions: [Asia]
@@ -11,7 +11,8 @@ data:
     sample_size: null            # null = all rows (about 30,000)
   homecredit:
     sample_size: 50000           # applicants sampled with the seed; null = all rows
-  backup_mode: india_ltfs        # used only if Kiva cannot be downloaded or labelled; not built unless needed
+  india_ltfs:
+    sample_size: null            # null = all rows (about 233,000)
   n_merchants: 20000
   months: 18
   thin_file_share: 0.35          # share of new merchants with very few early purchases
@@ -21,6 +22,93 @@ data:
   delivery_signal_strength: 0.5  # run ablation at 0, 0.5 and 1
   logistics_noise_share: 0.4     # share of returns/failures caused by address or rider issues
   questionnaire_in_model: false  # questionnaire shown beside the score, not inside it
+
+generator:                       # synthetic_bd only; see docs/GENERATOR_SPEC.md
+  start_date: "2025-01-01"       # first day of the 18-month window
+  out_dir: data/raw/synthetic_bd # gitignored; one sub-folder per delivery signal strength
+  observation_tail_days: 60     # activity continues this long after the 18 months, so every loan issued in the
+                                 # 18 months has an outcome; loans issued in the tail are the pending cases
+  repayment_share_target: 0.90   # share of loans repaid within the 30-day rule. A team assumption, set between
+                                 # published Bangladesh recovery rates (98% MRA FY2023; 99.5% City Bank-bKash nano
+                                 # loans) and early-default rates in other Asian datasets (8-22%). No public figure
+                                 # exists for 30-day lateness on merchant credit in Bangladesh.
+  town_tier_shares: {metro: 0.25, city: 0.45, small_town: 0.30}
+  shop_type_shares: {grocery: 0.35, pharmacy: 0.15, apparel: 0.20, electronics: 0.15, other: 0.15}
+  trade_license_rate: {metro: 0.60, city: 0.40, small_town: 0.25}
+  districts:
+    metro: [Dhaka, Chattogram, Gazipur, Narayanganj]
+    city: [Sylhet, Khulna, Rajshahi, Cumilla, Mymensingh, Barishal, Rangpur]
+    small_town: [Bogura, Jashore, Dinajpur, Tangail, Pabna, Noakhali, Feni, Kushtia]
+  categories:
+    grocery: [rice_grain, cooking_oil, snacks, beverages, spices, household]
+    pharmacy: [medicine, personal_care, baby_care, health_devices]
+    apparel: [clothing, footwear, accessories, fabrics]
+    electronics: [mobile_accessories, small_appliances, lighting, batteries]
+    other: [stationery, toys, hardware, cosmetics, household]
+  purchases:
+    base_weekly_rate: 1.9        # purchases per week for an average merchant
+    tier_effect: {metro: 0.15, city: 0.0, small_town: -0.15}   # added to log(rate)
+    reliability_effect: 0.20     # added to log(rate) per unit of hidden reliability
+    trend_per_month_per_reliability: 0.015   # growing vs shrinking shops (the spec's 0.1 compounds too fast over 18 months)
+    trend_per_month_sd: 0.015
+    weekly_noise_sd: 0.35
+    seasonality_file: config/calibration/bb_mfs_merchant_payment.csv
+    seasonality_strength: 1.0    # 0 = no seasonality, 1 = the detrended monthly shape in the file
+    thin_file_rate_multiplier: 0.04   # thin-file merchants start at this share of their normal rate
+    thin_file_ramp_days: 180     # and reach the normal rate after this many days
+    thin_file_max_purchases_30d: 2    # how the tests recognise a thin file
+    amount_median_bdt: {grocery: 9000, pharmacy: 14000, apparel: 12000, electronics: 18000, other: 8000}
+    amount_sigma: 0.5
+    amount_reliability_effect: 0.1
+    n_suppliers: 400             # shared supplier pool
+    main_suppliers_per_merchant: 2
+    supplier_repeat_intercept: 0.4    # P(buy from a main supplier) = sigmoid(intercept + effect x reliability)
+    supplier_repeat_effect: 0.35
+  deliveries:
+    base_weekly_parcels: 1.5
+    volume_signal_effect: 0.3    # x signal strength x reliability, added to log(volume)
+    volume_merchant_sd: 0.5
+    return_intercept: -2.2       # P(merchant-attributable return) before the logistics share is taken out
+    return_signal_effect: 0.9    # x signal strength x reliability (subtracted)
+    failed_intercept: -3.2
+    failed_signal_effect: 0.5
+    merchant_noise_sd: 0.5
+    cancelled_rate: 0.02
+    cod_share: 0.7
+    cod_remit_intercept: 1.2
+    cod_remit_signal_effect: 0.8
+    hours_log_mean: 3.2          # dispatch-to-delivery hours ~ LogNormal(mean - effect x strength x reliability, sigma)
+    hours_signal_effect: 0.15
+    hours_log_sigma: 0.4
+  loans:
+    min_days_after_onboarding: 45
+    first_loan_delay_mean_days: 60
+    gap_between_loans_mean_days: 75
+    max_loans: 3
+    term_days: 30
+    limit_median_bdt: {metro: 60000, city: 40000, small_town: 25000}
+    limit_sigma: 0.35
+    limit_growth_per_loan: 0.25
+    outcome_reliability_effect: 1.5
+    outcome_noise_sd: 0.3        # larger = harder to predict; tuned so test AUC lands around 0.72-0.82
+    late_days_log_mean: 1.6      # good payers: days late ~ Gamma with mean exp(1.6 - 0.6 x reliability)
+    late_days_reliability_effect: 0.6
+    late_days_shape: 1.5
+    bad_extra_days_mean: 30      # bad loans that are eventually paid: 31 + Gamma(mean) days late
+    bad_never_paid_share: 0.4
+    utilisation_intercept: 0.3   # mean used share of the limit = sigmoid(intercept - effect x reliability)
+    utilisation_effect: 0.4
+    utilisation_concentration: 8
+  questionnaire:
+    item_mean: 3.0
+    reliability_effect: 0.4
+    item_noise_sd: 1.0
+    answered_within_days: 30
+  consent:
+    valid_years: 2
+    revoked_share_of_non_consenting: 0.5   # the rest have no consent record at all
+  inject_group_bias: 0.0         # test switch only: subtracts this from the outcome score of small_town merchants,
+                                 # to check that the fairness audit catches a planted gap
 
 database:
   url_env: DATABASE_URL          # Supabase Postgres connection string lives in this environment variable (.env, never committed)
@@ -59,6 +147,11 @@ coverage_weights_by_mode:        # public modes: coverage = how much of what the
     repayment_status_history: 0.35
     bill_history: 0.25
     payment_history: 0.25
+  india_ltfs:                    # provisional until Phase 7; must sum to 1.0
+    loan_terms_present: 0.20
+    bureau_record_present: 0.40    # about half the borrowers have no bureau history: real thin files
+    credit_history_long_enough: 0.25
+    employment_type_present: 0.15
   homecredit:                    # provisional until the real columns are inspected; must sum to 1.0
     application_data_present: 0.20
     instalment_history_present: 0.35
@@ -78,8 +171,9 @@ fairness:
   flag_gap_points: 0.05          # candidate gap; flagged only if bootstrap ranges do not overlap or it persists across seeds
   audit_only_columns:
     kiva_asia: [borrower_genders, country]
-    taiwan_cc: [SEX, EDUCATION, MARRIAGE, age_band]   # confirm names on the real file
-    homecredit: [CODE_GENDER, age_band, REGION_RATING_CLIENT]   # confirm names on the real file
+    taiwan_cc: [SEX, EDUCATION, MARRIAGE, age_band]
+    india_ltfs: [age_band, State_ID, Employment.Type]   # provisional until Phase 7
+    homecredit: [CODE_GENDER, age_band, REGION_RATING_CLIENT]
 
 sanity:
   useful_auc_benchmark: 0.70     # CGAP: transactional MSE models around 0.70+ are useful

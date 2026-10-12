@@ -6,7 +6,7 @@ Implements: the "Commands" list in CLAUDE.md and PROJECT_BRIEF section 12.
 
 Usage:
     python tasks.py setup
-    python tasks.py data [--mode synthetic_bd|kiva_asia|taiwan_cc|homecredit]
+    python tasks.py data [--mode <mode>] [--strength 0|0.5|1] [--all-strengths]
     python tasks.py train | api | app | test | lint | backup
 
 This file uses the standard library only, so it runs before the virtual
@@ -27,7 +27,7 @@ VENV_DIR = ROOT / ".venv"
 
 # Kept in step with VALID_MODES in src/config.py. It is repeated here because
 # this file must not import anything outside the standard library.
-VALID_MODES = ("synthetic_bd", "kiva_asia", "taiwan_cc", "homecredit")
+VALID_MODES = ("synthetic_bd", "kiva_asia", "taiwan_cc", "india_ltfs", "homecredit")
 
 
 def venv_python() -> Path:
@@ -67,9 +67,18 @@ def task_setup(_: argparse.Namespace) -> int:
 
 
 def task_data(args: argparse.Namespace) -> int:
-    """Generate or load data for one data mode, then load the database."""
-    mode = args.mode or "the mode in config/default.yaml"
-    return not_implemented(f"data (mode: {mode})", "Phase 1 generator, Phase 2 database")
+    """Generate the synthetic tables, or say what a public data mode still needs."""
+    if args.mode not in (None, "synthetic_bd"):
+        return not_implemented(f"data (mode: {args.mode})", "Phase 7 public-data adapters")
+    command = ["-m", "src.synth.generate"]
+    if args.all_strengths:
+        command.append("--all-strengths")
+    elif args.strength is not None:
+        command += ["--strength", str(args.strength)]
+    code = run_in_venv(command)
+    if code == 0:
+        print("Loading the tables into the database: not implemented yet (Phase 2).")
+    return code
 
 
 def task_train(_: argparse.Namespace) -> int:
@@ -115,6 +124,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     data = tasks.add_parser("data", help="generate or load data and load the database")
     data.add_argument("--mode", choices=VALID_MODES, help="data mode; default is the one in config")
+    data.add_argument(
+        "--strength", type=float, choices=(0.0, 0.5, 1.0), help="delivery signal strength"
+    )
+    data.add_argument("--all-strengths", action="store_true", help="generate 0, 0.5 and 1")
     data.set_defaults(func=task_data)
 
     train = tasks.add_parser("train", help="features, training, calibration, reports")

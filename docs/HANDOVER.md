@@ -1,0 +1,79 @@
+# HANDOVER.md: where the project stands and what each person does next
+
+Kept up to date at the end of every phase, so a handover can happen at any time.
+Last updated: end of Phase 1 (Oct 12, 2026).
+
+## 1. What is finished and tested
+
+| Phase | What exists | How to check |
+|---|---|---|
+| 0. Scaffold | Folders, config loading and checks, the seven-table data contract, adapters, feature dictionary (English and Bangla), API contract, sample API responses, `GET /health` | `python tasks.py test` |
+| 1. Synthetic data | Generator for 20,000 Bangladesh-calibrated synthetic merchants at delivery signal strengths 0, 0.5 and 1; the `synthetic_bd` adapter; column dictionary (`src/synth/schemas.md`) | `python tasks.py data --all-strengths`, then `python tasks.py test` |
+
+Not built yet: database (Phase 2), features (3), model (4 to 6), public-data adapters (7), real-label runs (8), API endpoints (9), dashboard (10), ablation and model cards (11), deployment (12).
+
+Data on the lead's laptop only (never in git): Taiwan, India L&T, Home Credit, Findex, World Bank informal-sector indicators. The Kiva archive is still downloading. Details: `docs/DATA_SOURCES.md`.
+
+## 2. How to start (every teammate)
+
+1. Clone the repository and pull `main`.
+2. Create your own branch (you run git; Claude Code never does): for example `git checkout -b feat/dashboard`.
+3. Run `python tasks.py setup`, then `python tasks.py test`. Expect all tests to pass, with some skipped.
+4. Run `python tasks.py data` to create the synthetic data (about 15 seconds, about 190 MB).
+5. Open the repository in VS Code with Claude Code and paste the first message for your role (section 4).
+
+Rules that apply to everyone: read `CLAUDE.md`; two people never work in the same folder at the same time; small pull requests; one teammate reviews; merge only when tests pass.
+
+## 3. Who does what next
+
+### Lead (with Claude Code): data, then the model
+| Order | Work | Folders |
+|---|---|---|
+| 1 | Phase 2: database tables, loader (SQLite and Supabase), Mifos X-style export, backup | `src/db/` |
+| 2 | Phase 3: feature builder and the leakage test | `src/features/` |
+| 3 | Phases 4 to 6: labels, time split, logistic regression, calibration, score and coverage, LightGBM, reasons | `src/model/` |
+| 4 | Phase 7: adapters for Taiwan, India L&T, Home Credit, and Kiva if it qualifies | `src/adapters/` |
+| 5 | Phases 8 and 11: real-label runs, ablation, group audit, model cards | `src/model/`, `reports/` |
+
+### Humayra (heavy work): the dashboard and the API behind it
+She can start now. Nothing below waits for the model: the API contract and sample responses already exist.
+
+| Order | Work | Folders |
+|---|---|---|
+| 1 | Install Node.js LTS. Create the React app (Vite + TypeScript + Tailwind + shadcn/ui). Agree colours and layout with the lead | `web/` |
+| 2 | App shell: sidebar, role switch (officer / admin / viewer), data-source selector, and the banner taken from `GET /health` | `web/` |
+| 3 | API endpoints that return the sample files in `tests/fixtures/api/`: review queue, profile, score, decisions, model card, audit; roles from a header token | `src/api/` |
+| 4 | Pages against those endpoints: review queue; merchant detail (timeline, score gauge, coverage meter, helps/hurts reasons, questionnaire panel, "Why might this be wrong?", decision form); decision log; model card; consent; audit; portfolio. English/Bangla toggle for reasons | `web/` |
+| 5 | After the lead's Phases 2 and 6: connect the API to the real database and real scores; consent check; audit entry on every profile read; decisions append-only | `src/api/`, `web/` |
+| 6 | Questionnaire form on the merchant detail page: ten answers from 1 to 5, saved through `POST /merchants/{id}/questionnaire`; the panel updates, the score does not | `src/api/`, `web/` |
+| 7 | Data import page (admin only): upload a CSV for one table, the API checks it against the data contract and reports rows accepted and rejected, then loads the accepted rows (`POST /admin/import/{table}`). Build the check-and-report step first. See PROJECT_BRIEF section 18, item 20 | `src/api/`, `web/` |
+
+Must hold on every page: the banner names the data source and says "Decision support only."; a score is never shown without coverage and band; officers see sentences, never feature names; there is no approve or decline button; an override needs a written reason; the browser calls only the API, never the database.
+
+### Dipto (light work): checks, documents and the things only a person can do
+| Order | Work | Where |
+|---|---|---|
+| 1 | Confirm the Findex column definitions in the Findex codebook and correct `config/calibration/findex_bangladesh.csv` notes if needed | `config/calibration/` |
+| 2 | Read CGAP's Kaleidofin case in "Banking in Layers" and write three lines on what it actually reports | `docs/` |
+| 3 | Check the Bangla sentences in `src/features/dictionary.yaml` with a native speaker's eye; list any that sound unnatural or accusing | Report to the lead; the lead edits the file |
+| 4 | Draft `docs/starter_kit.md` (public sources a lender could use, from `docs/DATA_SOURCES.md` and the team's Finverse result) and `docs/data_inventory.md` (what data exists, who owns it, who may view it) | `docs/` |
+| 5 | When the dashboard exists: walk through it by hand with the demo script and list every problem | Report to Humayra |
+| 6 | Slides and pitch text, following `docs/WORDING_AND_QA.md` | Outside the repository |
+
+### Third teammate (when they arrive)
+Sceptical review of every claim against code and tests (Phase 13), help with deployment, the backup video and rehearsals.
+
+## 4. First message to paste into your own Claude Code
+
+Humayra:
+> Read CLAUDE.md, PROJECT_BRIEF.md (especially section 18), docs/HANDOVER.md and web/README.md. I am role D (full-stack). The last committed phase is 1. Check the repository matches that, then wait. My first task is to create the React app in web/ and build pages against the sample responses in tests/fixtures/api/.
+
+Dipto:
+> Read CLAUDE.md, docs/HANDOVER.md, docs/DATA_SOURCES.md and docs/WORDING_AND_QA.md. I am role A support (documents and checks). The last committed phase is 1. Check the repository matches that, then wait. My first task is in docs/HANDOVER.md section 3, under my name.
+
+## 5. What not to touch
+
+- `config/default.yaml`, `requirements.txt`, `src/features/dictionary.yaml`: only the lead edits these. Ask for changes.
+- `data/raw/`: never commit anything from it. Never upload raw public files anywhere.
+- `_latent_truth.csv` in the synthetic data folders: the hidden truth for generator tests. No feature, model, API or page may read it.
+- The Home Credit files stay on the lead's laptop. The hosted demo shows only aggregate results for that mode.

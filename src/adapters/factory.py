@@ -12,6 +12,7 @@ from typing import Any
 
 from src.adapters.base import DataAdapter
 from src.adapters.homecredit import HomeCreditAdapter
+from src.adapters.india_ltfs import IndiaLtfsAdapter
 from src.adapters.kiva_asia import KivaAsiaAdapter
 from src.adapters.shopup_synthetic import ShopUpSyntheticAdapter
 from src.adapters.taiwan_cc import TaiwanCreditCardAdapter
@@ -20,6 +21,7 @@ ADAPTERS: dict[str, type[DataAdapter]] = {
     "synthetic_bd": ShopUpSyntheticAdapter,
     "kiva_asia": KivaAsiaAdapter,
     "taiwan_cc": TaiwanCreditCardAdapter,
+    "india_ltfs": IndiaLtfsAdapter,
     "homecredit": HomeCreditAdapter,
 }
 

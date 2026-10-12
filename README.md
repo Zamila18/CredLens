@@ -11,12 +11,13 @@ Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2
 
 ## Status
 
-**Phase 0 (scaffold) is done. Nothing is trained and no data is generated yet.**
+**Phases 0 (scaffold) and 1 (synthetic data) are done. No model is trained yet.**
 
 | Works now | Not built yet |
 |---|---|
-| Project structure, config loading and checks | Synthetic data generator (Phase 1) |
-| Data contract and adapter interface | Database (Phase 2), features (Phase 3) |
+| Project structure, config loading and checks | Database (Phase 2), features (Phase 3) |
+| Data contract and adapter interface | |
+| Synthetic data generator: 20,000 merchants, three delivery signal strengths | |
 | Feature dictionary with English and Bangla sentences | Model, calibration, reasons (Phases 4 to 6) |
 | API contract, sample responses, `GET /health` | Public-data adapters (Phase 7), real-label runs (Phase 8) |
 | Lint, tests and CI | API endpoints (Phase 9), React dashboard (Phase 10) |
@@ -38,8 +39,9 @@ No partner data is used. Every screen names its data source.
 | Data mode | Source | What it is for |
 |---|---|---|
 | `synthetic_bd` | Generated, calibrated to public Bangladesh figures | The main demo, with every data stream |
-| `kiva_asia` | Kiva loans, filtered to Asia | Checks the method on real Asian small-business outcomes |
+| `kiva_asia` | Kiva loans, filtered to Asia (pending: only if the archived file has enough Asian defaults) | Checks the method on real Asian small-business outcomes |
 | `taiwan_cc` | UCI Taiwan credit-card default data | Checks the method on real Asian payment behaviour |
+| `india_ltfs` | India L&T vehicle loans (Kaggle) | Checks the method on real Indian borrowers, half of them with no credit record |
 | `homecredit` | Kaggle Home Credit (country not stated) | Checks the method at larger scale |
 
 Results on synthetic data show that the pipeline is sound. They say nothing about real merchants. The public datasets test the method; none of them is ShopUp data. Sources and licences: [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md).
@@ -52,10 +54,11 @@ You need Python 3.10 or newer. On Windows, use `python`; on Mac or Linux, `pytho
 python tasks.py setup     # create .venv and install dependencies
 python tasks.py test      # run the tests
 python tasks.py lint      # run ruff
+python tasks.py data      # generate the synthetic data (about 15 seconds, about 190 MB, not committed)
 python tasks.py api       # start the API, then open http://localhost:8000/docs
 ```
 
-`data`, `train`, `app` and `backup` exist as commands and say "not implemented yet" until their phase.
+`python tasks.py data --all-strengths` generates all three delivery signal strengths. `train`, `app` and `backup` exist as commands and say "not implemented yet" until their phase.
 
 To use a shared database, copy `.env.example` to `.env` and fill in `DATABASE_URL`. Without it, a local SQLite file is used. Never commit `.env`.
 

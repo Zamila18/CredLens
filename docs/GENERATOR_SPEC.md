@@ -46,3 +46,35 @@ Set these from public sources and cite them in docs/DATA_SOURCES.md; never inven
 - Share of merchants using mobile money / digital payments: Global Findex 2025 Bangladesh microdata.
 - Month-by-month seasonality of merchant payments: Bangladesh Bank MFS monthly statistics.
 - Share of small retailers selling on credit (73%) and formal-finance access (27.5%): ShopUp Series B press release (context for the deck; optional prior for questionnaire answers).
+
+## v3: what the built generator does (Phase 1, Oct 12)
+
+Where this section differs from the text above, this section is what the code does. Every number is in
+`config/default.yaml` under `generator`.
+
+- **Size and window.** 20,000 merchants. An 18-month main window (onboarding; every loan issued here has an outcome) plus a 60-day tail in which activity continues and new loans have no outcome yet (the pending cases).
+- **Repayment share.** Target 90%, not 75 to 85%. The outcome intercept is solved so the average repayment probability hits the target. It is a team assumption; see the comment in the config.
+- **Outcome.** P(repaid in time) = sigmoid(intercept + 1.5 x reliability + 0.3 x noise). A merchant who never repaid gets no further loan.
+- **Purchases.** Reliability effect on the weekly rate is 0.20 (not 0.5) and the growth trend is 0.015 per month per unit of reliability (not 0.1): the original values made purchases alone reveal almost everything, leaving nothing for payments or deliveries to add, and the trend compounded too fast over 18 months.
+- **Seasonality.** Twelve monthly multipliers computed from the real Bangladesh Bank merchant-payment series after removing its growth trend (`src/synth/seasonality.py`). April to June sit about 11 to 15% above trend; February and July about 10 to 12% below. Eid moves about 11 days earlier each year, so this is a realistic shape, not exact Eid timing for 2025 to 2026.
+- **Thin files.** About 35% of merchants start at 4% of their normal purchase rate and ramp up over 180 days.
+- **Logistics noise.** 40% of returns and failures are tagged `address_issue` or `rider_issue` and never depend on the merchant, at any signal strength.
+- **Signal strength.** Changing it changes only `deliveries.csv`. Every other table is identical, because each table has its own random stream.
+- **Hidden truth.** Written to `_latent_truth.csv` for generator tests. The adapter never reads it.
+
+### Rough difficulty check (a generator sanity check, not model results)
+
+`python -m src.synth.difficulty_check` fits a plain logistic regression on ten crude features, trains on
+the first 12 months of loans and scores the last 3. Seed 42, 20,000 merchants, 6,346 test loans of which
+614 were not repaid in time:
+
+| Signal strength | Purchases only | + payments | + deliveries | Gain from deliveries |
+|---|---|---|---|---|
+| 0 (control) | 0.693 | 0.702 | 0.702 | -0.000 |
+| 0.5 | 0.693 | 0.702 | 0.726 | +0.023 |
+| 1 | 0.693 | 0.702 | 0.747 | +0.045 |
+
+The best possible AUC, predicting from hidden reliability itself, is 0.824. So the task sits in the
+intended range (about 0.72 to 0.82), the negative control behaves (no gain at strength 0), and the gain
+grows with strength. These numbers come from one seed and crude features; the real model and its
+bootstrap ranges come in Phases 4 to 6 and 11.

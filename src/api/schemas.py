@@ -18,7 +18,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-DataMode = Literal["synthetic_bd", "kiva_asia", "taiwan_cc", "homecredit"]
+DataMode = Literal["synthetic_bd", "kiva_asia", "taiwan_cc", "india_ltfs", "homecredit"]
 Band = Literal["Strong", "Review", "Needs more info"]
 Role = Literal["officer", "admin", "viewer"]
 OfficerAction = Literal["accept", "override_up", "override_down", "needs_more_info"]
