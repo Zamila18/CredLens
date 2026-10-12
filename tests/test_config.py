@@ -38,7 +38,7 @@ def test_coverage_lists_differ_by_mode(config):
     """Coverage is per data mode: public modes use their own checklist."""
     synthetic = set(coverage_weights_for_mode(config, "synthetic_bd"))
     assert "deliveries_present" in synthetic
-    for mode in ("kiva_asia", "taiwan_cc", "homecredit"):
+    for mode in ("kiva_asia", "taiwan_cc", "india_ltfs", "homecredit"):
         assert set(coverage_weights_for_mode(config, mode)) != synthetic
 
 
@@ -48,7 +48,7 @@ def test_questionnaire_is_not_in_the_model(config):
 
 def test_group_columns_are_listed_for_audit(config):
     assert config["fairness"]["group_columns"] == ["town_tier", "shop_type", "has_trade_license"]
-    public_modes = {"kiva_asia", "taiwan_cc", "homecredit"}
+    public_modes = {"kiva_asia", "taiwan_cc", "india_ltfs", "homecredit"}
     assert set(config["fairness"]["audit_only_columns"]) == public_modes
 
 
@@ -116,7 +116,7 @@ def test_database_url_comes_from_the_environment_when_set(config, monkeypatch):
 
 def test_banner_names_the_source_and_says_decision_support():
     assert banner_text("synthetic_bd") == "Synthetic demo data. Decision support only."
-    for mode in ("kiva_asia", "taiwan_cc", "homecredit"):
+    for mode in ("kiva_asia", "taiwan_cc", "india_ltfs", "homecredit"):
         banner = banner_text(mode)
         assert banner.startswith("Public data: ")
         assert "not ShopUp data" in banner

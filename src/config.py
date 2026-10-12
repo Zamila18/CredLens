@@ -22,8 +22,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONFIG_PATH = PROJECT_ROOT / "config" / "default.yaml"
 
 # The data modes that run through the same pipeline (PROJECT_BRIEF section 18).
-# kiva_asia and taiwan_cc are Asian sources. homecredit does not state its country.
-VALID_MODES = ("synthetic_bd", "kiva_asia", "taiwan_cc", "homecredit")
+# kiva_asia, taiwan_cc and india_ltfs are Asian sources. homecredit does not state its country.
+VALID_MODES = ("synthetic_bd", "kiva_asia", "taiwan_cc", "india_ltfs", "homecredit")
 
 # Environment variable that overrides data.mode for one run.
 MODE_ENV_VAR = "CREDLENS_DATA_MODE"
@@ -34,6 +34,7 @@ SOURCE_LABELS = {
     "synthetic_bd": "Synthetic demo data.",
     "kiva_asia": "Public data: Kiva (Asia), not ShopUp data.",
     "taiwan_cc": "Public data: Taiwan credit cards, not ShopUp data.",
+    "india_ltfs": "Public data: India L&T vehicle loans, not ShopUp data.",
     "homecredit": "Public data: Home Credit (country not stated), not ShopUp data.",
 }
 

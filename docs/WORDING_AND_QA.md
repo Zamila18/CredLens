@@ -12,6 +12,7 @@
 - "73% of small retailers sell on credit; 27.5% have formal-finance access (ShopUp Series B press release)." The submission used 72% (Daily Star, 2021); if asked, say the source changed.
 
 ## Do not say
+- "Unexplored", "first of its kind", "nobody does this": platform lenders already score merchants from commerce data, and ShopUp already lends through Baki.
 - "Automated approval", "AI decides", "proven", "works for all of Asia", "fair" (say "we measured gaps and report them"), "REDX data predicts repayment" (as fact), any outcome for other organisations.
 
 ## Q&A
@@ -36,3 +37,14 @@
 - Small-town or unlicensed shops? Audited by group with bootstrap ranges, never inputs; thin files land in "Needs more info", never a low band.
 - Who are the labels for? Only people who got credit (selection bias). We propose small starter limits in a pilot.
 - Always say: "synthetic or public data", "decision support, an officer decides", "REDX is a hypothesis we test".
+
+## v3 answers (after the data work of Oct 12)
+- Does this already exist? Yes, the scoring idea does: MYbank, Udaan and others lend to merchants from platform data, and ShopUp lends through Baki. Our contribution is how the score is used: an officer decides, coverage is shown apart from the score, reasons are in plain language, the delivery signal is tested with a control where it is absent, results are audited by group, and scoring needs consent.
+- Say about delivery data: "Whether delivery reliability adds predictive value beyond purchases and payments is rarely tested in public; we test it openly, including a control where the signal is absent."
+- Why 90% repayment in the synthetic data? It is our assumption. Published Bangladesh recovery rates are higher (98% microfinance, FY2023) but count eventual recovery, not 30-day lateness; other Asian datasets show 8 to 22% early defaults. The real figure needs a partner's data.
+- Why 30 days? It follows the microfinance PAR30 convention and suits short-term merchant credit. It is one config value; we do not know ShopUp's own rule.
+- Two figures for selling on credit: 73% of small retailers (ShopUp press release) and 52 to 56% of informal businesses in Dhaka, Chittagong and Cox's Bazar (World Bank survey, 2022). They describe different groups; quote each with its source.
+- What does the India result show? Real Indian borrowers, half of them with no credit record. The outcome is missing the first instalment, an early-warning signal, not eventual default.
+- Is Home Credit Asian data? We do not know; the data does not state its country. We label it "country not stated".
+- Did you use data.org's Zindi Financial Health challenge? No, its files were locked after it closed. We cite it as related work.
+- How does a new merchant's data get in? In production the lender's systems feed the adapter automatically. In the prototype an admin uploads CSV exports on the import page, where each file is checked against the data contract before loading; an officer records questionnaire answers on a form. Nobody types purchase or delivery records by hand.

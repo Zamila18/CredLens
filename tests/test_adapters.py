@@ -13,6 +13,7 @@ import pytest
 
 from src.adapters import CONTRACT, DataAdapter, check_frame, empty_frame, get_adapter
 from src.adapters.homecredit import HomeCreditAdapter
+from src.adapters.india_ltfs import IndiaLtfsAdapter
 from src.adapters.kiva_asia import KivaAsiaAdapter
 from src.adapters.shopup_real import ShopUpRealAdapter
 from src.adapters.shopup_synthetic import ShopUpSyntheticAdapter
@@ -23,6 +24,7 @@ EXPECTED_CLASS = {
     "synthetic_bd": ShopUpSyntheticAdapter,
     "kiva_asia": KivaAsiaAdapter,
     "taiwan_cc": TaiwanCreditCardAdapter,
+    "india_ltfs": IndiaLtfsAdapter,
     "homecredit": HomeCreditAdapter,
 }
 
@@ -73,6 +75,7 @@ def test_purchases_are_not_sales():
     [
         ("kiva_asia", ["purchases", "deliveries", "payments", "questionnaire"]),
         ("taiwan_cc", ["purchases", "deliveries", "questionnaire"]),
+        ("india_ltfs", ["purchases", "deliveries", "payments", "questionnaire"]),
         ("homecredit", ["purchases", "deliveries", "questionnaire"]),
     ],
 )
@@ -84,7 +87,7 @@ def test_streams_a_public_source_lacks_are_empty_not_invented(config, mode, miss
         assert list(frame.columns) == CONTRACT[table], table
 
 
-@pytest.mark.parametrize("adapter_class", [ShopUpSyntheticAdapter, ShopUpRealAdapter])
+@pytest.mark.parametrize("adapter_class", [KivaAsiaAdapter, ShopUpRealAdapter])
 def test_unbuilt_adapters_say_so_clearly(config, adapter_class):
     adapter = adapter_class(config)
     with pytest.raises(NotImplementedError, match="load_merchants"):

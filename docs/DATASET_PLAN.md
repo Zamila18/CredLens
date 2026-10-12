@@ -138,3 +138,29 @@ Model card "Known limits" text: use section 3 of the teammates' review as writte
 ## 5. ShopUp alignment, later
 
 When ShopUp (or another FSP) can share even a small extract, `src/adapters/shopup_real.py` maps it to the same contract. The first questions to ask: (1) Are Mokam rows purchases only? (2) Which merchants does Baki lend to? (3) Can REDX returns be split by reason (refused vs address vs rider)? (4) What is "late" in Baki's policy?
+
+---
+
+## 6. Update after inspecting the real files (Oct 12)
+
+This section records what the downloads actually contained. Where it differs from sections 1 to 3, this
+section is current. The decisions are in PROJECT_BRIEF section 18, items 16 to 19.
+
+| Source | What we found | Decision |
+|---|---|---|
+| Taiwan credit cards (UCI) | 30,000 rows, 25 columns, no missing values, 22.1% default. Columns: `LIMIT_BAL`, `SEX`, `EDUCATION`, `MARRIAGE`, `AGE`, `PAY_0`, `PAY_2`..`PAY_6`, `BILL_AMT1`..`6`, `PAY_AMT1`..`6`, `default payment next month`. The file has an extra header row and a few undocumented codes in `EDUCATION` and `MARRIAGE` | Use as planned (`taiwan_cc`) |
+| Kiva, official link | `s3.kiva.org` no longer exists | Not available |
+| Kiva, Kaggle "additional kiva snapshot" (2018) | 1,419,607 loans, but `status` is only funded / expired / refunded / fundRaising: **no repayment outcome** | Cannot be used |
+| Kiva, Duke sample | 5,000 loans, 100 defaults, **none in Asia**; contains borrower names | Cannot be used |
+| Kiva, Internet Archive copy of the official snapshot (2 May 2016) | 1,061,401 loans in JSON with `paid` / `defaulted` / `in_repayment` statuses, posting dates, sector, country, partner, terms. In 1,500 sampled loans: 27 defaults, 1 of them Asian | Download in progress. Keep `kiva_asia` only if Asian defaults are numerous enough; drop personal fields on load |
+| India L&T vehicle loans (Kaggle) | 233,154 loans, 41 columns, disbursed Aug to Oct 2018, 21.7% default. Label = missed first instalment. 50.2% have a bureau score of zero (no credit record); 127,635 self-employed. All bureau columns are "at the time of disbursement". Licence: "Other", no terms in the description | New full mode `india_ltfs`, with a three-month time split |
+| Home Credit (Kaggle) | 307,511 applicants (8.1% default), 13.6 million instalment rows, 10.0 million POS rows; 95% of applicants have instalment history. Rules restrict use to the competition | Kept by the lead's decision, with safeguards (docs/DATA_SOURCES.md) |
+| Zindi data.org Financial Health challenge | CC BY-SA 4.0 per its rules, but files locked after the competition closed | Not used; mention in the pitch |
+| Bangladesh Bank MFS | 26 months of merchant payments read by hand and cross-checked | Seasonality for the generator |
+| World Bank Informal Sector Enterprise Survey | Indicators for Dhaka, Chittagong and Cox's Bazar (2022), about 3,700 businesses; verified against the Excel export | Priors and problem-slide figures. Better than the India survey proxy, which is no longer needed |
+| Global Findex 2025, country-level | Bangladesh 2024: 43.3% have an account, 20.8% mobile money, 70.3% borrowed, 20.4% saved | Loose priors; column definitions still to confirm |
+
+Consequences for the pitch: the real-label evidence is Taiwan (payment behaviour) and India (thin-file and
+self-employed borrowers), both Asian, plus Home Credit for scale. "Real Asian small-business loans"
+depends on the Kiva archive. No public dataset has repayment outcomes for Asian small merchants with
+purchase and delivery history; that is what a pilot with a partner's data would test.

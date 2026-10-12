@@ -29,3 +29,11 @@
 
 ## Before the finals
 - [ ] Freeze features Nov 1. Rehearse three times. Record backup demo video. Copy repo, DB and slides to a USB stick and cloud.
+
+## Added Oct 12
+- [x] Downloads done and checked: Taiwan, Home Credit, India L&T, Findex country file, World Bank informal-sector indicators.
+- [x] Bangladesh Bank merchant payments read for Jan 2023 to Feb 2025.
+- [ ] Kiva archive (`kiva_ds_json.zip`, about 1.16 GB, from the Internet Archive) into `data/raw/kiva/`. Do not unzip.
+- [ ] Confirm the Findex column definitions in the codebook before quoting the Bangladesh figures on a slide (`config/calibration/findex_bangladesh.csv`).
+- [ ] Ask ShopUp: what counts as "late" for Baki, and what share of Baki credit is repaid on time?
+- [ ] Do not say "unexplored" in the pitch (docs/WORDING_AND_QA.md).

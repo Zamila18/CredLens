@@ -15,7 +15,7 @@ Project: CredLens, a Merchant Readiness Dashboard, Team 4Bytes (2026 Data, AI & 
 - Asian context only. Never add generated purchases, deliveries or payments to real public rows. Coverage is per data mode (`coverage_weights_by_mode`).
 - The build must stay consistent with the team's Phase 2 submission (summarised in PROJECT_BRIEF section 18). If a change would drift from it, say so before making it.
 - Stack: Python for data, model and FastAPI; React + Vite + TypeScript + Tailwind dashboard in `web/`; Supabase PostgreSQL as the shared database with SQLite for local development and tests; Hostinger VPS for hosting.
-- ShopUp data was not obtained. Four data modes run through one pipeline: `synthetic_bd` (main demo, 20,000 merchants), and the public real-label checks `kiva_asia`, `taiwan_cc` and `homecredit`. Kiva and Taiwan are Asian sources; Home Credit does not state its country and is always labelled "country not stated". ShopUp can plug in later through `src/adapters/shopup_real.py`.
+- ShopUp data was not obtained. Five data modes run through one pipeline: `synthetic_bd` (main demo, 20,000 merchants), and the public real-label checks `taiwan_cc`, `india_ltfs`, `kiva_asia` (only if the archived snapshot has enough Asian defaults) and `homecredit`. Taiwan, India and Kiva are Asian sources; Home Credit does not state its country and is always labelled "country not stated". See PROJECT_BRIEF section 18, items 16 to 19. ShopUp can plug in later through `src/adapters/shopup_real.py`.
 - Every data source sits behind an adapter in `src/adapters/`. Never hard-wire the pipeline to one source.
 
 ## HUMAN STEP protocol (strict)
@@ -74,3 +74,8 @@ When a session starts and the human says they are a teammate taking over, check 
 
 ## Definition of done
 See section 12 of `PROJECT_BRIEF.md` and `docs/ACCEPTANCE_CHECKLIST.md`.
+
+## Working with the team lead
+- The lead prefers replies in Banglish (Bangla in Latin letters mixed with English) with short, simple sentences. Code, commands, file contents and documents stay in English.
+- The lead works through the phases with Claude Code and hands over to teammates (Humayra: heavy work; Dipto: light work) when they choose. Keep `docs/HANDOVER.md` up to date at the end of every phase so a handover can happen at any time.
+- Synthetic data: `python tasks.py data` (one strength) or `python tasks.py data --all-strengths`. The hidden-truth file `_latent_truth.csv` is for generator tests only; nothing in the pipeline may read it.
