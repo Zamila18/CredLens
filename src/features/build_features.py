@@ -42,7 +42,23 @@ PAYMENT_FEATURES = [
     "ontime_payment_rate",
     "credit_utilisation",
 ]
-FEATURE_GROUPS: dict[str, list[str]] = {"A": PURCHASE_FEATURES, "B": PAYMENT_FEATURES}
+DELIVERY_FEATURES = [
+    "parcel_volume_90d",
+    "delivered_rate",
+    "return_rate_90d",
+    "failed_rate_90d",
+    "cod_remit_ontime_rate",
+    "dispatch_to_delivery_hours",
+    "delivery_data_thin",
+]
+FEATURE_GROUPS: dict[str, list[str]] = {
+    "A": PURCHASE_FEATURES,
+    "B": PAYMENT_FEATURES,
+    "C": DELIVERY_FEATURES,
+}
+
+# Return reasons that are logistics problems, not the merchant's doing.
+LOGISTICS_RETURN_REASONS = ("address_issue", "rider_issue")
 
 KEY_COLUMNS = ["loan_id", "merchant_id", "cutoff_date"]
 
@@ -217,6 +233,61 @@ def payment_features(
     return features[PAYMENT_FEATURES]
 
 
+def delivery_features(
+    cutoffs: pd.DataFrame, deliveries: pd.DataFrame, config: dict[str, Any]
+) -> pd.DataFrame:
+    """Group C: the merchant's outgoing parcels before the cutoff. Indexed by loan_id.
+
+    Two things keep this honest:
+    - A parcel's outcome is used only once it could be known. A parcel dispatched in the
+      last few days (`delivery_settle_days`), or delivered on or after the cutoff, is
+      still "in transit" as far as the cutoff day is concerned: it counts towards the
+      volume but not towards any rate.
+    - Returns caused by address or rider problems are not counted against the merchant
+      in `return_rate_90d`.
+
+    A merchant with no parcels in the window has no delivery features at all (empty,
+    not zero). Missing delivery data lowers coverage; it must never lower the score.
+    """
+    settings = config["features"]
+    parcels = events_before_cutoff(
+        cutoffs, deliveries, "dispatched_at", max_age_days=settings["window_days"]
+    )
+    parcels = parcels[parcels["status"] != "cancelled"]
+
+    dispatched = pd.to_datetime(parcels["dispatched_at"])
+    arrived = pd.to_datetime(parcels["delivered_at"])
+    delivered = parcels["status"] == "delivered"
+    outcome_known = (parcels["age_days"] > settings["delivery_settle_days"]) & (
+        ~delivered | (arrived < parcels["cutoff_date"])
+    )
+    merchant_return = (parcels["status"] == "returned") & ~parcels["return_reason"].isin(
+        LOGISTICS_RETURN_REASONS
+    )
+    parcels = parcels.assign(
+        delivered=delivered,
+        merchant_return=merchant_return,
+        failed=parcels["status"] == "failed",
+        hours=(arrived - dispatched).dt.total_seconds() / 3600.0,
+        cod_on_time=parcels["cod_remitted_on_time"].astype("float"),
+    )
+    settled = parcels[outcome_known]
+    settled_delivered = settled[settled["delivered"]]
+
+    features = pd.DataFrame(index=pd.Index(cutoffs["loan_id"], name="loan_id"))
+    features["parcel_volume_90d"] = parcels.groupby("loan_id").size()
+    by_loan = settled.groupby("loan_id")
+    features["delivered_rate"] = by_loan["delivered"].mean()
+    features["return_rate_90d"] = by_loan["merchant_return"].mean()
+    features["failed_rate_90d"] = by_loan["failed"].mean()
+    features["cod_remit_ontime_rate"] = settled_delivered.groupby("loan_id")["cod_on_time"].mean()
+    features["dispatch_to_delivery_hours"] = settled_delivered.groupby("loan_id")["hours"].median()
+
+    thin = (features["parcel_volume_90d"] < settings["thin_delivery_parcels"]).astype(float)
+    features["delivery_data_thin"] = thin.where(features["parcel_volume_90d"].notna())
+    return features[DELIVERY_FEATURES]
+
+
 def build_features(tables: dict[str, pd.DataFrame], config: dict[str, Any]) -> pd.DataFrame:
     """Return one row per loan with features built only from data before its cutoff.
 
@@ -228,6 +299,7 @@ def build_features(tables: dict[str, pd.DataFrame], config: dict[str, Any]) -> p
     parts = [
         purchase_features(cutoffs, tables["purchases"], config),
         payment_features(cutoffs, tables["loans"], tables["payments"], config),
+        delivery_features(cutoffs, tables["deliveries"], config),
     ]
     features = cutoffs.set_index("loan_id").join(parts)
     return features.reset_index()

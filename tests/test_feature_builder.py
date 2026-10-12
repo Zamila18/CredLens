@@ -17,6 +17,7 @@ import pytest
 from src.adapters import CONTRACT, empty_frame
 from src.config import load_config
 from src.features.build_features import (
+    DELIVERY_FEATURES,
     FEATURE_GROUPS,
     PAYMENT_FEATURES,
     PURCHASE_FEATURES,
@@ -297,6 +298,96 @@ def test_a_first_loan_has_no_payment_history(payment_example):
         assert payment_example.loc[first_loan, PAYMENT_FEATURES].isna().all(), first_loan
 
 
+# --- group C: deliveries -------------------------------------------------------------
+
+
+def parcel(
+    number: int,
+    dispatched: str,
+    status: str,
+    arrived: str | None = None,
+    reason: str | None = None,
+    cod: bool = False,
+    remitted: bool | None = None,
+    merchant_id: str = "M1",
+) -> dict:
+    return {
+        "delivery_id": f"D{number}",
+        "merchant_id": merchant_id,
+        "dispatched_at": dispatched,
+        "delivered_at": arrived,
+        "status": status,
+        "return_reason": reason,
+        "is_cod": cod,
+        "cod_remitted_on_time": remitted,
+    }
+
+
+@pytest.fixture(scope="module")
+def delivery_example(config) -> pd.DataFrame:
+    """M1 sends parcels before a loan issued on 2025-07-01; M2 sends none."""
+    parcels = [
+        parcel(1, "2025-06-01T10:00:00", "delivered", "2025-06-02T10:00:00", None, True, True),
+        parcel(2, "2025-06-05T10:00:00", "delivered", "2025-06-07T10:00:00", None, True, False),
+        parcel(3, "2025-06-10T10:00:00", "returned", None, "refused"),
+        parcel(4, "2025-06-12T10:00:00", "returned", None, "address_issue"),
+        parcel(5, "2025-06-15T10:00:00", "failed", None, "rider_issue"),
+        parcel(6, "2025-06-18T10:00:00", "delivered", "2025-06-19T22:00:00"),
+        parcel(7, "2025-06-20T10:00:00", "cancelled"),
+        # Dispatched two days before the cutoff: too recent for its outcome to be known.
+        parcel(8, "2025-06-29T10:00:00", "delivered", "2025-06-30T10:00:00", None, True, True),
+        # Delivered only after the cutoff: still in transit on the cutoff day.
+        parcel(9, "2025-06-25T10:00:00", "delivered", "2025-07-02T10:00:00", None, True, True),
+        parcel(10, "2025-07-01T09:00:00", "returned", None, "refused"),  # on the cutoff day
+        parcel(11, "2025-03-01T10:00:00", "returned", None, "refused"),  # outside the window
+    ]
+    tables = make_tables(
+        merchants=[merchant("M1", "2025-01-01"), merchant("M2", "2025-01-01")],
+        loans=[loan("L1", "M1"), loan("L2", "M2")],
+        deliveries=parcels,
+    )
+    return build_features(tables, config).set_index("loan_id")
+
+
+def test_parcel_volume_counts_dispatched_parcels_in_the_window(delivery_example):
+    # parcels 1-6, 8 and 9. Not the cancelled one, the cutoff-day one or the old one.
+    assert delivery_example.loc["L1", "parcel_volume_90d"] == 8
+
+
+def test_delivery_rates_use_only_parcels_whose_outcome_was_known(delivery_example):
+    # Settled parcels: 1, 2, 3, 4, 5, 6. Three delivered, two returned, one failed.
+    row = delivery_example.loc["L1"]
+    assert row["delivered_rate"] == pytest.approx(3 / 6)
+    assert row["failed_rate_90d"] == pytest.approx(1 / 6)
+
+
+def test_return_rate_leaves_out_address_and_rider_problems(delivery_example):
+    # Two parcels came back, but one was an address problem: only "refused" counts.
+    assert delivery_example.loc["L1", "return_rate_90d"] == pytest.approx(1 / 6)
+
+
+def test_delivery_time_is_the_median_of_settled_delivered_parcels(delivery_example):
+    # 24, 48 and 36 hours
+    assert delivery_example.loc["L1", "dispatch_to_delivery_hours"] == pytest.approx(36.0)
+
+
+def test_cod_remittance_rate_uses_settled_cash_on_delivery_parcels(delivery_example):
+    # parcel 1 remitted on time, parcel 2 did not
+    assert delivery_example.loc["L1", "cod_remit_ontime_rate"] == pytest.approx(0.5)
+
+
+def test_few_parcels_are_flagged_as_thin(delivery_example, config):
+    assert config["features"]["thin_delivery_parcels"] > 8
+    assert delivery_example.loc["L1", "delivery_data_thin"] == 1
+
+
+def test_no_parcels_means_no_delivery_features_not_zeros(delivery_example):
+    """Missing delivery data must never look like bad delivery data."""
+    row = delivery_example.loc["L2"]
+    for name in DELIVERY_FEATURES:
+        assert np.isnan(row[name]), name
+
+
 # --- the whole table -----------------------------------------------------------------
 
 
@@ -333,6 +424,20 @@ def test_purchase_features_stay_in_sensible_ranges(synthetic_features):
     assert features["supplier_repeat_share"].dropna().between(0, 1).all()
     assert (features["purchase_volatility"].dropna() >= 0).all()
     assert set(PURCHASE_FEATURES) <= set(features.columns)
+
+
+def test_delivery_features_stay_in_sensible_ranges(synthetic_features):
+    features, tables = synthetic_features
+    for name in ("delivered_rate", "return_rate_90d", "failed_rate_90d", "cod_remit_ontime_rate"):
+        assert features[name].dropna().between(0, 1).all(), name
+    assert (features["dispatch_to_delivery_hours"].dropna() > 0).all()
+    assert set(features["delivery_data_thin"].dropna().unique()) <= {0.0, 1.0}
+
+    # Merchants who never send parcels have no delivery features at all.
+    senders = set(tables["deliveries"]["merchant_id"])
+    no_parcels = ~features["merchant_id"].isin(senders)
+    assert no_parcels.any()
+    assert features.loc[no_parcels, DELIVERY_FEATURES].isna().all().all()
 
 
 def test_payment_features_stay_in_sensible_ranges(synthetic_features):
