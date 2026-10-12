@@ -1,0 +1,18 @@
+{
+  "data_mode": "synthetic_bd",
+  "model_version": "fixture-0",
+  "intended_use": "Decision support for credit officers. The officer decides and records why.",
+  "metrics": {
+    "note": "Fixture only. No model has been trained yet, so there are no results to show."
+  },
+  "ablation": [],
+  "group_results": [],
+  "limitations": [
+    "All results use synthetic data. They show that the pipeline is sound, not that the model is accurate on ShopUp merchants.",
+    "The delivery (REDX) signal is a hypothesis tested by ablation, including a zero-signal control. It is not an established predictor of repayment.",
+    "Labels exist only for merchants who previously received credit. The model may not generalize to applicants who would have been declined under earlier policy.",
+    "Scores are less certain for merchants with short history. A thin file is never treated as a bad file.",
+    "Town tier, shop type and licence status are used only to audit results, never as model inputs.",
+    "The tool supports a human decision. It must not be used for automatic approval or decline."
+  ]
+}

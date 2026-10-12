@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "actor": "FIX-OFFICER-1",
+    "role": "officer",
+    "action": "view_profile",
+    "merchant_id": "FIX-M003",
+    "timestamp": "2026-06-11T10:38:00"
+  },
+  {
+    "id": 2,
+    "actor": "FIX-OFFICER-1",
+    "role": "officer",
+    "action": "record_decision",
+    "merchant_id": "FIX-M003",
+    "timestamp": "2026-06-11T10:42:00"
+  },
+  {
+    "id": 3,
+    "actor": "FIX-ADMIN-1",
+    "role": "admin",
+    "action": "view_audit_log",
+    "merchant_id": null,
+    "timestamp": "2026-06-11T12:00:00"
+  }
+]

@@ -1,0 +1,47 @@
+{
+  "merchant_id": "FIX-M001",
+  "data_mode": "synthetic_bd",
+  "onboarded_at": "2025-01-10",
+  "district": "Dhaka",
+  "town_tier": "metro",
+  "shop_type": "grocery",
+  "has_trade_license": true,
+  "consent_valid": true,
+  "purchases": {
+    "n_purchases_90d": 9,
+    "value_bdt_90d": 148000.0,
+    "n_categories": 4,
+    "weeks_active": 61
+  },
+  "deliveries": {
+    "n_parcels_90d": 14,
+    "delivered_rate": 0.86,
+    "return_rate": 0.07,
+    "failed_rate": 0.07,
+    "cod_remit_ontime_rate": 1.0
+  },
+  "payments": {
+    "n_payments": 2,
+    "ontime_rate": 1.0,
+    "avg_days_late": 1.0
+  },
+  "questionnaire": {
+    "answered_at": "2025-01-15",
+    "spend": 4.0,
+    "save": 3.5,
+    "borrow": 4.5,
+    "plan": 3.5,
+    "stress": 4,
+    "confidence": 4,
+    "directional": true
+  },
+  "timeline": [
+    {"date": "2025-01-20", "stream": "purchase", "label": "Stock purchase: rice and grain", "amount_bdt": 12000.0},
+    {"date": "2025-02-05", "stream": "delivery", "label": "Parcel delivered", "amount_bdt": null},
+    {"date": "2025-03-04", "stream": "delivery", "label": "Parcel returned (refused)", "amount_bdt": null},
+    {"date": "2025-04-01", "stream": "loan", "label": "Loan issued", "amount_bdt": 50000.0},
+    {"date": "2025-05-01", "stream": "payment", "label": "Payment on the due date", "amount_bdt": 50000.0},
+    {"date": "2025-10-01", "stream": "loan", "label": "Loan issued", "amount_bdt": 80000.0},
+    {"date": "2025-11-02", "stream": "payment", "label": "Payment 2 days after the due date", "amount_bdt": 80000.0}
+  ]
+}

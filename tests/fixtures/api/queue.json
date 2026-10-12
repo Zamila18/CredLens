@@ -1,0 +1,54 @@
+[
+  {
+    "merchant_id": "FIX-M004",
+    "district": "Dhaka",
+    "town_tier": "metro",
+    "shop_type": "electronics",
+    "onboarded_at": "2026-04-20",
+    "status": "pending",
+    "pending_since": "2026-06-05",
+    "score": 66,
+    "coverage": 0.35,
+    "band": "Needs more info",
+    "consent_valid": true
+  },
+  {
+    "merchant_id": "FIX-M001",
+    "district": "Dhaka",
+    "town_tier": "metro",
+    "shop_type": "grocery",
+    "onboarded_at": "2025-01-10",
+    "status": "pending",
+    "pending_since": "2026-06-10",
+    "score": 72,
+    "coverage": 0.85,
+    "band": "Strong",
+    "consent_valid": true
+  },
+  {
+    "merchant_id": "FIX-M003",
+    "district": "Bogura",
+    "town_tier": "small_town",
+    "shop_type": "apparel",
+    "onboarded_at": "2025-03-01",
+    "status": "decided",
+    "pending_since": null,
+    "score": 48,
+    "coverage": 0.75,
+    "band": "Review",
+    "consent_valid": true
+  },
+  {
+    "merchant_id": "FIX-M005",
+    "district": "Sylhet",
+    "town_tier": "city",
+    "shop_type": "other",
+    "onboarded_at": "2025-05-05",
+    "status": "pending",
+    "pending_since": "2026-06-12",
+    "score": null,
+    "coverage": null,
+    "band": null,
+    "consent_valid": false
+  }
+]

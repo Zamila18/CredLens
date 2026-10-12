@@ -3,13 +3,13 @@
 The prototype runs on synthetic data. Real data, if ShopUp agrees, is a bonus for validation and must never block the build.
 
 ## Ask in tiers
-1. Minimum: a data dictionary and a few sample rows (no real identities) for orders, deliveries, payments and loans, so our schema and adapter match reality.
+1. Minimum: a data dictionary and a few sample rows (no real identities) for purchases, deliveries, payments and loans, so our schema and adapter match reality.
 2. Better: a pseudonymised extract for 300 to 1,000 merchants, 12 to 18 months, with loan outcomes (repaid within 30 days of due date or not).
 3. Best: consent basis for each merchant, plus a documented definition of "default" and of "late".
 
 ## Fields (map to our tables)
 - merchants: pseudonymous merchant_id, onboarding date, district, town tier, shop type, licence yes/no.
-- orders (Mokam): order id, merchant_id, date, amount, category.
+- purchases (Mokam, what the merchant buys): purchase id, merchant_id, date, amount, category.
 - deliveries (REDX): parcel id, merchant_id, order id if available, dispatched/delivered timestamps, status (delivered/returned/failed/cancelled), COD flag, COD remitted on time.
 - payments/loans (Baki): loan id, merchant_id, issue date, limit, due dates, paid dates, amounts, outcome.
 - No names, phone numbers, addresses, NID numbers.

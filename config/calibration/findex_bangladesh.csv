@@ -1,0 +1,8 @@
+indicator,source_column,survey_year,share_of_adults,status
+has_account,account_t_d,2024,0.433,column meaning inferred from its name; confirm in the Findex codebook
+has_financial_institution_account,fiaccount_t_d,2024,0.329,column meaning inferred from its name; confirm in the Findex codebook
+has_mobile_money_account,mobileaccount_t_d,2024,0.208,column meaning inferred from its name; confirm in the Findex codebook
+borrowed_any_money_past_year,borrow_any_t_d,2024,0.703,column meaning inferred from its name; confirm in the Findex codebook
+saved_any_money_past_year,save_any_t_d,2024,0.204,column meaning inferred from its name; confirm in the Findex codebook
+made_digital_merchant_payment,merchant_pay,2024,0.028,exact definition unknown and the 2021 value is identical (0.028); confirm in the codebook before use
+borrowed_from_formal_institution,,2024,,not found: the column is coded and needs the codebook

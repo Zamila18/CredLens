@@ -1,0 +1,14 @@
+{
+  "valid": [
+    {"officer_action": "accept", "reason_text": null},
+    {"officer_action": "needs_more_info", "reason_text": "Waiting for delivery records."},
+    {"officer_action": "override_up", "reason_text": "Strong supplier reference seen in person."},
+    {"officer_action": "override_down", "reason_text": "Shop was closed on two visits."}
+  ],
+  "invalid": [
+    {"officer_action": "override_up", "reason_text": null},
+    {"officer_action": "override_down", "reason_text": "   "},
+    {"officer_action": "approve", "reason_text": "The API has no approve action."},
+    {"officer_action": "decline", "reason_text": "The API has no decline action."}
+  ]
+}

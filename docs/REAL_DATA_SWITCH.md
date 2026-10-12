@@ -7,12 +7,12 @@ Principle: the pipeline stays the same; only the adapter, config and some featur
 |---|---|---|---|
 | 1. Nothing | No data | Synthetic default; method and negative control only | Any real-world claim |
 | 2. Labels only | Loan outcomes (repaid within 30 days or not), maybe loan amounts and dates | Check label definition and base repayment rate against our synthetic assumption (75 to 85%); recalibrate score-to-probability mapping; set realistic band lines; validate class balance | Train a real model (no features); test REDX value; real feature-based fairness |
-| 3. Extract | Labels plus some orders, deliveries, payments | Map to our tables via adapter; build whichever features are possible; real ablation (A to D as available); real group checks | Anything for feature groups not provided |
+| 3. Extract | Labels plus some purchases, deliveries, payments | Map to our tables via adapter; build whichever features are possible; real ablation (A to D as available); real group checks | Anything for feature groups not provided |
 
 ## Steps (any real data)
 1. Write down their definitions: what is "late", "default", "repaid"; time zone; currency; whether outcomes are final.
 2. Put raw files in a read-only folder outside the repo; log them in the data register (file, date, sender, rows, checksum, location, deletion date).
-3. Implement the adapter (`src/adapters/shopup_real.py` or `label_only.py`). Never edit raw files. Pseudonymise IDs on arrival if not already.
+3. Implement the adapter (`src/adapters/shopup_real.py`; for labels only, map loans and leave other streams empty). Never edit raw files. Pseudonymise IDs on arrival if not already.
 4. Run validation: duplicate IDs, orphan rows, date order, missing rates, outcome definition, base rate. Send issues back to ShopUp.
 5. Update `config/default.yaml`: label rules, split months (to match their history length), band lines, coverage weights. Record every change.
 6. Decide which feature groups exist; drop the rest from the feature list and the ablation; update the dictionary.
