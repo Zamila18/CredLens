@@ -49,8 +49,9 @@ Rules for every source:
 | Item | Entry |
 |---|---|
 | Link | https://www.kaggle.com/competitions/home-credit-default-risk/data |
-| Licence / terms | Not checked. Kaggle competition rules apply; a teammate must read them and confirm this use is allowed |
-| Download status | Not checked. Needs a Kaggle account and acceptance of the competition rules |
+| Licence / terms | Checked Oct 12, 2026 (rules page read by the lead). The competition-specific rule says: "you may access and use the Competition Data only for the purposes of the Competition", and it supersedes the general rule that allows academic and non-commercial use. Section 7.B forbids transmitting, publishing or redistributing the data. "The Competition" is Kaggle's 2018 Home Credit competition, so use in this hackathon prototype is outside the literal terms. **The team lead decided on Oct 12 to use it anyway as a local, non-commercial method check and accepts that risk.** |
+| Safeguards | Raw files stay on the lead's laptop only: never committed, never loaded into the shared database, never copied to the hosting server. The hosted dashboard shows only aggregate results (metrics, calibration, group audit) for this mode, never individual records. First data source to remove if anyone objects |
+| Download status | Not downloaded yet. Needs a Kaggle account and acceptance of the competition rules |
 | Save to | `data/raw/homecredit/` |
 | Label | Planned: 1 minus TARGET. Not checked on the real file |
 | We use | To be filled in Phase 7 (planned files: application_train, installments_payments, POS_CASH_balance) |
