@@ -18,6 +18,7 @@ from src.adapters import CONTRACT, empty_frame
 from src.config import load_config
 from src.features.build_features import (
     FEATURE_GROUPS,
+    PAYMENT_FEATURES,
     PURCHASE_FEATURES,
     build_features,
     events_before_cutoff,
@@ -187,6 +188,115 @@ def test_purchase_features_are_never_filled_in_silently(worked_example):
     assert worked_example["basket_growth"].isna().sum() == 2
 
 
+# --- group B: payments ---------------------------------------------------------------
+
+
+def earlier_loan(
+    loan_id: str,
+    merchant_id: str,
+    issued: str,
+    limit: float,
+    due: str,
+    paid: str | None,
+    used: float,
+) -> tuple[dict, dict]:
+    """A loan and its single payment, as two contract rows."""
+    loan_row = {
+        "loan_id": loan_id,
+        "merchant_id": merchant_id,
+        "issued_at": issued,
+        "limit_bdt": limit,
+    }
+    payment_row = {
+        "payment_id": f"P-{loan_id}",
+        "merchant_id": merchant_id,
+        "loan_id": loan_id,
+        "due_date": due,
+        "paid_date": paid,
+        "amount_due_bdt": used,
+        "amount_paid_bdt": used if paid else 0.0,
+    }
+    return loan_row, payment_row
+
+
+@pytest.fixture(scope="module")
+def payment_example(config) -> pd.DataFrame:
+    """Four merchants whose current loan is issued on 2025-07-01.
+
+    M1: one earlier loan paid on time, one paid 10 days late, one not yet due.
+    M2: one earlier loan, due a month ago and still unpaid.
+    M3: one earlier loan, due 10 days ago, paid only AFTER the cutoff.
+    M4: no earlier loans.
+    """
+    history = [
+        earlier_loan("LA", "M1", "2025-02-01", 10000, "2025-03-03", "2025-03-03", 5000),
+        earlier_loan("LB", "M1", "2025-04-01", 20000, "2025-05-01", "2025-05-11", 15000),
+        earlier_loan("LC", "M1", "2025-06-10", 10000, "2025-07-10", None, 4000),
+        earlier_loan("LE", "M2", "2025-05-01", 10000, "2025-05-31", None, 9000),
+        earlier_loan("LF", "M3", "2025-05-22", 10000, "2025-06-21", "2025-07-15", 6000),
+    ]
+    current = [
+        earlier_loan(f"NOW{n}", f"M{n}", CUTOFF, 30000, "2025-07-31", "2025-07-31", 30000)
+        for n in (1, 2, 3, 4)
+    ]
+    rows = history + current
+    tables = make_tables(
+        merchants=[merchant(f"M{n}", "2025-01-01") for n in (1, 2, 3, 4)],
+        loans=[loan_row for loan_row, _ in rows],
+        payments=[payment_row for _, payment_row in rows],
+    )
+    return build_features(tables, config).set_index("loan_id")
+
+
+def test_payment_delay_and_on_time_rate_use_earlier_loans_only(payment_example):
+    row = payment_example.loc["NOW1"]
+    # LA was on time (0 days), LB was 10 days late; LC is not due yet, so it says nothing.
+    assert row["avg_pay_delay_days"] == pytest.approx(5.0)
+    assert row["ontime_payment_rate"] == pytest.approx(0.5)
+
+
+def test_late_payment_count_looks_at_the_recent_window(payment_example):
+    # LB's late payment was made 51 days before the cutoff; LA's on-time one does not count.
+    assert payment_example.loc["NOW1", "late_pay_count_90d"] == 1
+
+
+def test_credit_utilisation_averages_earlier_loans(payment_example):
+    # 5000/10000, 15000/20000 and 4000/10000; the loan being scored is not included.
+    expected = np.mean([0.5, 0.75, 0.4])
+    assert payment_example.loc["NOW1", "credit_utilisation"] == pytest.approx(expected)
+
+
+def test_an_unpaid_overdue_loan_is_late_by_the_days_so_far(payment_example):
+    row = payment_example.loc["NOW2"]
+    assert row["avg_pay_delay_days"] == 31  # due 2025-05-31, cutoff 2025-07-01
+    assert row["ontime_payment_rate"] == 0
+    assert row["late_pay_count_90d"] == 1
+
+
+def test_a_payment_made_after_the_cutoff_is_not_known_yet(payment_example):
+    """LF was paid on 2025-07-15. On the cutoff day it was simply 10 days overdue."""
+    row = payment_example.loc["NOW3"]
+    assert row["avg_pay_delay_days"] == 10  # not 24, the lateness only known later
+    assert row["late_pay_count_90d"] == 1
+
+
+def test_the_loan_being_scored_never_describes_itself(payment_example):
+    """Each NOW loan was repaid on time, yet that must not appear in its own features."""
+    assert payment_example.loc["NOW2", "ontime_payment_rate"] == 0
+    assert payment_example.loc["NOW1", "credit_utilisation"] < 1.0
+
+
+def test_no_earlier_loans_means_no_payment_features(payment_example):
+    row = payment_example.loc["NOW4"]
+    for name in PAYMENT_FEATURES:
+        assert np.isnan(row[name]), name
+
+
+def test_a_first_loan_has_no_payment_history(payment_example):
+    for first_loan in ("LA", "LE", "LF"):
+        assert payment_example.loc[first_loan, PAYMENT_FEATURES].isna().all(), first_loan
+
+
 # --- the whole table -----------------------------------------------------------------
 
 
@@ -223,6 +333,21 @@ def test_purchase_features_stay_in_sensible_ranges(synthetic_features):
     assert features["supplier_repeat_share"].dropna().between(0, 1).all()
     assert (features["purchase_volatility"].dropna() >= 0).all()
     assert set(PURCHASE_FEATURES) <= set(features.columns)
+
+
+def test_payment_features_stay_in_sensible_ranges(synthetic_features):
+    features, tables = synthetic_features
+    assert (features["avg_pay_delay_days"].dropna() >= 0).all()
+    assert features["ontime_payment_rate"].dropna().between(0, 1).all()
+    assert (features["late_pay_count_90d"].dropna() >= 0).all()
+    assert features["credit_utilisation"].dropna().between(0, 1.5).all()
+
+    # A merchant's first loan can have no payment history; later loans usually do.
+    order = tables["loans"].sort_values("issued_at").groupby("merchant_id").cumcount()
+    first_loans = set(tables["loans"].loc[order[order == 0].index, "loan_id"])
+    is_first = features["loan_id"].isin(first_loans)
+    assert features.loc[is_first, PAYMENT_FEATURES].isna().all().all()
+    assert features.loc[~is_first, "credit_utilisation"].notna().all()
 
 
 def test_no_group_column_is_a_feature(synthetic_features):

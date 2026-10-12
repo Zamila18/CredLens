@@ -36,7 +36,13 @@ PURCHASE_FEATURES = [
     "category_diversity",
     "supplier_repeat_share",
 ]
-FEATURE_GROUPS: dict[str, list[str]] = {"A": PURCHASE_FEATURES}
+PAYMENT_FEATURES = [
+    "avg_pay_delay_days",
+    "late_pay_count_90d",
+    "ontime_payment_rate",
+    "credit_utilisation",
+]
+FEATURE_GROUPS: dict[str, list[str]] = {"A": PURCHASE_FEATURES, "B": PAYMENT_FEATURES}
 
 KEY_COLUMNS = ["loan_id", "merchant_id", "cutoff_date"]
 
@@ -95,6 +101,7 @@ def purchase_features(
     # Was this supplier already used by this merchant in an earlier purchase? This looks
     # only backwards in time, so it is safe to compute once for the whole table.
     purchases = purchases.sort_values(["merchant_id", "purchase_date", "purchase_id"]).copy()
+    purchases["amount_bdt"] = purchases["amount_bdt"].astype(float)
     purchases["supplier_seen_before"] = (
         purchases.groupby(["merchant_id", "supplier_id"]).cumcount() > 0
     )
@@ -146,6 +153,70 @@ def purchase_features(
     return features[PURCHASE_FEATURES]
 
 
+def payment_features(
+    cutoffs: pd.DataFrame,
+    loans: pd.DataFrame,
+    payments: pd.DataFrame,
+    config: dict[str, Any],
+) -> pd.DataFrame:
+    """Group B: how the merchant repaid earlier loans, as known on the cutoff day.
+
+    Only loans issued before the cutoff count, so the loan being scored never describes
+    itself. For each earlier payment, only what was already visible is used:
+    - paid before the cutoff: the real number of days late (0 if early or on time);
+    - not paid by the cutoff, and already due: late by the days since the due date so
+      far. A payment made on or after the cutoff is treated as still unpaid, because on
+      the cutoff day nobody could know it would arrive;
+    - not paid and not yet due: nothing is known, so it is left out of the lateness
+      features.
+    A merchant with no earlier loans has no payment history: every feature is empty.
+    Indexed by loan_id.
+    """
+    settings = config["features"]
+    earlier_loans = loans[["loan_id", "issued_at", "limit_bdt"]].rename(
+        columns={"loan_id": "earlier_loan_id"}
+    )
+    history = payments.rename(columns={"loan_id": "earlier_loan_id"}).merge(
+        earlier_loans, on="earlier_loan_id", how="left", validate="many_to_one"
+    )
+    history = events_before_cutoff(cutoffs, history, "issued_at")
+
+    due = pd.to_datetime(history["due_date"])
+    paid = pd.to_datetime(history["paid_date"])
+    cutoff = history["cutoff_date"]
+    paid_before = paid.notna() & (paid < cutoff)
+    already_due = due < cutoff
+
+    days_late = np.where(
+        paid_before, (paid - due).dt.days.clip(lower=0), (cutoff - due).dt.days
+    ).astype(float)
+    history = history.assign(
+        days_late=days_late,
+        known=paid_before | already_due,
+        used_share=history["amount_due_bdt"] / history["limit_bdt"],
+        # When the lateness became visible: the payment day, or the day before the cutoff.
+        seen_days_ago=np.where(paid_before, (cutoff - paid).dt.days, 1),
+    )
+
+    features = pd.DataFrame(index=pd.Index(cutoffs["loan_id"], name="loan_id"))
+    known = history[history["known"]]
+    by_loan = known.groupby("loan_id")
+    features["avg_pay_delay_days"] = by_loan["days_late"].mean()
+    on_time = known["days_late"] <= settings["ontime_payment_days"]
+    features["ontime_payment_rate"] = on_time.groupby(known["loan_id"]).mean()
+
+    recent_late = known[
+        (known["days_late"] > settings["late_payment_days"])
+        & (known["seen_days_ago"] <= settings["window_days"])
+    ]
+    late_count = recent_late.groupby("loan_id").size().reindex(features.index).fillna(0)
+    has_history = by_loan.size().reindex(features.index).fillna(0) > 0
+    features["late_pay_count_90d"] = late_count.where(has_history)
+
+    features["credit_utilisation"] = history.groupby("loan_id")["used_share"].mean()
+    return features[PAYMENT_FEATURES]
+
+
 def build_features(tables: dict[str, pd.DataFrame], config: dict[str, Any]) -> pd.DataFrame:
     """Return one row per loan with features built only from data before its cutoff.
 
@@ -154,6 +225,9 @@ def build_features(tables: dict[str, pd.DataFrame], config: dict[str, Any]) -> p
     filled in silently (docs/MODEL_SPEC.md section 1).
     """
     cutoffs = loan_cutoffs(tables)
-    parts = [purchase_features(cutoffs, tables["purchases"], config)]
+    parts = [
+        purchase_features(cutoffs, tables["purchases"], config),
+        payment_features(cutoffs, tables["loans"], tables["payments"], config),
+    ]
     features = cutoffs.set_index("loan_id").join(parts)
     return features.reset_index()
