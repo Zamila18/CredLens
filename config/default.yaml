@@ -110,6 +110,14 @@ generator:                       # synthetic_bd only; see docs/GENERATOR_SPEC.md
   inject_group_bias: 0.0         # test switch only: subtracts this from the outcome score of small_town merchants,
                                  # to check that the fairness audit catches a planted gap
 
+features:                        # how features are computed; see docs/FEATURE_DICTIONARY.md
+  window_days: 90                # "recent" means this many days before the loan's cutoff date
+  weekly_window_weeks: 12        # weekly statistics use this many whole weeks before the cutoff
+  ontime_payment_days: 3         # a payment within this many days of the due date counts as on time
+  late_payment_days: 7           # a payment more than this many days late counts as late
+  delivery_settle_days: 3        # a parcel's outcome is treated as known this many days after dispatch
+  thin_delivery_parcels: 20      # fewer parcels than this in the window: delivery history is thin
+
 database:
   url_env: DATABASE_URL          # Supabase Postgres connection string lives in this environment variable (.env, never committed)
   default_url: sqlite:///data/app.db   # used when the variable is not set: local development, tests, CI
