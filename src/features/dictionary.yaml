@@ -28,6 +28,7 @@ groups:
   B: payments
   C: deliveries
   D: questionnaire
+  L: loan terms    # public data modes only
 
 features:
   purchases_90d:
@@ -504,3 +505,113 @@ source_features:
       negative:
         en: "In some months that followed a bill, no payment was made."
         bn: "বিলের পরের কিছু মাসে কোনো পেমেন্ট হয়নি।"
+
+  india_ltfs:
+    down_payment_share:
+      group: L
+      higher_is: better
+      detail: {label: "Paid up front", format: share}
+      definition: One minus the loan-to-value, the part of the vehicle's price the borrower paid up front
+      positive:
+        en: "A larger share of the vehicle's price was paid up front than by similar borrowers."
+        bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় গাড়ির দামের বেশি অংশ আগেই পরিশোধ করা হয়েছে।"
+      negative:
+        en: "A smaller share of the vehicle's price was paid up front than by similar borrowers."
+        bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় গাড়ির দামের কম অংশ আগেই পরিশোধ করা হয়েছে।"
+
+    bureau_score:
+      group: B
+      higher_is: better
+      detail: {label: "Bureau score", format: count}
+      definition: Credit-bureau score at disbursement, for borrowers the bureau could score
+      positive:
+        en: "The credit-bureau score is higher than for similar borrowers."
+        bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় ক্রেডিট ব্যুরোর স্কোর বেশি।"
+      negative:
+        en: "The credit-bureau score is lower than for similar borrowers."
+        bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় ক্রেডিট ব্যুরোর স্কোর কম।"
+
+    overdue_account_share:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {above: 0}
+      otherwise:
+        positive:
+          en: "A smaller share of earlier loans is overdue than for similar borrowers."
+          bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় আগের ঋণের কম অংশ বকেয়া।"
+      detail: {label: "Earlier loans overdue", format: share}
+      definition: Overdue earlier loans divided by all earlier loans, at disbursement
+      positive:
+        en: "No earlier loan is overdue."
+        bn: "আগের কোনো ঋণ বকেয়া নেই।"
+      negative:
+        en: "Some earlier loans are overdue."
+        bn: "আগের কিছু ঋণ বকেয়া আছে।"
+
+    delinquent_accounts_6m:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {at_least: 1}
+      otherwise:
+        positive:
+          en: "Fewer loans fell behind in the last six months than for similar borrowers."
+          bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় গত ছয় মাসে কম ঋণে দেরি হয়েছে।"
+        negative:
+          en: "More loans fell behind in the last six months than for similar borrowers."
+          bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় গত ছয় মাসে বেশি ঋণে দেরি হয়েছে।"
+      detail: {label: "Loans behind in six months", format: count}
+      definition: Loans that became delinquent in the six months before disbursement
+      positive:
+        en: "No loan fell behind in the last six months."
+        bn: "গত ছয় মাসে কোনো ঋণে দেরি হয়নি।"
+      negative:
+        en: "At least one loan fell behind in the last six months."
+        bn: "গত ছয় মাসে অন্তত একটি ঋণে দেরি হয়েছে।"
+
+    new_accounts_6m:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {at_least: 1}
+      otherwise:
+        positive:
+          en: "Fewer new loans were taken in the last six months than by similar borrowers."
+          bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় গত ছয় মাসে কম নতুন ঋণ নেওয়া হয়েছে।"
+        negative:
+          en: "More new loans were taken in the last six months than by similar borrowers."
+          bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় গত ছয় মাসে বেশি নতুন ঋণ নেওয়া হয়েছে।"
+      detail: {label: "New loans in six months", format: count}
+      definition: New loans taken in the six months before disbursement
+      positive:
+        en: "No new loan was taken in the last six months."
+        bn: "গত ছয় মাসে কোনো নতুন ঋণ নেওয়া হয়নি।"
+      negative:
+        en: "New loans were taken in the last six months."
+        bn: "গত ছয় মাসে নতুন ঋণ নেওয়া হয়েছে।"
+
+    loan_enquiries:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {at_least: 1}
+      otherwise:
+        positive:
+          en: "Fewer loan enquiries are on record than for similar borrowers."
+          bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় ঋণের অনুসন্ধান কম।"
+        negative:
+          en: "More loan enquiries are on record than for similar borrowers."
+          bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় ঋণের অনুসন্ধান বেশি।"
+      detail: {label: "Loan enquiries", format: count}
+      definition: Enquiries the borrower made for loans, as recorded by the bureau
+      positive:
+        en: "No loan enquiries are on record."
+        bn: "কোনো ঋণের অনুসন্ধান রেকর্ডে নেই।"
+      negative:
+        en: "Loan enquiries are on record."
+        bn: "ঋণের অনুসন্ধান রেকর্ডে আছে।"

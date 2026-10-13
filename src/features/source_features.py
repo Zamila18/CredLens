@@ -22,14 +22,18 @@ from typing import Any, Callable
 import pandas as pd
 
 from src.adapters.base import SOURCE_RECORDS  # noqa: F401  (re-exported for callers)
-from src.features import taiwan_cc
+from src.features import india_ltfs, taiwan_cc
 
 BUILDERS: dict[str, Callable[[pd.DataFrame, dict[str, Any]], pd.DataFrame]] = {
     taiwan_cc.MODE: taiwan_cc.taiwan_features,
+    india_ltfs.MODE: india_ltfs.india_features,
 }
-MODEL_INPUTS: dict[str, list[str]] = {taiwan_cc.MODE: taiwan_cc.MODEL_INPUTS}
-CONTEXT_COLUMNS: dict[str, list[str]] = {taiwan_cc.MODE: taiwan_cc.CONTEXT_COLUMNS}
-COVERAGE_COLUMNS: dict[str, list[str]] = {taiwan_cc.MODE: taiwan_cc.COVERAGE_COLUMNS}
+_SOURCES = (taiwan_cc, india_ltfs)
+MODEL_INPUTS: dict[str, list[str]] = {source.MODE: source.MODEL_INPUTS for source in _SOURCES}
+CONTEXT_COLUMNS: dict[str, list[str]] = {source.MODE: source.CONTEXT_COLUMNS for source in _SOURCES}
+COVERAGE_COLUMNS: dict[str, list[str]] = {
+    source.MODE: source.COVERAGE_COLUMNS for source in _SOURCES
+}
 
 
 def build_source_features(

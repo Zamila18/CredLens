@@ -117,9 +117,15 @@ def validate_config(config: dict[str, Any]) -> None:
     taiwan = data.get("taiwan_cc") or {}
     if not _is_positive_int(taiwan.get("coverage_min_months")) or taiwan["coverage_min_months"] > 6:
         problems.append("data.taiwan_cc.coverage_min_months must be a whole number from 1 to 6")
-    edges = taiwan.get("age_band_edges")
-    if not isinstance(edges, list) or not edges or edges != sorted(set(edges)):
-        problems.append("data.taiwan_cc.age_band_edges must be a rising list of ages")
+    india = data.get("india_ltfs") or {}
+    if not _is_positive_int(india.get("coverage_min_history_months")):
+        problems.append(
+            "data.india_ltfs.coverage_min_history_months must be a positive whole number"
+        )
+    for source, settings in (("taiwan_cc", taiwan), ("india_ltfs", india)):
+        edges = settings.get("age_band_edges")
+        if not isinstance(edges, list) or not edges or edges != sorted(set(edges)):
+            problems.append(f"data.{source}.age_band_edges must be a rising list of ages")
 
     score = config.get("score") or {}
     if not _is_number(score.get("band_min_coverage")) or not 0 <= score["band_min_coverage"] <= 1:

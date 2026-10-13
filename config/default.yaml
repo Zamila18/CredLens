@@ -15,6 +15,8 @@ data:
     sample_size: 50000           # applicants sampled with the seed; null = all rows
   india_ltfs:
     sample_size: null            # null = all rows (about 233,000)
+    coverage_min_history_months: 12   # "long enough" credit history for the coverage checklist
+    age_band_edges: [25, 35, 45, 55]  # audit only: under 25, 25 to 34, 35 to 44, 45 to 54, 55 and over
   n_merchants: 20000
   months: 18
   thin_file_share: 0.35          # share of new merchants with very few early purchases
@@ -207,11 +209,11 @@ coverage_weights_by_mode:        # public modes: coverage = how much of what the
     repayment_status_history: 0.35   # the card was used in at least `coverage_min_months` of the six months
     bill_history: 0.25               # a bill above zero in at least `coverage_min_months` months
     payment_history: 0.25            # at least one payment recorded
-  india_ltfs:                    # provisional until Phase 7; must sum to 1.0
-    loan_terms_present: 0.20
-    bureau_record_present: 0.40    # about half the borrowers have no bureau history: real thin files
-    credit_history_long_enough: 0.25
-    employment_type_present: 0.15
+  india_ltfs:                    # set on Oct 13 from the real columns; must sum to 1.0
+    loan_terms_present: 0.20             # amount and loan-to-value are recorded
+    bureau_record_present: 0.40          # a credit-bureau record exists (about half the borrowers have none)
+    credit_history_long_enough: 0.25     # credit history of at least `coverage_min_history_months`
+    bureau_score_available: 0.15         # the bureau could give a score
   homecredit:                    # provisional until the real columns are inspected; must sum to 1.0
     application_data_present: 0.20
     instalment_history_present: 0.35
@@ -232,7 +234,7 @@ fairness:
   audit_only_columns:
     kiva_asia: [borrower_genders, country]
     taiwan_cc: [SEX, EDUCATION, MARRIAGE, age_band]
-    india_ltfs: [age_band, State_ID, Employment.Type]   # provisional until Phase 7
+    india_ltfs: [age_band, State_ID, Employment.Type]
     homecredit: [CODE_GENDER, age_band, REGION_RATING_CLIENT]
 
 sanity:
