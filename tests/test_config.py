@@ -151,6 +151,8 @@ def test_home_credit_is_never_presented_as_asian_data():
         ("model", "candidates", ["logistic_regression", "magic_forest"]),
         ("model", "lightgbm", {"grid": []}),
         ("score", "low_score_warning_below", 150),
+        ("score", "min_reason_points", -1),
+        ("score", "max_inputs_for_exact_reasons", 0),
         ("score", "by_mode", {"mars": {"band_min_coverage": 0.5}}),
         ("score", "by_mode", {"taiwan_cc": {"made_up_line": 5}}),
         ("score", "by_mode", {"taiwan_cc": {"band_min_coverage": 5}}),

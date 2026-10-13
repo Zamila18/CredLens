@@ -131,6 +131,8 @@ def validate_config(config: dict[str, Any]) -> None:
                     f"score.by_mode.{line_mode}.{name} is not a valid band line "
                     f"(a number between 0 and {highest})"
                 )
+    if not _is_number(score.get("min_reason_points")) or score["min_reason_points"] < 0:
+        problems.append("score.min_reason_points must be a number of 0 or more")
     if not _is_positive_int(score.get("top_reasons_each_side")):
         problems.append("score.top_reasons_each_side must be a positive whole number")
 
@@ -237,6 +239,8 @@ POSITIVE_WHOLE_NUMBERS = (
     "model.bootstrap_resamples",
     "model.logistic_regression.max_iter",
     "model.lightgbm.tuning_months",
+    "score.max_inputs_for_exact_reasons",
+    "score.reasons_report_sample",
     "model.lightgbm.max_trees",
     "model.lightgbm.early_stopping_rounds",
     "evaluation.calibration_bins",

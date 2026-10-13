@@ -186,6 +186,9 @@ score:
   low_score_warning_below: 70    # a score under this gets an explicit low-score warning
   by_mode: {}                    # optional own lines per data mode, e.g. taiwan_cc: {band_strong_min_score: 85}
   top_reasons_each_side: 3
+  min_reason_points: 0.1         # a contribution smaller than this many score points is not shown as a reason
+  max_inputs_for_exact_reasons: 14   # reasons are computed exactly; 14 inputs = 16,384 combinations per merchant
+  reasons_report_sample: 300     # validation loans whose reasons are checked in the training report
 
 coverage_weights_by_mode:        # public modes: coverage = how much of what the source can provide is present
   kiva_asia:                     # provisional until the real columns are inspected; must sum to 1.0
