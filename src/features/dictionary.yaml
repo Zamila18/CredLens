@@ -344,3 +344,163 @@ coverage_only:
   - n_deliveries_total
   - n_payments_total
   - share_of_groups_present
+
+# Features of the public data modes. Each mode has its own inputs, built only from fields
+# that source really has (src/features/source_features.py). Same rules as above: every
+# input says which way it points, sentences are observations, and a plain sentence is
+# shown only when it is true for the client (`shown_when`), else the comparing one.
+# "Client" is used instead of "shop": these sources are not merchants.
+source_features:
+  taiwan_cc:
+    ontime_share_6m:
+      group: B
+      higher_is: better
+      shown_when:
+        positive: {above: 0.5}
+        negative: {below: 0.5}
+      otherwise:
+        positive:
+          en: "More monthly bills were paid on time than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় বেশি মাসের বিল সময়মতো পরিশোধ হয়েছে।"
+        negative:
+          en: "Fewer monthly bills were paid on time than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় কম মাসের বিল সময়মতো পরিশোধ হয়েছে।"
+      detail: {label: "Months paid on time", format: share}
+      definition: Of the last six months in which the card was used, the share with no late payment
+      positive:
+        en: "Most monthly bills in the last six months were paid on time."
+        bn: "গত ছয় মাসের বেশিরভাগ বিল সময়মতো পরিশোধ হয়েছে।"
+      negative:
+        en: "Few monthly bills in the last six months were paid on time."
+        bn: "গত ছয় মাসে কম বিল সময়মতো পরিশোধ হয়েছে।"
+
+    worst_delay_6m:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {at_least: 2}
+      otherwise:
+        positive:
+          en: "The longest payment delay was shorter than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় সবচেয়ে লম্বা দেরি কম ছিল।"
+        negative:
+          en: "The longest payment delay was longer than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় সবচেয়ে লম্বা দেরি বেশি ছিল।"
+      detail: {label: "Longest delay", format: months}
+      definition: The longest payment delay, in months, in the last six months
+      positive:
+        en: "No payment was late in the last six months."
+        bn: "গত ছয় মাসে কোনো পেমেন্ট দেরিতে হয়নি।"
+      negative:
+        en: "A payment was late by two months or more in the last six months."
+        bn: "গত ছয় মাসে কোনো পেমেন্ট দুই মাস বা তার বেশি দেরিতে হয়েছে।"
+
+    latest_delay_months:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {at_least: 1}
+      otherwise:
+        positive:
+          en: "The most recent delay was shorter than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় সবচেয়ে সাম্প্রতিক দেরি কম ছিল।"
+        negative:
+          en: "The most recent delay was longer than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় সবচেয়ে সাম্প্রতিক দেরি বেশি ছিল।"
+      detail: {label: "Latest delay", format: months}
+      definition: The payment delay, in months, in the most recent month
+      positive:
+        en: "The most recent bill was paid on time."
+        bn: "সবচেয়ে সাম্প্রতিক বিল সময়মতো পরিশোধ হয়েছে।"
+      negative:
+        en: "The most recent bill was paid late."
+        bn: "সবচেয়ে সাম্প্রতিক বিল দেরিতে পরিশোধ হয়েছে।"
+
+    delay_trend_6m:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {above: 0}
+      otherwise:
+        positive:
+          en: "Payment delays are growing more slowly than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় পেমেন্টের দেরি ধীরে বাড়ছে।"
+        negative:
+          en: "Payment delays are shrinking more slowly than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় পেমেন্টের দেরি ধীরে কমছে।"
+      detail: {label: "Change in delay", format: months_change}
+      definition: Average delay in the three newest months minus the three oldest, in months
+      positive:
+        en: "Payment delays have not been getting longer."
+        bn: "পেমেন্টের দেরি বাড়ছে না।"
+      negative:
+        en: "Payment delays have been getting longer."
+        bn: "পেমেন্টের দেরি বাড়ছে।"
+
+    pay_to_bill_ratio:
+      group: B
+      higher_is: better
+      detail: {label: "Paid share of bills", format: share}
+      definition: Amount paid in five months divided by the bills of the month before each
+      positive:
+        en: "Payments covered a larger share of the bills than for similar clients."
+        bn: "সমান ধরনের গ্রাহকের তুলনায় বিলের বেশি অংশ পরিশোধ হয়েছে।"
+      negative:
+        en: "Payments covered a smaller share of the bills than for similar clients."
+        bn: "সমান ধরনের গ্রাহকের তুলনায় বিলের কম অংশ পরিশোধ হয়েছে।"
+
+    limit_utilisation:
+      group: B
+      higher_is: worse
+      detail: {label: "Credit limit in use", format: share}
+      definition: Average bill over six months divided by the credit limit
+      positive:
+        en: "A smaller share of the credit limit is in use than for similar clients."
+        bn: "সমান ধরনের গ্রাহকের তুলনায় ঋণসীমার কম অংশ ব্যবহার হচ্ছে।"
+      negative:
+        en: "A larger share of the credit limit is in use than for similar clients."
+        bn: "সমান ধরনের গ্রাহকের তুলনায় ঋণসীমার বেশি অংশ ব্যবহার হচ্ছে।"
+
+    balance_growth_6m:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {above: 0}
+      otherwise:
+        positive:
+          en: "The balance has grown more slowly than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় বকেয়া ধীরে বেড়েছে।"
+        negative:
+          en: "The balance has fallen more slowly than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় বকেয়া ধীরে কমেছে।"
+      detail: {label: "Balance change as a share of the limit", format: share_change}
+      definition: Newest bill minus oldest bill, divided by the credit limit
+      positive:
+        en: "The outstanding balance has not grown over six months."
+        bn: "ছয় মাসে বকেয়া বাড়েনি।"
+      negative:
+        en: "The outstanding balance has grown over six months."
+        bn: "ছয় মাসে বকেয়া বেড়েছে।"
+
+    no_payment_month_share:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {above: 0}
+      otherwise:
+        positive:
+          en: "Fewer months went without a payment than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় পেমেন্ট ছাড়া মাস কম।"
+      detail: {label: "Months with a bill but no payment", format: share}
+      definition: Of the months that followed a bill, the share in which nothing was paid
+      positive:
+        en: "A payment was made in every month that followed a bill."
+        bn: "বিলের পরের প্রতিটি মাসে পেমেন্ট হয়েছে।"
+      negative:
+        en: "In some months that followed a bill, no payment was made."
+        bn: "বিলের পরের কিছু মাসে কোনো পেমেন্ট হয়নি।"

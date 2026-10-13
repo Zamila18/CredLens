@@ -9,6 +9,8 @@ data:
     sectors: [Retail, Food, Services]
   taiwan_cc:
     sample_size: null            # null = all rows (about 30,000)
+    coverage_min_months: 4       # of the six statement months: "enough history" for the coverage checklist
+    age_band_edges: [30, 40, 50] # audit only: under 30, 30 to 39, 40 to 49, 50 and over
   homecredit:
     sample_size: 50000           # applicants sampled with the seed; null = all rows
   india_ltfs:
@@ -132,6 +134,9 @@ labels:
   good_if_days_late_at_most: 30
   min_loan_age_days: 60          # younger loans are excluded (outcome unknown)
   paid_in_full_tolerance: 0.01   # a payment counts as made only if at least 99% of the amount due was paid
+  # Public data sources whose file states the outcome of every loan. Their label is that
+  # outcome as it is; the 30-day rule above is for data with repayment records of the loan itself.
+  supplied_by_source: [taiwan_cc, india_ltfs, homecredit, kiva_asia]
 
 split:                           # by loan issue date
   train_months: 12
@@ -197,11 +202,11 @@ coverage_weights_by_mode:        # public modes: coverage = how much of what the
     partner_track_record: 0.30   # enough earlier closed loans for the field partner, as of the posting date
     borrower_info_present: 0.15
     description_present: 0.10
-  taiwan_cc:                     # provisional until the real columns are inspected; must sum to 1.0
-    credit_limit_present: 0.15
-    repayment_status_history: 0.35
-    bill_history: 0.25
-    payment_history: 0.25
+  taiwan_cc:                     # set on Oct 13 from the real columns; must sum to 1.0
+    credit_limit_present: 0.15       # a credit limit is recorded
+    repayment_status_history: 0.35   # the card was used in at least `coverage_min_months` of the six months
+    bill_history: 0.25               # a bill above zero in at least `coverage_min_months` months
+    payment_history: 0.25            # at least one payment recorded
   india_ltfs:                    # provisional until Phase 7; must sum to 1.0
     loan_terms_present: 0.20
     bureau_record_present: 0.40    # about half the borrowers have no bureau history: real thin files
