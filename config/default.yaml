@@ -7,6 +7,10 @@ data:
   kiva:
     regions: [Asia]
     sectors: [Retail, Food, Services]
+    posted_from: "2009-07-01"        # before this, Asian defaults are almost absent from the snapshot
+    posted_until: "2013-06-30"       # later loans were too often still being repaid when the snapshot was taken
+    default_known_lag_months: 6      # a default counts as known this long after the end of the loan's term
+    partner_min_known_loans: 30      # fewer earlier loans with a known outcome: the partner has no track record yet
   taiwan_cc:
     sample_size: null            # null = all rows (about 30,000)
     coverage_min_months: 4       # of the six statement months: "enough history" for the coverage checklist
@@ -152,6 +156,7 @@ split:                           # by loan issue date
 
 split_by_mode:                   # a data source whose history is shorter than 18 months sets its own periods
   india_ltfs: {train_months: 1, validation_months: 1, test_months: 1}   # loans from Aug to Oct 2018 only
+  kiva_asia: {train_months: 30, validation_months: 9, test_months: 9}   # Jul 2009 to Jun 2013; each part has over 100 defaults
 
 model:
   candidates: [logistic_regression, lightgbm]
@@ -203,12 +208,11 @@ score:
   reasons_report_sample: 300     # validation loans whose reasons are checked in the training report
 
 coverage_weights_by_mode:        # public modes: coverage = how much of what the source can provide is present
-  kiva_asia:                     # provisional until the real columns are inspected; must sum to 1.0
-    loan_terms_present: 0.25
-    sector_activity_present: 0.20
-    partner_track_record: 0.30   # enough earlier closed loans for the field partner, as of the posting date
-    borrower_info_present: 0.15
-    description_present: 0.10
+  kiva_asia:                     # set on Oct 13 from the real fields; must sum to 1.0
+    loan_terms_present: 0.20         # the term and the amount are recorded
+    sector_activity_present: 0.20    # the sector and the activity are recorded
+    partner_track_record: 0.60       # the field partner has at least `partner_min_known_loans` earlier loans with a known outcome
+    # The loan's description is deliberately NOT here: Kiva removes it from defaulted loans.
   taiwan_cc:                     # set on Oct 13 from the real columns; must sum to 1.0
     credit_limit_present: 0.15       # a credit limit is recorded
     repayment_status_history: 0.35   # the card was used in at least `coverage_min_months` of the six months

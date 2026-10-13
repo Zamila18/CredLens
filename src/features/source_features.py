@@ -22,14 +22,15 @@ from typing import Any, Callable
 import pandas as pd
 
 from src.adapters.base import SOURCE_RECORDS  # noqa: F401  (re-exported for callers)
-from src.features import homecredit, india_ltfs, taiwan_cc
+from src.features import homecredit, india_ltfs, kiva_asia, taiwan_cc
 
 BUILDERS: dict[str, Callable[[pd.DataFrame, dict[str, Any]], pd.DataFrame]] = {
     taiwan_cc.MODE: taiwan_cc.taiwan_features,
     india_ltfs.MODE: india_ltfs.india_features,
     homecredit.MODE: homecredit.homecredit_features,
+    kiva_asia.MODE: kiva_asia.kiva_features,
 }
-_SOURCES = (taiwan_cc, india_ltfs, homecredit)
+_SOURCES = (taiwan_cc, india_ltfs, homecredit, kiva_asia)
 MODEL_INPUTS: dict[str, list[str]] = {source.MODE: source.MODEL_INPUTS for source in _SOURCES}
 CONTEXT_COLUMNS: dict[str, list[str]] = {source.MODE: source.CONTEXT_COLUMNS for source in _SOURCES}
 COVERAGE_COLUMNS: dict[str, list[str]] = {

@@ -122,6 +122,17 @@ def validate_config(config: dict[str, Any]) -> None:
         problems.append(
             "data.india_ltfs.coverage_min_history_months must be a positive whole number"
         )
+    kiva = data.get("kiva") or {}
+    for name in ("default_known_lag_months", "partner_min_known_loans"):
+        if not _is_positive_int(kiva.get(name)):
+            problems.append(f"data.kiva.{name} must be a positive whole number")
+    for name in ("regions", "sectors"):
+        if not isinstance(kiva.get(name), list) or not kiva[name]:
+            problems.append(f"data.kiva.{name} must be a non-empty list")
+    if not (isinstance(kiva.get("posted_from"), str) and isinstance(kiva.get("posted_until"), str)):
+        problems.append("data.kiva.posted_from and posted_until must be dates written in quotes")
+    elif kiva["posted_from"] >= kiva["posted_until"]:
+        problems.append("data.kiva.posted_from must be earlier than posted_until")
     home = data.get("homecredit") or {}
     for name in ("chunk_rows", "late_days", "recent_days", "coverage_min_instalments"):
         if not _is_positive_int(home.get(name)):

@@ -29,6 +29,7 @@ groups:
   C: deliveries
   D: questionnaire
   L: loan terms    # public data modes only
+  P: field partner # kiva_asia only: the local lender's track record, not the borrower's behaviour
   X: outside score # homecredit only: a score from external sources, not the applicant's own records
 
 features:
@@ -766,3 +767,49 @@ source_features:
       negative:
         en: "The score from outside data sources is lower than for similar applicants."
         bn: "সমান ধরনের আবেদনকারীর তুলনায় বাইরের তথ্যসূত্রের স্কোর কম।"
+
+  kiva_asia:
+    repayment_term_months:
+      group: L
+      higher_is: worse
+      detail: {label: "Loan term", format: months}
+      definition: The number of months over which the loan is to be repaid
+      positive:
+        en: "The loan runs for fewer months than similar loans."
+        bn: "সমান ধরনের ঋণের তুলনায় এই ঋণের মেয়াদ কম।"
+      negative:
+        en: "The loan runs for more months than similar loans."
+        bn: "সমান ধরনের ঋণের তুলনায় এই ঋণের মেয়াদ বেশি।"
+
+    partner_past_default_rate:
+      group: P
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {above: 0}
+      otherwise:
+        positive:
+          en: "A smaller share of this field partner's earlier loans had defaulted than for similar loans."
+          bn: "সমান ধরনের ঋণের তুলনায় এই সহযোগী সংস্থার আগের ঋণের কম অংশ খেলাপি হয়েছিল।"
+      detail: {label: "Field partner's earlier loans that defaulted", format: share}
+      definition: Of the field partner's earlier loans with an outcome known on the posting day, the share that defaulted
+      positive:
+        en: "None of this field partner's earlier loans had defaulted when the loan was posted."
+        bn: "ঋণটি প্রকাশের সময় এই সহযোগী সংস্থার আগের কোনো ঋণ খেলাপি হয়নি।"
+      negative:
+        en: "Some of this field partner's earlier loans had defaulted when the loan was posted."
+        bn: "ঋণটি প্রকাশের সময় এই সহযোগী সংস্থার আগের কিছু ঋণ খেলাপি হয়েছিল।"
+
+    partner_covers_default:
+      group: P
+      higher_is: better
+      shown_when:
+        positive: {at_least: 1}
+        negative: {at_most: 0}
+      definition: 1 when the field partner, not the lender, carries the loss if the borrower does not pay
+      positive:
+        en: "The field partner carries the loss if the borrower does not repay."
+        bn: "ঋণগ্রহীতা পরিশোধ না করলে ক্ষতি সহযোগী সংস্থা বহন করে।"
+      negative:
+        en: "The lender carries the loss if the borrower does not repay."
+        bn: "ঋণগ্রহীতা পরিশোধ না করলে ক্ষতি ঋণদাতা বহন করে।"
