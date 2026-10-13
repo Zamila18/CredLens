@@ -25,7 +25,7 @@ Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2
 | Reasons: three up and three down, in English and Bangla, with numbers that add up to the score (exact SHAP values) | |
 | Scoring service for the API: review queue and score card, nothing scored without consent | |
 | API contract, sample responses, `GET /health` | |
-| Lint, 570 tests and CI | |
+| Lint, 591 tests and CI | |
 
 ### Where the model stands (synthetic data, validation months, seed 42)
 
