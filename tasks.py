@@ -84,8 +84,8 @@ def task_data(args: argparse.Namespace) -> int:
 
 
 def task_train(_: argparse.Namespace) -> int:
-    """Build features, train, calibrate, evaluate, write reports and model card."""
-    return not_implemented("train", "Phases 3 to 6")
+    """Build features, train, evaluate on the validation period, save the model and report."""
+    return run_in_venv(["-m", "src.model.train"])
 
 
 def task_api(_: argparse.Namespace) -> int:

@@ -234,3 +234,35 @@ def evaluate(labels: Any, probabilities: Any, config: dict[str, Any]) -> dict[st
         },
         "warnings": warnings,
     }
+
+
+def paired_auc_gain(
+    labels: Any, baseline_probabilities: Any, new_probabilities: Any, config: dict[str, Any]
+) -> dict[str, Any]:
+    """How much AUC a model adds over a baseline on the same loans, with a range.
+
+    The two models are scored on the same resampled loans each time, so the range is for
+    the difference itself. That is much sharper than comparing two separate ranges, which
+    can overlap even when one model is reliably better. `clearly_better` is True when the
+    whole range is above zero.
+    """
+    labels, baseline = _checked(labels, baseline_probabilities)
+    _, new = _checked(labels, new_probabilities)
+    rng = np.random.default_rng(config["seed"])
+
+    gains = []
+    for _ in range(config["model"]["bootstrap_resamples"]):
+        rows = rng.integers(0, len(labels), size=len(labels))
+        y = labels[rows]
+        if y.min() == y.max():
+            continue
+        gains.append(roc_auc_score(y, new[rows]) - roc_auc_score(y, baseline[rows]))
+
+    level = config["evaluation"]["bootstrap_level"]
+    low, high = np.percentile(gains, [100 * (1 - level) / 2, 100 * (1 + level) / 2])
+    return {
+        "auc_gain": float(roc_auc_score(labels, new) - roc_auc_score(labels, baseline)),
+        "range": [float(low), float(high)],
+        "clearly_better": bool(low > 0),
+        "resamples_used": len(gains),
+    }
