@@ -253,7 +253,7 @@ def test_statement_records_never_change_a_stated_outcome(tables, config):
 
 def test_an_unknown_mode_has_no_feature_builder(tables, config):
     with pytest.raises(ValueError, match="No feature builder"):
-        build_source_features(tables[SOURCE_RECORDS], config, "kiva_asia")
+        build_source_features(tables[SOURCE_RECORDS], config, "a_mode_that_does_not_exist")
 
 
 # --- dictionary entries ---------------------------------------------------------------------

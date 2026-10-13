@@ -87,7 +87,7 @@ def test_streams_a_public_source_lacks_are_empty_not_invented(config, mode, miss
         assert list(frame.columns) == CONTRACT[table], table
 
 
-@pytest.mark.parametrize("adapter_class", [KivaAsiaAdapter, ShopUpRealAdapter])
+@pytest.mark.parametrize("adapter_class", [ShopUpRealAdapter])
 def test_unbuilt_adapters_say_so_clearly(config, adapter_class):
     adapter = adapter_class(config)
     with pytest.raises(NotImplementedError, match="load_merchants"):
