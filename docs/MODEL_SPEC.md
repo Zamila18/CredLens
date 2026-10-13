@@ -104,5 +104,5 @@ Random split; features after the cutoff; counting young loans as defaults; tunin
 - Group audit: bootstrap range per group; flag only when ranges do not overlap or the gap persists across seeds.
 - Model card "Known limits": copy from docs/DATASET_PLAN.md section 4 and the review list, and add one card per data mode.
 - india_ltfs: real disbursal dates over three months (Aug to Oct 2018), so split by time: train on August, validate on September, test on October, and say in the model card that the window is short. Label = 1 - loan_default, where loan_default is "payment default in the first EMI on due date" (an early-warning outcome). Treat branch and employee identifiers with care: never as headline reasons.
-- synthetic_bd label timing: every loan issued in the 18-month main window has an outcome; loans issued in the 60-day tail are unlabelled and must be excluded from training and testing (they are the pending cases).
+- synthetic_bd label timing: every loan issued in the 18-month main window has an outcome; loans issued in the 61-day tail are unlabelled and must be excluded from training and testing (they are the pending cases).
 - synthetic_bd repayment share is about 90%, so the classes are imbalanced: report PR-AUC and top-k next to AUC here too.

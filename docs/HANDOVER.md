@@ -10,7 +10,7 @@ Last updated: end of Phase 3 (Oct 13, 2026).
 | 0. Scaffold | Folders, config loading and checks, the seven-table data contract, adapters, feature dictionary (English and Bangla), API contract, sample API responses, `GET /health` | `python tasks.py test` |
 | 1. Synthetic data | Generator for 20,000 Bangladesh-calibrated synthetic merchants at delivery signal strengths 0, 0.5 and 1; the `synthetic_bd` adapter; column dictionary (`src/synth/schemas.md`) | `python tasks.py data --all-strengths`, then `python tasks.py test` |
 | 2. Database | Tables for the data contract plus users, decisions, audit log and model versions (`src/db/models.py`); loader; backup; Mifos X-style export. Decisions and the audit log are append-only, enforced in the application and by database triggers. Tested on SQLite. **Not yet run against Supabase/PostgreSQL** | `python tasks.py data` (generates, then loads `data/app.db`, about 55 seconds, about 350 MB), `python tasks.py backup`, `python -m src.db.mifos_adapter` |
-| 3. Features and labels | 18 model inputs per loan in three groups, coverage checklist, labels from the 30-day rule, and a leakage guard that catches planted leaks (`src/features/`, `src/model/labels.py`) | `python tasks.py test` (about 75 seconds) |
+| 3. Features and labels | 11 model inputs per loan in three groups (behaviour only; amounts of data are context, so a thin file cannot lower a score), coverage checklist, labels from the 30-day rule, and a leakage guard that catches planted leaks (`src/features/`, `src/model/labels.py`) | `python tasks.py test` (about 75 seconds) |
 
 Not built yet: model (4 to 6), public-data adapters (7), real-label runs (8), API endpoints (9), dashboard (10), ablation and model cards (11), deployment (12).
 

@@ -30,7 +30,7 @@ Each merchant i has a hidden reliability r_i ~ Normal(0, 1). The system never se
 ## Loans and outcomes
 - 1 to 3 loans per merchant, first no earlier than 45 days after onboarding; limit grows with tier and history. Only merchants with consent=true get scored.
 - P(repaid within 30 days of due date) = sigmoid(1.2 + 1.1*r + 0.15*Normal(0,1)). Draw days_late accordingly; outcome_label per `labels` config. Loans too young are left unobserved.
-- Expected repayment share roughly 75-85%; check and report.
+- Expected repayment share: about 90% (see "v3" below; the original 75-85% was replaced on Oct 12).
 
 ## Questionnaire (FinHealth-style, 10 items, 1-5)
 Item = clip(round(3 + 0.4*r + Normal(0,1)), 1, 5); stress item reverse-coded. Weakly related to r, so it is a directional signal only. Generated for the questionnaire panel; excluded from the headline model (`questionnaire_in_model: false`).
@@ -65,16 +65,20 @@ Where this section differs from the text above, this section is what the code do
 ### Rough difficulty check (a generator sanity check, not model results)
 
 `python -m src.synth.difficulty_check` fits a plain logistic regression on ten crude features, trains on
-the first 12 months of loans and scores the last 3. Seed 42, 20,000 merchants, 6,346 test loans of which
-614 were not repaid in time (re-run on Oct 13 after the tail became 61 days):
+the first 12 months of loans and scores the 3 validation months that follow. Seed 42, 20,000 merchants,
+6,161 validation loans of which 596 were not repaid in time (run on Oct 13):
 
 | Signal strength | Purchases only | + payments | + deliveries | Gain from deliveries |
 |---|---|---|---|---|
-| 0 (control) | 0.696 | 0.706 | 0.706 | +0.000 |
-| 0.5 | 0.696 | 0.706 | 0.729 | +0.023 |
-| 1 | 0.696 | 0.706 | 0.749 | +0.043 |
+| 0 (control) | 0.696 | 0.711 | 0.712 | +0.001 |
+| 0.5 | 0.696 | 0.711 | 0.724 | +0.013 |
+| 1 | 0.696 | 0.711 | 0.755 | +0.044 |
 
-The best possible AUC, predicting from hidden reliability itself, is 0.824. So the task sits in the
+The best possible AUC on these months, predicting from hidden reliability itself, is 0.812. So the task sits in the
 intended range (about 0.72 to 0.82), the negative control behaves (no gain at strength 0), and the gain
-grows with strength. These numbers come from one seed and crude features; the real model and its
-bootstrap ranges come in Phases 4 to 6 and 11.
+grows with strength. These numbers come from one seed and crude features (which include amounts of data that the real model
+does not use); the real model and its bootstrap ranges come in Phases 4 to 6 and 11.
+
+Said openly: until Oct 13 this check scored the test months, and the generator's noise levels were tuned
+with those numbers. It now scores the validation months only. Every look at the test months is recorded in
+`reports/synthetic_bd/test_set_use.json`, and the model card must report the count.
