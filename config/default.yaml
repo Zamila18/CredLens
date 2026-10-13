@@ -143,7 +143,9 @@ split_by_mode:                   # a data source whose history is shorter than 1
 
 model:
   candidates: [logistic_regression, lightgbm]
-  calibration: auto              # platt | isotonic | auto (pick on validation)
+  calibration: auto              # none | platt | isotonic | auto (compare on validation, keep the simplest that is good enough)
+  calibration_folds: 5           # validation loans are cut into this many folds to compare the choices honestly
+  calibration_min_brier_gain: 0.0002   # a more flexible calibrator must lower the Brier score by at least this
   prefer_simple_if_auc_gain_below: 0.01
   bootstrap_resamples: 500
   logistic_regression:

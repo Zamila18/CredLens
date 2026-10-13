@@ -138,6 +138,12 @@ def validate_config(config: dict[str, Any]) -> None:
         _check_values(config, POSITIVE_WHOLE_NUMBERS, _is_positive_int, "a positive whole number")
     )
     problems.extend(_check_values(config, SHARES, _is_share, "a number between 0 and 1"))
+    model = config.get("model") or {}
+    if model.get("calibration") not in ("auto", "none", "platt", "isotonic"):
+        problems.append("model.calibration must be 'auto', 'none', 'platt' or 'isotonic'")
+    folds = model.get("calibration_folds")
+    if not _is_positive_int(folds) or folds < 2:
+        problems.append("model.calibration_folds must be a whole number of at least 2")
     binning = (config.get("evaluation") or {}).get("calibration_binning")
     if binning not in ("quantile", "width"):
         problems.append("evaluation.calibration_binning must be 'quantile' or 'width'")
@@ -222,6 +228,7 @@ SHARES = (
     "generator.repayment_share_target",
     "labels.paid_in_full_tolerance",
     "model.prefer_simple_if_auc_gain_below",
+    "model.calibration_min_brier_gain",
     "sanity.useful_auc_benchmark",
     "sanity.suspicious_auc",
     "sanity.zero_signal_max_auc_gain",

@@ -146,6 +146,9 @@ def test_home_credit_is_never_presented_as_asian_data():
         ("labels", "paid_in_full_tolerance", -1),
         ("sanity", "min_not_repaid_for_stable_metrics", 0),
         ("model", "bootstrap_resamples", 0),
+        ("model", "calibration", "magic"),
+        ("model", "calibration_folds", 1),
+        ("model", "calibration_min_brier_gain", -0.1),
     ],
 )
 def test_a_wrong_setting_is_named_when_the_config_loads(config, section, key, bad_value):
