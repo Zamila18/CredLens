@@ -2,32 +2,32 @@
   "merchant_id": "FIX-M001",
   "data_mode": "synthetic_bd",
   "model_version": "fixture-0",
-  "probability": 0.72,
-  "score": 72,
+  "probability": 0.94,
+  "score": 94,
   "coverage": 0.85,
   "band": "Strong",
   "low_score_warning": false,
-  "baseline_score": 60.0,
+  "baseline_score": 90.0,
   "reasons_positive": [
     {
       "code": "basket_growth",
       "sentence_en": "Stock purchases are growing compared with the previous three months.",
       "sentence_bn": "আগের তিন মাসের তুলনায় মাল কেনা বাড়ছে।",
-      "contribution": 8.0,
+      "contribution": 3.0,
       "detail": null
     },
     {
       "code": "avg_pay_delay_days",
       "sentence_en": "Past payments were made close to the due date.",
       "sentence_bn": "আগের পেমেন্ট প্রায় নির্ধারিত সময়ে হয়েছে।",
-      "contribution": 5.0,
+      "contribution": 2.0,
       "detail": null
     },
     {
       "code": "supplier_repeat_share",
       "sentence_en": "The shop buys steadily from familiar suppliers.",
       "sentence_bn": "দোকান পরিচিত সরবরাহকারীর কাছ থেকে নিয়মিত কেনে।",
-      "contribution": 4.0,
+      "contribution": 1.0,
       "detail": null
     }
   ],
@@ -36,23 +36,23 @@
       "code": "return_rate_90d",
       "sentence_en": "Returns are higher than similar shops; this may reflect delivery conditions.",
       "sentence_bn": "সমান ধরনের দোকানের তুলনায় ফেরত বেশি; এটা ডেলিভারির পরিস্থিতির কারণেও হতে পারে।",
-      "contribution": -6.0,
+      "contribution": -1.5,
       "detail": "Returns 7.5% vs typical 4%"
     },
     {
       "code": "late_pay_count_90d",
       "sentence_en": "There were late payments recently.",
       "sentence_bn": "সাম্প্রতিক সময়ে পেমেন্টে দেরি হয়েছে।",
-      "contribution": -4.0,
+      "contribution": -0.5,
       "detail": null
     },
     {
       "code": "dispatch_to_delivery_hours",
       "sentence_en": "Parcels take long to reach customers.",
       "sentence_bn": "পার্সেল পৌঁছাতে বেশি সময় লাগে।",
-      "contribution": -2.0,
+      "contribution": -0.5,
       "detail": null
     }
   ],
-  "other_contribution": 7.0
+  "other_contribution": 0.5
 }

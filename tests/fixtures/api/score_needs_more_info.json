@@ -6,7 +6,7 @@
   "score": 66,
   "coverage": 0.35,
   "band": "Needs more info",
-  "low_score_warning": false,
+  "low_score_warning": true,
   "baseline_score": 60.0,
   "reasons_positive": [],
   "reasons_negative": [],

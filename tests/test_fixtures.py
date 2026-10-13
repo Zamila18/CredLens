@@ -24,6 +24,7 @@ from src.api.schemas import (
 from src.config import banner_text
 from src.features.build_features import model_feature_names
 from src.features.dictionary import load_dictionary
+from src.model.score import band_for, low_score_warning, score_from_probability
 from tests.conftest import load_api_fixture
 
 SCORE_FIXTURES = ["score_strong", "score_needs_more_info"]
@@ -109,13 +110,17 @@ def test_score_parts_sum_to_the_score(name):
 def test_score_band_follows_the_config_rules(name, config):
     """Low coverage gives 'Needs more info' whatever the score (docs/MODEL_SPEC.md section 7)."""
     score = ScoreResponse.model_validate(load_api_fixture(name))
-    if score.coverage < config["score"]["band_min_coverage"]:
-        expected = "Needs more info"
-    elif score.score >= config["score"]["band_strong_min_score"]:
-        expected = "Strong"
-    else:
-        expected = "Review"
-    assert score.band == expected
+    assert score.band == band_for(score.score, score.coverage, config, score.data_mode)
+    assert score.low_score_warning == low_score_warning(score.score, config, score.data_mode)
+    assert score.score == score_from_probability(score.probability, config)
+
+
+def test_queue_bands_follow_the_config_rules(config):
+    for row in load_api_fixture("queue"):
+        if row["score"] is None:
+            assert row["band"] is None, "no score, no band"
+        else:
+            assert row["band"] == band_for(row["score"], row["coverage"], config)
 
 
 def test_strong_score_fixture_has_three_reasons_each_side(config):
