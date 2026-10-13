@@ -280,7 +280,7 @@ def test_the_synthetic_dictionary_is_untouched_by_the_public_entries():
     synthetic = expected_directions(dictionary, "synthetic_bd")
     assert expected_directions(dictionary) == synthetic
     with pytest.raises(KeyError, match="no entries"):
-        features_for_mode(dictionary, "homecredit")
+        features_for_mode(dictionary, "a_mode_that_does_not_exist")
 
 
 # --- reading the file -----------------------------------------------------------------------
