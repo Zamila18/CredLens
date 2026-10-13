@@ -10,11 +10,13 @@ What a run does:
 2. Builds features and labels, and keeps only loans with a known outcome whose merchant
    has a valid consent (src/model/dataset.py).
 3. Splits by time: train, validation, test (src/model/split.py).
-4. Fits a regularised logistic regression on the training period only. An input whose
-   weight points against its meaning is removed, so reasons never contradict the facts.
-5. Checks calibration on the VALIDATION period and corrects it only if that clearly
-   helps (src/model/calibrate.py).
-6. Measures the result on the VALIDATION period, next to two baselines, and separately
+4. Fits two candidates on the training period only: a regularised logistic regression
+   and LightGBM (src/model/boosted.py). In both, an input can only push the probability
+   the way its meaning says, so reasons never contradict the facts.
+5. Checks calibration of each on the VALIDATION period and corrects it only if that
+   clearly helps (src/model/calibrate.py).
+6. Chooses one: the logistic regression stays unless LightGBM is clearly better.
+   Measures the result on the VALIDATION period, next to two baselines, and separately
    for first loans and repeat loans.
 7. Saves the model, its calibrator and a metadata file with a version id, and writes the
    report.
@@ -25,7 +27,7 @@ every look at it is recorded in reports/<mode>/test_set_use.json.
 The model outputs a probability of repaying in time. It never approves or declines
 anything: an officer decides.
 
-LightGBM and reasons are added in Phase 6.
+Reasons are added in src/model/explain.py.
 """
 
 from __future__ import annotations
@@ -42,6 +44,7 @@ import numpy as np
 import pandas as pd
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
@@ -49,6 +52,7 @@ from src.adapters import get_adapter
 from src.config import PROJECT_ROOT, load_config
 from src.features.build_features import FEATURE_GROUPS, model_feature_names
 from src.features.dictionary import expected_directions, load_dictionary
+from src.model.boosted import tune_lightgbm
 from src.model.calibrate import choose_calibrator
 from src.model.dataset import build_dataset, dataset_summary, modelling_rows
 from src.model.evaluate import baseline_metrics, evaluate, paired_auc_gain
@@ -67,6 +71,9 @@ METRICS_FILE = "metrics.json"
 CALIBRATION_PLOT = "calibration_validation.png"
 HEADLINE_GROUPS = "ABC"  # purchases + payments + deliveries; the questionnaire is never in
 PAYMENT_HISTORY_COLUMN = "avg_pay_delay_days"  # empty exactly when a loan is a first loan
+HISTORY_COLUMN = "cov_history_6_months"  # yes when the merchant has six months of history
+LOGISTIC_REGRESSION = "logistic_regression"
+LIGHTGBM = "lightgbm"
 
 
 def make_logistic_regression(config: dict[str, Any]) -> Pipeline:
@@ -182,17 +189,140 @@ def _by_history(
     return result
 
 
+def _fit_candidate(
+    name: str,
+    config: dict[str, Any],
+    split: Any,
+    candidates: list[str],
+    directions: dict[str, int],
+    mode: str,
+) -> dict[str, Any]:
+    """Fit one kind of model on the training period and measure it on validation.
+
+    Calibration learns from the validation period only. The numbers use the out-of-fold
+    probabilities, so no loan is measured with a correction that saw it.
+    """
+    extra: dict[str, Any] = {}
+    if name == LOGISTIC_REGRESSION:
+        model, features, removed = fit_with_expected_directions(
+            config, split.train, candidates, directions
+        )
+    elif name == LIGHTGBM:
+        model, extra["tuning"] = tune_lightgbm(
+            config, split.train, candidates, directions, split.method
+        )
+        features, removed = list(candidates), []
+    else:
+        raise ValueError(f"Unknown model: {name!r}")
+
+    labels = split.validation["label"].to_numpy()
+    raw = _score(model, split.validation, features)
+    calibration = choose_calibrator(raw, labels, config)
+    probabilities = calibration["out_of_fold"]
+    return {
+        "name": name,
+        "model": model,
+        "features": features,
+        "removed": removed,
+        "raw": raw,
+        "calibration": calibration,
+        "probabilities": probabilities,
+        "evaluation": evaluate(labels, probabilities, config, mode),
+        "train_roc_auc": float(
+            roc_auc_score(split.train["label"], _score(model, split.train, features))
+        ),
+        **extra,
+    }
+
+
+def choose_model(
+    fitted: dict[str, dict[str, Any]], labels: np.ndarray, config: dict[str, Any]
+) -> dict[str, Any]:
+    """Pick the model to use. The simple one stays unless the flexible one is clearly better.
+
+    LightGBM replaces the logistic regression only if both hold on the validation period:
+    the whole range of its AUC gain (measured on the same resampled loans) is at or above
+    `model.prefer_simple_if_auc_gain_below`, and its Brier score is not worse.
+
+    Why the whole range and not the single number: on synthetic data LightGBM gained
+    between +0.002 and +0.013 AUC depending on the data seed, and a rule on the single
+    number picked it in one run out of nine. A choice that flips with the seed is not a
+    finding. A simple model that an officer and a judge can follow is worth more than a
+    gain we cannot be sure of.
+    """
+    if len(fitted) == 1:
+        only = next(iter(fitted))
+        return {"chosen": only, "reason": "the only candidate in `model.candidates`"}
+
+    simple, flexible = fitted[LOGISTIC_REGRESSION], fitted[LIGHTGBM]
+    needed = config["model"]["prefer_simple_if_auc_gain_below"]
+    gain = paired_auc_gain(labels, simple["probabilities"], flexible["probabilities"], config)
+    brier_simple = simple["evaluation"]["metrics"]["brier"]
+    brier_flexible = flexible["evaluation"]["metrics"]["brier"]
+    checks = {
+        "whole_gain_range_reaches_the_threshold": bool(gain["range"][0] >= needed),
+        "brier_is_not_worse": bool(brier_flexible <= brier_simple),
+    }
+    chosen = LIGHTGBM if all(checks.values()) else LOGISTIC_REGRESSION
+    failed = [name.replace("_", " ") for name, passed in checks.items() if not passed]
+    reason = (
+        f"LightGBM adds {gain['auc_gain']:+.3f} AUC over the logistic regression "
+        f"(range {gain['range'][0]:+.3f} to {gain['range'][1]:+.3f}; the whole range must "
+        f"reach {needed:+.3f}). "
+        + ("Both checks pass." if not failed else f"Not met: {', '.join(failed)}.")
+    )
+    return {
+        "chosen": chosen,
+        "reason": reason,
+        "auc_gain_of_lightgbm": gain,
+        "brier": {LOGISTIC_REGRESSION: brier_simple, LIGHTGBM: brier_flexible},
+        "checks": checks,
+    }
+
+
+def _predicted_against_actual(
+    validation: pd.DataFrame, probabilities: np.ndarray
+) -> dict[str, dict[str, Any]]:
+    """Mean predicted probability next to the actual repaid share, for groups that matter.
+
+    A model can be right on average and still be unfair to a group: for example score new
+    merchants lower although they repay just as often. This table shows it if it happens.
+    """
+    labels = validation["label"].to_numpy()
+    groups: dict[str, np.ndarray] = {}
+    first = _first_loans(validation)
+    if first is not None:
+        groups["first_loans"], groups["repeat_loans"] = first, ~first
+    if HISTORY_COLUMN in validation.columns:
+        long_history = validation[HISTORY_COLUMN].fillna(False).astype(bool).to_numpy()
+        groups["under_6_months_history"] = ~long_history
+        groups["6_months_history_or_more"] = long_history
+    table = {}
+    for name, inside in groups.items():
+        if inside.any():
+            table[name] = {
+                "loans": int(inside.sum()),
+                "mean_predicted": float(probabilities[inside].mean()),
+                "share_repaid": float(labels[inside].mean()),
+                "predicted_minus_actual": float(
+                    probabilities[inside].mean() - labels[inside].mean()
+                ),
+            }
+    return table
+
+
 def train_models(
     dataset: pd.DataFrame, config: dict[str, Any], mode: str | None = None
 ) -> dict[str, Any]:
-    """Fit the logistic regression and report how it does on the validation period.
+    """Fit the candidate models, choose one and report how it does on validation.
 
     Args:
         dataset: the output of `build_dataset` (every loan, with label and consent).
         config: the validated config.
         mode: the data mode; defaults to the one in the config.
 
-    Returns a dict with the fitted model, the split, the feature list and the report.
+    Returns a dict with the chosen model, its calibrator and feature list, the split, the
+    report, and every fitted candidate under "candidates".
     """
     mode = mode or config["data"]["mode"]
     rows = modelling_rows(dataset)
@@ -201,16 +331,15 @@ def train_models(
 
     directions = expected_directions(load_dictionary())
     candidates = model_feature_names(HEADLINE_GROUPS)
-    model, features, removed = fit_with_expected_directions(
-        config, split.train, candidates, directions
-    )
-    raw_probabilities = _score(model, split.validation, features)
-
-    # Calibration learns from the validation period only. The numbers below use the
-    # out-of-fold probabilities, so no loan is measured with a correction that saw it.
-    calibration = choose_calibrator(raw_probabilities, validation_labels, config)
-    probabilities = calibration["out_of_fold"]
-    headline = evaluate(validation_labels, probabilities, config, mode)
+    fitted = {
+        name: _fit_candidate(name, config, split, candidates, directions, mode)
+        for name in config["model"]["candidates"]
+    }
+    choice = choose_model(fitted, validation_labels, config)
+    winner = fitted[choice["chosen"]]
+    model, features = winner["model"], winner["features"]
+    calibration, probabilities = winner["calibration"], winner["probabilities"]
+    headline = winner["evaluation"]
 
     # Baselines to beat (docs/MODEL_SPEC.md section 9).
     purchase_model, purchase_features, _ = fit_with_expected_directions(
@@ -251,10 +380,26 @@ def train_models(
             "left_out": split.left_out,
         },
         "dataset": dataset_summary(dataset),
-        "model": "logistic_regression",
+        "model": choice["chosen"],
+        "model_choice": choice,
+        "candidates": {
+            name: {
+                "inputs_used": candidate["features"],
+                "inputs_removed_for_pointing_the_wrong_way": candidate["removed"],
+                "calibration_method": candidate["calibration"]["method"],
+                "train_roc_auc": candidate["train_roc_auc"],
+                "validation_metrics": candidate["evaluation"]["metrics"],
+                "validation_ranges": candidate["evaluation"]["ranges"],
+                "validation_by_history": _by_history(
+                    split.validation, candidate["probabilities"], config, mode
+                ),
+                **({"tuning": candidate["tuning"]} if "tuning" in candidate else {}),
+            }
+            for name, candidate in fitted.items()
+        },
         "feature_groups": {group: FEATURE_GROUPS[group] for group in HEADLINE_GROUPS},
         "inputs_used": features,
-        "inputs_removed_for_pointing_the_wrong_way": removed,
+        "inputs_removed_for_pointing_the_wrong_way": winner["removed"],
         "calibration": {
             "method": calibration["method"],
             "chosen_by": calibration["chosen_by"],
@@ -267,6 +412,9 @@ def train_models(
         },
         "validation": headline,
         "validation_by_history": _by_history(split.validation, probabilities, config, mode),
+        "validation_predicted_against_actual": _predicted_against_actual(
+            split.validation, probabilities
+        ),
         "validation_bands": {
             "lines": band_lines(config, mode),
             "bands": bands,
@@ -283,17 +431,21 @@ def train_models(
             },
         },
         "gain_over_purchases_only": paired_auc_gain(
-            validation_labels, purchase_probabilities, raw_probabilities, config
+            validation_labels, purchase_probabilities, winner["raw"], config
         ),
-        "coefficients": _coefficients(model, features),
         "notes": notes,
     }
+    if LOGISTIC_REGRESSION in fitted:
+        simple = fitted[LOGISTIC_REGRESSION]
+        report["coefficients"] = _coefficients(simple["model"], simple["features"])
     return {
         "model": model,
+        "model_name": choice["chosen"],
         "calibrator": calibration["calibrator"],
         "split": split,
         "features": features,
         "report": report,
+        "candidates": fitted,
     }
 
 
@@ -359,6 +511,7 @@ def save_artifacts(
     }
     saved = {
         "model": result["model"],
+        "model_name": result["model_name"],
         "calibrator": result["calibrator"],
         "features": result["features"],
         "version_id": metadata["version_id"],
@@ -429,7 +582,7 @@ def main() -> int:
     metrics, ranges = validation["metrics"], validation["ranges"]
     baseline = report["baselines"]
 
-    print(f"Trained {report['model']} on '{report['data_mode']}'.")
+    print(f"Trained on '{report['data_mode']}'. Model in use: {report['model']}.")
     print(f"  version: {metadata['version_id']}")
     print(f"  loans used: {report['split']['sizes']}  ({report['split']['method']} split)")
     print(f"  left out of modelling: {report['dataset']}")
@@ -474,6 +627,21 @@ def main() -> int:
     for band, part in report["validation_bands"]["bands"].items():
         repaid = "n/a" if part["share_repaid"] is None else f"{part['share_repaid']:.1%}"
         print(f"    {band}: {part['share']:.0%} of loans, {repaid} repaid")
+    print("  Candidates on validation:")
+    for name, candidate in report["candidates"].items():
+        numbers, spread = candidate["validation_metrics"], candidate["validation_ranges"]
+        print(
+            f"    {name}: AUC {numbers['roc_auc']:.3f} "
+            f"(range {spread['roc_auc'][0]:.3f} to {spread['roc_auc'][1]:.3f}), "
+            f"Brier {numbers['brier']:.4f}, training AUC {candidate['train_roc_auc']:.3f}"
+        )
+    print(f"    choice: {report['model_choice']['reason']}")
+    print("  Predicted against actual (a gap means a group is scored too high or too low):")
+    for name, part in report["validation_predicted_against_actual"].items():
+        print(
+            f"    {name.replace('_', ' ')}: predicted {part['mean_predicted']:.1%}, "
+            f"repaid {part['share_repaid']:.1%}"
+        )
     removed = report["inputs_removed_for_pointing_the_wrong_way"]
     print(f"  inputs used: {len(report['inputs_used'])}")
     print(f"  inputs removed for pointing the wrong way: {removed or 'none'}")
