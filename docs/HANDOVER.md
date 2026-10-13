@@ -1,7 +1,7 @@
 # HANDOVER.md: where the project stands and what each person does next
 
 Kept up to date at the end of every phase, so a handover can happen at any time.
-Last updated: end of Phase 4 (Oct 13, 2026).
+Last updated: end of Phase 5 (Oct 13, 2026).
 
 ## 1. What is finished and tested
 
@@ -11,9 +11,10 @@ Last updated: end of Phase 4 (Oct 13, 2026).
 | 1. Synthetic data | Generator for 20,000 Bangladesh-calibrated synthetic merchants at delivery signal strengths 0, 0.5 and 1; the `synthetic_bd` adapter; column dictionary (`src/synth/schemas.md`) | `python tasks.py data --all-strengths`, then `python tasks.py test` |
 | 2. Database | Tables for the data contract plus users, decisions, audit log and model versions (`src/db/models.py`); loader; backup; Mifos X-style export. Decisions and the audit log are append-only, enforced in the application and by database triggers. Tested on SQLite. **Not yet run against Supabase/PostgreSQL** | `python tasks.py data` (generates, then loads `data/app.db`, about 55 seconds, about 350 MB), `python tasks.py backup`, `python -m src.db.mifos_adapter` |
 | 3. Features and labels | 10 model inputs per loan in three groups (behaviour only; amounts of data are context, so a thin file cannot lower a score), coverage checklist, labels from the 30-day rule, and a leakage guard that catches planted leaks (`src/features/`, `src/model/labels.py`) | `python tasks.py test` (about 75 seconds) |
-| 4. First model | Logistic regression on 10 behaviour inputs, fitted on the first 12 months, measured on the next 3 (validation). An input whose weight points against its meaning is removed and listed. Validation AUC 0.710 (0.688 to 0.729); first loans 0.665, repeat loans 0.770. Open for Phase 5: 97% of loans score 70 or more, so the band lines need a team decision. Saved with a version id in `src/model/artifacts/<mode>/`; report in `reports/<mode>/metrics.json` | `python tasks.py train` (about 20 seconds) |
+| 4. First model | Logistic regression on 10 behaviour inputs, fitted on the first 12 months, measured on the next 3 (validation). An input whose weight points against its meaning is removed and listed. Validation AUC 0.710 (0.688 to 0.729); first loans 0.665, repeat loans 0.770. Saved with a version id in `src/model/artifacts/<mode>/`; report in `reports/<mode>/metrics.json` | `python tasks.py train` (about 20 seconds) |
+| 5. Calibration, score, bands | Calibration compared out of fold on validation (`none` kept: the model is already calibrated). `src/model/score.py`: score, coverage, band and low-score warning per loan. Lines: Strong 90, coverage 0.45, warning below 70 (settings in `config/default.yaml`, `score` section). On validation: Strong 56% of loans (95.2% repaid), Review 29% (82.1%), Needs more info 15% (88.3%). The sample API responses in `tests/fixtures/api/` use the new lines | `python tasks.py train`, `python tasks.py test` |
 
-Not built yet: calibration, score and bands (5), LightGBM and reasons (6), public-data adapters (7), real-label runs (8), API endpoints (9), dashboard (10), ablation and model cards (11), deployment (12).
+Not built yet: LightGBM and reasons (6), public-data adapters (7), real-label runs (8), API endpoints (9), dashboard (10), ablation and model cards (11), deployment (12).
 
 Data on the lead's laptop only (never in git): Taiwan, India L&T, Home Credit, Findex, World Bank informal-sector indicators. The Kiva archive is still downloading. Details: `docs/DATA_SOURCES.md`.
 

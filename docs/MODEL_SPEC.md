@@ -51,8 +51,11 @@ See `docs/FEATURE_DICTIONARY.md`. Feature groups: A purchases, B payments, C del
 - Band:
   - coverage < `band_min_coverage` -> "Needs more info" (regardless of score)
   - else score >= `band_strong_min_score` -> "Strong"
-  - else "Review"; if score is also low (for example < 40), attach a low-score warning.
-- Example: probability 0.72, coverage 85% -> score 72, band Strong. Probability 0.66, coverage 35% -> score 66, band Needs more info.
+  - else "Review".
+  - A score below `low_score_warning_below` also carries an explicit low-score warning.
+- Lines as set on Oct 13 (`score` section of the config): Strong line 90, coverage line 0.45, low-score warning below 70. They were set from the validation scores of the synthetic data and are settings, not facts: about nine in ten loans are repaid, so most scores sit between 80 and 99, and the first lines (70 and 0.60) put 97% of loans at or above the Strong line and 91% of first-loan merchants in "Needs more info". A data mode can have its own lines under `score.by_mode`; set them again for any real data source.
+- Examples (tests in `tests/test_score.py`): probability 0.92, coverage 85% -> score 92, Strong. Probability 0.84, coverage 85% -> score 84, Review. Probability 0.93, coverage 35% -> score 93, Needs more info. Probability 0.62, coverage 85% -> score 62, Review with a low-score warning.
+- As built (`src/model/score.py`): `score_table` gives probability, score, coverage, band and warning per loan; `band_summary` gives the share of loans and the share repaid per band. On synthetic validation data (seed 42, strength 0.5): Strong 56% of loans (95.2% repaid), Review 29% (82.1% repaid), Needs more info 15% (88.3% repaid). 28% of first loans and under 1% of repeat loans are "Needs more info".
 
 ## 8. Explanations
 - SHAP (tree explainer) for LightGBM; coefficient x standardised value for Logistic Regression.
