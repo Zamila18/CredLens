@@ -42,7 +42,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_score
 
-from src.model.score import score_from_probability
+from src.model.score import band_lines, score_from_probability
 
 RANGED_METRICS = ("roc_auc", "pr_auc_not_repaid", "brier", "calibration_error")
 
@@ -103,8 +103,13 @@ def calibration_error(
     return float((gap * table["loans"]).sum() / table["loans"].sum())
 
 
-def point_metrics(labels: Any, probabilities: Any, config: dict[str, Any]) -> dict[str, float]:
-    """Every metric once, on the given loans. Needs both outcomes to be present."""
+def point_metrics(
+    labels: Any, probabilities: Any, config: dict[str, Any], mode: str | None = None
+) -> dict[str, float]:
+    """Every metric once, on the given loans. Needs both outcomes to be present.
+
+    `mode` picks the Strong line of that data mode; it defaults to the mode in the config.
+    """
     settings = config["evaluation"]
     labels, probabilities = _checked(labels, probabilities)
 
@@ -128,7 +133,7 @@ def point_metrics(labels: Any, probabilities: Any, config: dict[str, Any]) -> di
         ),
         "precision_at_top_k": float(labels[highest_first[:k]].mean()),
         "share_at_or_above_strong_line": float(
-            (scores >= config["score"]["band_strong_min_score"]).mean()
+            (scores >= band_lines(config, mode)["band_strong_min_score"]).mean()
         ),
     }
 
@@ -179,13 +184,16 @@ def baseline_metrics(labels: Any, average_rate: float) -> dict[str, float]:
     }
 
 
-def evaluate(labels: Any, probabilities: Any, config: dict[str, Any]) -> dict[str, Any]:
+def evaluate(
+    labels: Any, probabilities: Any, config: dict[str, Any], mode: str | None = None
+) -> dict[str, Any]:
     """Return metrics with bootstrap ranges, and warnings when a result needs care.
 
     Args:
         labels: 1 = repaid in time, 0 = not.
         probabilities: predicted probability of repaying in time, one per loan.
         config: the validated config.
+        mode: the data mode whose Strong line is used; defaults to the one in the config.
 
     Warnings are raised for: an AUC too good to be true (possible leakage), an AUC below
     a coin toss, and too few not-repaid loans for the numbers to be stable.
@@ -195,7 +203,7 @@ def evaluate(labels: Any, probabilities: Any, config: dict[str, Any]) -> dict[st
         raise ValueError("Evaluation needs loans with both outcomes (repaid and not repaid).")
 
     settings, sanity = config["evaluation"], config["sanity"]
-    metrics = point_metrics(labels, probabilities, config)
+    metrics = point_metrics(labels, probabilities, config, mode)
     ranges = bootstrap_ranges(labels, probabilities, config)
     table = calibration_table(
         labels, probabilities, settings["calibration_bins"], settings["calibration_binning"]

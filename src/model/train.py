@@ -53,6 +53,7 @@ from src.model.calibrate import choose_calibrator
 from src.model.dataset import build_dataset, dataset_summary, modelling_rows
 from src.model.evaluate import baseline_metrics, evaluate, paired_auc_gain
 from src.model.preprocess import QuantileClipper
+from src.model.score import NEEDS_MORE_INFO, band_lines, band_summary, score_table
 from src.model.split import split_for_mode
 
 matplotlib.use("Agg")  # draw to files; no window needed
@@ -136,26 +137,41 @@ def predict_probability(saved: dict[str, Any], rows: pd.DataFrame) -> np.ndarray
 
     This is the number a score is made from: score = round(100 x this probability).
     """
+    if "calibrator" not in saved:
+        raise ValueError(
+            "This saved model has no calibrator (it was trained before calibration was "
+            "added). Train it again with: python tasks.py train"
+        )
     raw = _score(saved["model"], rows, saved["features"])
     return saved["calibrator"].predict(raw)
 
 
+def _first_loans(rows: pd.DataFrame) -> np.ndarray | None:
+    """True for loans with no payment history; None when the data source has no such column."""
+    if PAYMENT_HISTORY_COLUMN not in rows.columns:
+        return None
+    return rows[PAYMENT_HISTORY_COLUMN].isna().to_numpy()
+
+
 def _by_history(
-    validation: pd.DataFrame, probabilities: np.ndarray, config: dict[str, Any]
+    validation: pd.DataFrame, probabilities: np.ndarray, config: dict[str, Any], mode: str
 ) -> dict[str, Any]:
     """Validation AUC for first loans and for repeat loans, shown apart on purpose.
 
     A first loan has no payment history, which is the hard case this project is about.
-    The model must not hide behind the easier repeat loans.
+    The model must not hide behind the easier repeat loans. Empty for a data source that
+    cannot tell the two apart.
     """
-    first = validation[PAYMENT_HISTORY_COLUMN].isna().to_numpy()
+    first = _first_loans(validation)
+    if first is None:
+        return {}
     labels = validation["label"].to_numpy()
     result = {}
     for name, mask in (("first_loans", first), ("repeat_loans", ~first)):
         part = labels[mask]
         if len(part) == 0 or part.min() == part.max():
             continue
-        report = evaluate(part, probabilities[mask], config)
+        report = evaluate(part, probabilities[mask], config, mode)
         result[name] = {
             "loans": report["loans"],
             "not_repaid_loans": report["not_repaid_loans"],
@@ -194,24 +210,34 @@ def train_models(
     # out-of-fold probabilities, so no loan is measured with a correction that saw it.
     calibration = choose_calibrator(raw_probabilities, validation_labels, config)
     probabilities = calibration["out_of_fold"]
-    headline = evaluate(validation_labels, probabilities, config)
+    headline = evaluate(validation_labels, probabilities, config, mode)
 
     # Baselines to beat (docs/MODEL_SPEC.md section 9).
     purchase_model, purchase_features, _ = fit_with_expected_directions(
         config, split.train, model_feature_names("A"), directions
     )
     purchase_probabilities = _score(purchase_model, split.validation, purchase_features)
-    purchases_only = evaluate(validation_labels, purchase_probabilities, config)
+    purchases_only = evaluate(validation_labels, purchase_probabilities, config, mode)
     average_rate = float(split.train["label"].mean())
+
+    # Score, coverage and band of every validation loan, as an officer would see them.
+    scored = score_table(probabilities, split.validation, config, mode)
+    bands = band_summary(scored, validation_labels)
+    first_loans = _first_loans(split.validation)
+    waiting = (scored["band"] == NEEDS_MORE_INFO).to_numpy()
 
     notes = []
     strong_share = headline["metrics"]["share_at_or_above_strong_line"]
     if strong_share > 0.9:
         notes.append(
             f"{strong_share:.0%} of validation loans score at or above the Strong line "
-            f"({config['score']['band_strong_min_score']}). With about nine in ten loans "
-            "repaid, most scores are high, so this line separates almost nobody. The band "
-            "lines must be set from the score distribution in Phase 5."
+            f"({band_lines(config, mode)['band_strong_min_score']}), so this line separates "
+            "almost nobody. Set `score.band_strong_min_score` from the score distribution."
+        )
+    if waiting.mean() > 0.4:
+        notes.append(
+            f"{waiting.mean():.0%} of validation loans fall in 'Needs more info'. Check "
+            "`score.band_min_coverage` against the coverage this data source can reach."
         )
 
     report = {
@@ -240,7 +266,14 @@ def train_models(
             "candidates": calibration["candidates"],
         },
         "validation": headline,
-        "validation_by_history": _by_history(split.validation, probabilities, config),
+        "validation_by_history": _by_history(split.validation, probabilities, config, mode),
+        "validation_bands": {
+            "lines": band_lines(config, mode),
+            "bands": bands,
+            "needs_more_info_share_first_loans": _share(waiting, first_loans, True),
+            "needs_more_info_share_repeat_loans": _share(waiting, first_loans, False),
+            "low_score_warning_share": float(scored["low_score_warning"].mean()),
+        },
         "baselines": {
             "always_average_rate": baseline_metrics(validation_labels, average_rate),
             "purchases_only": {
@@ -262,6 +295,14 @@ def train_models(
         "features": features,
         "report": report,
     }
+
+
+def _share(flags: np.ndarray, first_loans: np.ndarray | None, first: bool) -> float | None:
+    """Share of flagged loans among first loans (or repeat loans); None if there are none."""
+    if first_loans is None:
+        return None
+    group = first_loans if first else ~first_loans
+    return float(flags[group].mean()) if group.any() else None
 
 
 def _coefficients(model: Pipeline, features: list[str]) -> dict[str, float]:
@@ -425,6 +466,14 @@ def main() -> int:
             f"(range {part['roc_auc_range'][0]:.3f} to {part['roc_auc_range'][1]:.3f}, "
             f"{part['loans']} loans)"
         )
+    lines = report["validation_bands"]["lines"]
+    print(
+        f"  Bands (Strong line {lines['band_strong_min_score']}, "
+        f"coverage line {lines['band_min_coverage']:.0%}):"
+    )
+    for band, part in report["validation_bands"]["bands"].items():
+        repaid = "n/a" if part["share_repaid"] is None else f"{part['share_repaid']:.1%}"
+        print(f"    {band}: {part['share']:.0%} of loans, {repaid} repaid")
     removed = report["inputs_removed_for_pointing_the_wrong_way"]
     print(f"  inputs used: {len(report['inputs_used'])}")
     print(f"  inputs removed for pointing the wrong way: {removed or 'none'}")

@@ -247,9 +247,21 @@ def test_share_at_the_strong_line_uses_the_rounded_score(config):
     """0.695 shows as a score of 70, so it counts as reaching a strong line of 70."""
     probabilities = np.array([0.695, 0.699, 0.70, 0.50])
     labels = np.array([1, 1, 1, 0])
+    config = copy.deepcopy(config)
+    config["score"]["band_strong_min_score"] = 70
     metrics = point_metrics(labels, probabilities, config)
-    assert config["score"]["band_strong_min_score"] == 70
     assert metrics["share_at_or_above_strong_line"] == pytest.approx(0.75)
+
+
+def test_share_at_the_strong_line_uses_the_line_of_the_data_mode(config):
+    probabilities = np.array([0.60, 0.40, 0.95, 0.70])
+    labels = np.array([1, 0, 1, 1])
+    config = copy.deepcopy(config)
+    config["score"]["by_mode"] = {"taiwan_cc": {"band_strong_min_score": 50}}
+    own = point_metrics(labels, probabilities, config, "taiwan_cc")
+    default = point_metrics(labels, probabilities, config, "synthetic_bd")
+    assert own["share_at_or_above_strong_line"] == pytest.approx(0.75)
+    assert default["share_at_or_above_strong_line"] == pytest.approx(0.25)
 
 
 def test_equal_width_calibration_table_compares_predicted_with_actual():

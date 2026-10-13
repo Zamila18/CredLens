@@ -222,6 +222,20 @@ def test_first_loans_and_repeat_loans_are_reported_apart(result):
         assert part["roc_auc_range"][0] <= part["roc_auc"] <= part["roc_auc_range"][1]
 
 
+def test_bands_on_validation_are_reported_and_mean_something(result):
+    report = result["report"]["validation_bands"]
+    bands = report["bands"]
+    assert set(bands) == {"Strong", "Review", "Needs more info"}
+    assert sum(part["loans"] for part in bands.values()) == result["report"]["validation"]["loans"]
+    assert sum(part["share"] for part in bands.values()) == pytest.approx(1)
+    # The bands must separate: Strong loans repay more often than Review loans.
+    assert bands["Strong"]["share_repaid"] > bands["Review"]["share_repaid"]
+    # No band may swallow nearly everyone, or it tells the officer nothing.
+    assert all(part["share"] < 0.8 for part in bands.values())
+    # New merchants (first loans) must not be locked out as a group.
+    assert report["needs_more_info_share_first_loans"] < 0.5
+
+
 def test_a_band_line_that_separates_nobody_is_pointed_out(result, config):
     share = result["report"]["validation"]["metrics"]["share_at_or_above_strong_line"]
     notes = result["report"]["notes"]

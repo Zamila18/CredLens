@@ -76,8 +76,8 @@
         "roc_auc": 0.7090229085121134
       },
       "isotonic": {
-        "brier": 0.0818105873724895,
-        "calibration_error": 0.0105752040005427,
+        "brier": 0.08181058668908578,
+        "calibration_error": 0.010575197508145631,
         "roc_auc": 0.7025029534065751
       }
     }
@@ -94,7 +94,7 @@
       "not_repaid_rate_in_lowest_k": 0.55,
       "not_repaid_caught_in_lowest": 0.4326241134751773,
       "precision_at_top_k": 0.95,
-      "share_at_or_above_strong_line": 0.9660003417051085
+      "share_at_or_above_strong_line": 0.6647872885699642
     },
     "ranges": {
       "roc_auc": [
@@ -217,6 +217,33 @@
       "warnings": []
     }
   },
+  "validation_bands": {
+    "lines": {
+      "band_strong_min_score": 90,
+      "band_min_coverage": 0.45,
+      "low_score_warning_below": 70
+    },
+    "bands": {
+      "Strong": {
+        "loans": 3274,
+        "share": 0.5593712626003758,
+        "share_repaid": 0.9517409896151496
+      },
+      "Review": {
+        "loans": 1680,
+        "share": 0.2870322911327524,
+        "share_repaid": 0.8208333333333333
+      },
+      "Needs more info": {
+        "loans": 899,
+        "share": 0.1535964462668717,
+        "share_repaid": 0.8832035595105673
+      }
+    },
+    "needs_more_info_share_first_loans": 0.2846251588310038,
+    "needs_more_info_share_repeat_loans": 0.0011090573012939,
+    "low_score_warning_share": 0.03399965829489151
+  },
   "baselines": {
     "always_average_rate": {
       "predicted_rate": 0.8997597236822346,
@@ -238,7 +265,7 @@
         "not_repaid_rate_in_lowest_k": 0.45,
         "not_repaid_caught_in_lowest": 0.38475177304964536,
         "precision_at_top_k": 0.95,
-        "share_at_or_above_strong_line": 1.0
+        "share_at_or_above_strong_line": 0.6253203485392107
       },
       "ranges": {
         "roc_auc": [
@@ -282,8 +309,6 @@
     "cod_remit_ontime_rate": 0.2064,
     "dispatch_to_delivery_hours": -0.2317
   },
-  "notes": [
-    "97% of validation loans score at or above the Strong line (70). With about nine in ten loans repaid, most scores are high, so this line separates almost nobody. The band lines must be set from the score distribution in Phase 5."
-  ],
-  "model_version": "synthetic_bd-20261013-152502-5d95714"
+  "notes": [],
+  "model_version": "synthetic_bd-20261013-164901-9445dcd"
 }
