@@ -33,3 +33,15 @@ Rules
 - If a feature is missing for a merchant, do not generate a reason for it; mention missing data via coverage.
 - Questionnaire (group D) is shown beside the score, not used in the headline model. Its reasons appear in the questionnaire panel only.
 - Public-data sources add their own entries (e.g. kiva: loan_amount_usd, term_months, repayment_interval_irregular, sector; taiwan_cc: ontime_share_6m, worst_delay_6m, pay_to_bill_ratio, limit_utilisation; homecredit: inst_ontime_rate, inst_mean_days_late, pos_months_active). Claude Code adds these to dictionary.yaml with EN/BN sentences when building the adapters.
+
+## How the features are computed (as built in Phase 3)
+
+Code: `src/features/build_features.py`. Thresholds: the `features` section of `config/default.yaml`.
+
+- **Cutoff.** A loan's cutoff is its issue date. Only events dated strictly before that day are used; an event on the cutoff day is not. One function, `events_before_cutoff`, applies this for every feature.
+- **Empty is not zero.** A feature that cannot be computed is left empty. Counts of purchases are real zeros when nothing was bought. Ratios with nothing to compare (growth for a new merchant, payment features on a first loan, delivery features for a merchant who sends no parcels) stay empty and produce no reason.
+- **Group A, purchases.** "90d" means the 90 days before the cutoff. Growth compares that window with the 90 days before it. Regularity and volatility use the last 12 whole weeks the merchant existed for; empty weeks count as zero.
+- **Group B, payments.** Only loans issued before the cutoff count, so a loan never describes itself. A payment made before the cutoff uses its real lateness. A payment not made by the cutoff but already due counts as late by the days so far, even if it was paid later: on the cutoff day nobody could know. A payment not yet due says nothing. On time means within 3 days of the due date; late means more than 7 days.
+- **Group C, deliveries.** Cancelled parcels are ignored. A parcel dispatched in the last 3 days, or delivered on or after the cutoff, counts towards volume but not towards any rate, because its outcome was not yet known. `return_rate_90d` leaves out returns tagged `address_issue` or `rider_issue`. A merchant with no parcels in the window has no delivery features at all.
+- **Coverage.** Counts (`history_months`, `n_purchases_total`, `n_deliveries_total`, `n_payments_total`, `share_of_groups_present`) and one yes/no column per item of `coverage_weights`, named `cov_<item>`. Never model inputs.
+- **Leakage guard.** `src/features/leakage.py` rebuilds a loan's features after erasing everything dated on or after its cutoff; nothing may change. `tests/test_leakage.py` runs it on the real features and on five leaks planted on purpose, each of which must be caught.
