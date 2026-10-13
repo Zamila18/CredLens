@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import pytest
 
+from src.features.build_features import CONTEXT_COLUMNS, model_feature_names
 from src.features.dictionary import DIRECTIONAL_WORDS, load_dictionary, reason_sentence
 
 # Feature names listed in docs/FEATURE_DICTIONARY.md.
@@ -94,3 +95,9 @@ def test_reason_sentence_picks_side_and_language(dictionary):
     assert reason_sentence(dictionary, feature, True) == "Most payments arrive on time."
     assert reason_sentence(dictionary, feature, False, "bn") == "কম পেমেন্ট সময়মতো আসে।"
 
+
+def test_dictionary_marks_exactly_the_context_columns_as_not_model_inputs(dictionary):
+    """The dictionary and the code must agree on what the model may see."""
+    marked = {n for n, e in dictionary["features"].items() if e.get("model_input") is False}
+    assert marked == set(CONTEXT_COLUMNS)
+    assert not marked & set(model_feature_names("ABC"))

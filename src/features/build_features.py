@@ -17,6 +17,17 @@ Feature groups (used later for the ablation: A, then A+B, then A+B+C):
     A  purchases   what the merchant buys (Mokam-style). Never sales.
     B  payments    how earlier credit was repaid (Baki-style)
     C  deliveries  outgoing parcels (REDX-style)
+
+Model inputs and context columns. Every group produces two kinds of columns:
+- model inputs describe HOW a merchant behaves (growth, supplier loyalty, lateness, return
+  rates). They are the only columns a model may use.
+- context columns describe HOW MUCH data there is (number of purchases, total value,
+  share of active weeks, number of parcels). They are shown on the profile and feed the
+  coverage checklist, but they are not model inputs.
+Why: a thin-file merchant has few purchases and parcels by definition. A model that used
+those amounts scored thin-file merchants about three points lower although they repaid
+just as well (measured on validation data, Oct 13). A thin file must lower coverage, not
+the score (PROJECT_BRIEF section 2 and the model card limits).
 """
 
 from __future__ import annotations
@@ -26,16 +37,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-# Feature names per group, in the order of docs/FEATURE_DICTIONARY.md.
-PURCHASE_FEATURES = [
-    "purchases_90d",
-    "purchase_value_90d",
-    "basket_growth",
-    "purchase_volatility",
-    "purchase_regularity",
-    "category_diversity",
-    "supplier_repeat_share",
-]
+# Model inputs per group: how the merchant behaves.
+PURCHASE_FEATURES = ["basket_growth", "supplier_repeat_share"]
 PAYMENT_FEATURES = [
     "avg_pay_delay_days",
     "late_pay_count_90d",
@@ -43,19 +46,29 @@ PAYMENT_FEATURES = [
     "credit_utilisation",
 ]
 DELIVERY_FEATURES = [
-    "parcel_volume_90d",
     "delivered_rate",
     "return_rate_90d",
     "failed_rate_90d",
     "cod_remit_ontime_rate",
     "dispatch_to_delivery_hours",
-    "delivery_data_thin",
 ]
 FEATURE_GROUPS: dict[str, list[str]] = {
     "A": PURCHASE_FEATURES,
     "B": PAYMENT_FEATURES,
     "C": DELIVERY_FEATURES,
 }
+
+# Context columns per group: how much data there is. Shown to the officer and used for
+# coverage. Never model inputs, so a thin file cannot lower the score.
+PURCHASE_CONTEXT = [
+    "purchases_90d",
+    "purchase_value_90d",
+    "purchase_volatility",
+    "purchase_regularity",
+    "category_diversity",
+]
+DELIVERY_CONTEXT = ["parcel_volume_90d", "delivery_data_thin"]
+CONTEXT_COLUMNS = PURCHASE_CONTEXT + DELIVERY_CONTEXT
 
 # Coverage columns describe how much history a score rests on. They are never model
 # inputs and never appear as reasons for a score.
@@ -131,18 +144,17 @@ def events_before_cutoff(
 def purchase_features(
     cutoffs: pd.DataFrame, purchases: pd.DataFrame, config: dict[str, Any]
 ) -> pd.DataFrame:
-    """Group A: what the merchant bought before the cutoff. Indexed by loan_id."""
+    """Group A: what the merchant bought before the cutoff. Indexed by loan_id.
+
+    Returns the model inputs (PURCHASE_FEATURES) and the context columns
+    (PURCHASE_CONTEXT).
+    """
     settings = config["features"]
     window = settings["window_days"]
     n_weeks = settings["weekly_window_weeks"]
 
-    # Was this supplier already used by this merchant in an earlier purchase? This looks
-    # only backwards in time, so it is safe to compute once for the whole table.
-    purchases = purchases.sort_values(["merchant_id", "purchase_date", "purchase_id"]).copy()
+    purchases = purchases.copy()
     purchases["amount_bdt"] = purchases["amount_bdt"].astype(float)
-    purchases["supplier_seen_before"] = (
-        purchases.groupby(["merchant_id", "supplier_id"]).cumcount() > 0
-    )
 
     history = events_before_cutoff(cutoffs, purchases, "purchase_date", max_age_days=2 * window)
     recent = history[history["age_days"] <= window]
@@ -153,7 +165,16 @@ def purchase_features(
     features["purchases_90d"] = by_loan.size()
     features["purchase_value_90d"] = by_loan["amount_bdt"].sum()
     features["category_diversity"] = by_loan["category"].nunique()
-    features["supplier_repeat_share"] = by_loan["supplier_seen_before"].mean()
+
+    # Supplier loyalty: take two of the merchant's recent purchases at random. How likely
+    # is it that both came from the same supplier? Counting pairs this way gives the same
+    # answer on average whether the merchant made 5 purchases or 50, so a merchant with
+    # little history is not marked down for it. Needs at least two purchases.
+    per_supplier = recent.groupby(["loan_id", "supplier_id"]).size()
+    same_supplier_pairs = (per_supplier * (per_supplier - 1)).groupby("loan_id").sum()
+    count = by_loan.size()
+    all_pairs = (count * (count - 1)).where(count >= 2)
+    features["supplier_repeat_share"] = same_supplier_pairs / all_pairs
 
     # A merchant with no purchases in the window bought nothing: that is a real zero.
     for column in ("purchases_90d", "purchase_value_90d", "category_diversity"):
@@ -188,7 +209,7 @@ def purchase_features(
     features["purchase_volatility"] = np.where(
         (weeks_known >= 2) & (mean > 0), np.sqrt(variance) / mean.where(mean > 0), np.nan
     )
-    return features[PURCHASE_FEATURES]
+    return features[PURCHASE_FEATURES + PURCHASE_CONTEXT]
 
 
 def payment_features(
@@ -207,6 +228,8 @@ def payment_features(
       the cutoff day nobody could know it would arrive;
     - not paid and not yet due: nothing is known, so it is left out of the lateness
       features.
+    A part payment is not a repayment: the same rule as the labels (labels config,
+    `paid_in_full_tolerance`).
     A merchant with no earlier loans has no payment history: every feature is empty.
     Indexed by loan_id.
     """
@@ -222,7 +245,8 @@ def payment_features(
     due = pd.to_datetime(history["due_date"])
     paid = pd.to_datetime(history["paid_date"])
     cutoff = history["cutoff_date"]
-    paid_before = paid.notna() & (paid < cutoff)
+    paid_in_full = _paid_in_full(history, config)
+    paid_before = paid.notna() & (paid < cutoff) & paid_in_full
     already_due = due < cutoff
 
     days_late = np.where(
@@ -270,6 +294,9 @@ def delivery_features(
 
     A merchant with no parcels in the window has no delivery features at all (empty,
     not zero). Missing delivery data lowers coverage; it must never lower the score.
+
+    Returns the model inputs (DELIVERY_FEATURES) and the context columns
+    (DELIVERY_CONTEXT: the number of parcels and the "history is thin" flag).
     """
     settings = config["features"]
     parcels = events_before_cutoff(
@@ -307,7 +334,7 @@ def delivery_features(
 
     thin = (features["parcel_volume_90d"] < settings["thin_delivery_parcels"]).astype(float)
     features["delivery_data_thin"] = thin.where(features["parcel_volume_90d"].notna())
-    return features[DELIVERY_FEATURES]
+    return features[DELIVERY_FEATURES + DELIVERY_CONTEXT]
 
 
 def coverage_features(
@@ -345,7 +372,9 @@ def coverage_features(
     coverage["n_deliveries_total"] = n_parcels
     # Earlier payments whose status was known on the cutoff day (see payment_features).
     has_payments = model_features["avg_pay_delay_days"].notna()
-    known_payments = _known_payment_counts(cutoffs, tables["loans"], tables["payments"])
+    known_payments = _known_payment_counts(
+        cutoffs, tables["loans"], tables["payments"], config
+    )
     coverage["n_payments_total"] = known_payments.reindex(index).fillna(0)
 
     has_purchases = model_features["purchases_90d"] > 0
@@ -377,8 +406,15 @@ def coverage_features(
     return coverage[COVERAGE_COLUMNS]
 
 
+def _paid_in_full(payments: pd.DataFrame, config: dict[str, Any]) -> pd.Series:
+    """True where at least (nearly) the full amount due was paid."""
+    tolerance = config["labels"]["paid_in_full_tolerance"]
+    paid = payments["amount_paid_bdt"].astype(float)
+    return paid >= (1 - tolerance) * payments["amount_due_bdt"].astype(float)
+
+
 def _known_payment_counts(
-    cutoffs: pd.DataFrame, loans: pd.DataFrame, payments: pd.DataFrame
+    cutoffs: pd.DataFrame, loans: pd.DataFrame, payments: pd.DataFrame, config: dict[str, Any]
 ) -> pd.Series:
     """Number of earlier payments whose status was already known on the cutoff day."""
     earlier_loans = loans[["loan_id", "issued_at"]].rename(columns={"loan_id": "earlier_loan_id"})
@@ -388,15 +424,17 @@ def _known_payment_counts(
     history = events_before_cutoff(cutoffs, history, "issued_at")
     paid = pd.to_datetime(history["paid_date"])
     due = pd.to_datetime(history["due_date"])
-    known = (paid.notna() & (paid < history["cutoff_date"])) | (due < history["cutoff_date"])
+    paid_before = paid.notna() & (paid < history["cutoff_date"]) & _paid_in_full(history, config)
+    known = paid_before | (due < history["cutoff_date"])
     return history[known].groupby("loan_id").size()
 
 
 def build_features(tables: dict[str, pd.DataFrame], config: dict[str, Any]) -> pd.DataFrame:
     """Return one row per loan with features built only from data before its cutoff.
 
-    Columns: loan_id, merchant_id, cutoff_date, days_known, then every feature in
-    FEATURE_GROUPS (the model inputs), then COVERAGE_COLUMNS (never model inputs).
+    Columns: loan_id, merchant_id, cutoff_date, days_known, then the model inputs
+    (FEATURE_GROUPS), the context columns (CONTEXT_COLUMNS) and the coverage columns
+    (COVERAGE_COLUMNS). Only the model inputs may be given to a model.
     A feature that cannot be computed is left empty (NaN); it is never filled in
     silently (docs/MODEL_SPEC.md section 1).
     """

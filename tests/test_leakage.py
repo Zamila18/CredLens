@@ -158,3 +158,19 @@ def test_erase_future_removes_or_blanks_everything_from_the_cutoff_on(tables):
     # It really removed something, and it did not touch the original tables.
     assert len(erased["purchases"]) < len(tables["purchases"])
     assert tables["loans"]["outcome_label"].notna().any()
+
+
+def test_erasing_everything_after_one_date_changes_no_earlier_loan(tables, config):
+    """A second check that covers every loan issued up to a date, not only a sample."""
+    as_of = pd.Timestamp("2026-01-01")
+    full = build_features(tables, config).set_index("loan_id")
+    past_only = build_features(erase_future(tables, as_of), config).set_index("loan_id")
+    earlier = full.index[full["cutoff_date"] <= as_of]
+    assert len(earlier) > 300
+    columns = [c for c in full.columns if c not in KEY_COLUMNS]
+    pd.testing.assert_frame_equal(
+        full.loc[earlier, columns].astype(float),
+        past_only.loc[earlier, columns].astype(float),
+        check_exact=False,
+        rtol=1e-9,
+    )

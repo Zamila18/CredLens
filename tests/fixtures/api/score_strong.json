@@ -47,9 +47,9 @@
       "detail": null
     },
     {
-      "code": "delivery_data_thin",
-      "sentence_en": "Delivery history is thin, so the picture is less certain.",
-      "sentence_bn": "ডেলিভারির ইতিহাস কম, তাই চিত্রটি কম নিশ্চিত।",
+      "code": "dispatch_to_delivery_hours",
+      "sentence_en": "Parcels take long to reach customers.",
+      "sentence_bn": "পার্সেল পৌঁছাতে বেশি সময় লাগে।",
       "contribution": -2.0,
       "detail": null
     }

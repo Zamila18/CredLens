@@ -35,7 +35,11 @@ def loan(loan_id: str, issued: str, outcome: int | None = None) -> dict:
     return {"loan_id": loan_id, "merchant_id": "M1", "issued_at": issued, "outcome_label": outcome}
 
 
-def payment(loan_id: str, due: str, paid: str | None, number: int = 1) -> dict:
+def payment(
+    loan_id: str, due: str, paid: str | None, number: int = 1, amount_paid: float | None = None
+) -> dict:
+    if amount_paid is None:
+        amount_paid = 1000.0 if paid else 0.0
     return {
         "payment_id": f"P-{loan_id}-{number}",
         "merchant_id": "M1",
@@ -43,7 +47,7 @@ def payment(loan_id: str, due: str, paid: str | None, number: int = 1) -> dict:
         "due_date": due,
         "paid_date": paid,
         "amount_due_bdt": 1000.0,
-        "amount_paid_bdt": 1000.0 if paid else 0.0,
+        "amount_paid_bdt": amount_paid,
     }
 
 
@@ -135,6 +139,17 @@ def test_all_instalments_in_time_makes_the_loan_good(config):
         config,
     )
     assert labels.loc["L1", "label"] == 1
+
+
+@pytest.mark.parametrize(("amount_paid", "expected"), [(1000.0, 1), (995.0, 1), (100.0, 0)])
+def test_a_part_payment_is_not_a_repayment(config, amount_paid, expected):
+    """Paying 100 of 1000 on the due date does not make the loan good."""
+    labels = labels_for(
+        [loan("L1", "2025-06-01")],
+        [payment("L1", "2025-07-01", "2025-07-01", amount_paid=amount_paid)],
+        config,
+    )
+    assert labels.loc["L1", "label"] == expected
 
 
 def test_the_rule_reads_its_numbers_from_the_config(config):

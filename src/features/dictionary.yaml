@@ -10,6 +10,9 @@
 # - If a feature is missing for a merchant, no reason is generated for it.
 # - The Bangla text must be reviewed by a native speaker before the demo.
 # - Public-data modes (kiva_asia, taiwan_cc) add their own entries in Phase 7.
+# - Entries marked `model_input: false` describe how MUCH data a merchant has (number of
+#   purchases, total value, number of parcels). They are shown to the officer and feed
+#   coverage, but the model never sees them, so a thin file cannot lower the score.
 
 groups:
   A: purchases
@@ -20,6 +23,7 @@ groups:
 features:
   purchases_90d:
     group: A
+    model_input: false           # context only: shown on the profile, never given to the model
     definition: Mokam purchase orders placed by the merchant in the 90 days before cutoff
     higher_means: active restocking
     positive:
@@ -31,6 +35,7 @@ features:
 
   purchase_value_90d:
     group: A
+    model_input: false           # context only: shown on the profile, never given to the model
     definition: Total purchase value, 90 days
     higher_means: larger business
     positive:
@@ -53,6 +58,7 @@ features:
 
   purchase_volatility:
     group: A
+    model_input: false           # context only: shown on the profile, never given to the model
     definition: Std. dev. of weekly purchase value / mean
     higher_means: unstable
     positive:
@@ -64,6 +70,7 @@ features:
 
   purchase_regularity:
     group: A
+    model_input: false           # context only: shown on the profile, never given to the model
     definition: Share of weeks with at least one purchase
     higher_means: consistent
     positive:
@@ -75,6 +82,7 @@ features:
 
   category_diversity:
     group: A
+    model_input: false           # context only: shown on the profile, never given to the model
     definition: Number of product categories purchased
     higher_means: diversified
     positive:
@@ -86,7 +94,10 @@ features:
 
   supplier_repeat_share:
     group: A
-    definition: Share of purchases from suppliers used before
+    definition: >-
+      Chance that two of the merchant's purchases in the last 90 days came from the same
+      supplier (counted over all pairs of purchases, so it does not depend on how many
+      purchases there were)
     higher_means: stable sourcing
     positive:
       en: "The shop buys steadily from familiar suppliers."
@@ -97,6 +108,7 @@ features:
 
   parcel_volume_90d:
     group: C
+    model_input: false           # context only: shown on the profile, never given to the model
     sales_proxy: true
     definition: Outgoing REDX parcels, 90 days (only for merchants who sell online)
     higher_means: more sales
@@ -210,6 +222,7 @@ features:
 
   delivery_data_thin:
     group: C
+    model_input: false           # context only: shown on the profile, never given to the model
     definition: Fewer than 20 parcels in 90 days (flag)
     higher_means: less certain
     positive: null

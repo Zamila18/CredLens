@@ -22,6 +22,7 @@ from src.api.schemas import (
     ScoreResponse,
 )
 from src.config import banner_text
+from src.features.build_features import model_feature_names
 from src.features.dictionary import load_dictionary
 from tests.conftest import load_api_fixture
 
@@ -134,6 +135,15 @@ def test_score_reasons_use_the_dictionary_sentences(name):
             sentences = dictionary[reason.code][side]
             assert reason.sentence_en == sentences["en"]
             assert reason.sentence_bn == sentences["bn"]
+
+
+@pytest.mark.parametrize("name", SCORE_FIXTURES)
+def test_sample_reasons_only_name_real_model_inputs(name):
+    """A reason must come from a feature the model actually uses."""
+    inputs = set(model_feature_names("ABC"))
+    score = ScoreResponse.model_validate(load_api_fixture(name))
+    for reason in score.reasons_positive + score.reasons_negative:
+        assert reason.code in inputs, reason.code
 
 
 def test_queue_never_shows_a_score_without_coverage_and_band():
