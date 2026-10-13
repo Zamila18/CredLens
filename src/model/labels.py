@@ -27,6 +27,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 LABELLED = "labelled"
@@ -57,6 +58,7 @@ def build_labels(
     payments: pd.DataFrame,
     config: dict[str, Any],
     as_of: pd.Timestamp | str,
+    outcome_supplied: bool = False,
 ) -> pd.DataFrame:
     """Return one row per loan with its label and why it has (or lacks) one.
 
@@ -66,6 +68,11 @@ def build_labels(
             that supplies outcomes directly.
         config: the validated config.
         as_of: "today" for the data. Loan age and overdue days are counted up to it.
+        outcome_supplied: True for a public data source whose file states the outcome of
+            every loan (the modes in `labels.supplied_by_source`). The label is then
+            `outcome_label` as it is: payment records, if any, are history and not the
+            repayment of this loan, and the "too young to judge" rule does not apply
+            because the outcome is already known.
 
     Columns: loan_id, merchant_id, issued_at, label (1, 0 or empty), label_status
     (labelled / too_young / not_yet_known) and label_source ("payments" when the label
@@ -77,6 +84,12 @@ def build_labels(
     as_of = pd.Timestamp(as_of).normalize()
 
     result = loans[["loan_id", "merchant_id", "issued_at"]].copy()
+    if outcome_supplied:
+        supplied = pd.to_numeric(loans["outcome_label"], errors="coerce").astype("Int64")
+        result["label"] = supplied.to_numpy()
+        result["label_status"] = np.where(supplied.isna(), NOT_YET_KNOWN, LABELLED)
+        result["label_source"] = "source"
+        return result[LABEL_COLUMNS]
     age_days = (as_of - pd.to_datetime(result["issued_at"])).dt.days
     too_young = (age_days < rules["min_loan_age_days"]).to_numpy()
 
