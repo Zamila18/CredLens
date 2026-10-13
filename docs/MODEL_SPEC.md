@@ -42,6 +42,7 @@ See `docs/FEATURE_DICTIONARY.md`. Feature groups: A purchases, B payments, C del
 - Check: bin validation predictions (0-0.1 ... 0.9-1.0), plot predicted mean vs actual repayment rate.
 - Fix with Platt scaling or isotonic regression, fitted on validation only, then frozen. Re-check on test.
 - Calibration preserves ranking; it fixes the meaning of the number.
+- As built (`src/model/calibrate.py`): three choices, `none`, `platt`, `isotonic`. A correction measured on the loans it learned from always looks good, so the validation loans are cut into `model.calibration_folds` folds and each choice is compared on out-of-fold probabilities. With `model.calibration: auto` the simplest choice stays unless a more flexible one lowers the Brier score by at least `model.calibration_min_brier_gain`. The saved calibrator is fitted on all validation loans. The validation numbers in the report use the out-of-fold probabilities. On synthetic data (seed 42, strength 0.5) the logistic regression is already calibrated (error 0.012; Brier 0.0819 with none, 0.0818 with either correction), so `none` is kept.
 
 ## 7. Score, coverage, band
 - score = round(100 x calibrated probability).

@@ -59,6 +59,29 @@
     "dispatch_to_delivery_hours"
   ],
   "inputs_removed_for_pointing_the_wrong_way": [],
+  "calibration": {
+    "method": "none",
+    "chosen_by": "auto: the simplest method is kept unless a more flexible one lowers the out-of-fold Brier score by at least 0.0002",
+    "fitted_on": "validation period only; re-checked once on the test period",
+    "compared_on": "out-of-fold probabilities, 5 folds of the validation period",
+    "candidates": {
+      "none": {
+        "brier": 0.08191852475007164,
+        "calibration_error": 0.011723266973884145,
+        "roc_auc": 0.7095343071194196
+      },
+      "platt": {
+        "brier": 0.0817556355952457,
+        "calibration_error": 0.01074101588748598,
+        "roc_auc": 0.7090229085121134
+      },
+      "isotonic": {
+        "brier": 0.0818105873724895,
+        "calibration_error": 0.0105752040005427,
+        "roc_auc": 0.7025029534065751
+      }
+    }
+  },
   "validation": {
     "loans": 5853,
     "not_repaid_loans": 564,
@@ -262,5 +285,5 @@
   "notes": [
     "97% of validation loans score at or above the Strong line (70). With about nine in ten loans repaid, most scores are high, so this line separates almost nobody. The band lines must be set from the score distribution in Phase 5."
   ],
-  "model_version": "synthetic_bd-20261013-141456-8d38a48"
+  "model_version": "synthetic_bd-20261013-152502-5d95714"
 }

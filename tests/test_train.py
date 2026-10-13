@@ -16,6 +16,7 @@ import pytest
 from src.config import load_config
 from src.features.build_features import CONTEXT_COLUMNS, COVERAGE_COLUMNS, DELIVERY_FEATURES
 from src.features.dictionary import expected_directions, load_dictionary
+from src.model.calibrate import fit_calibrator
 from src.model.dataset import build_dataset
 from src.model.evaluate import paired_auc_gain
 from src.model.preprocess import QuantileClipper
@@ -23,6 +24,7 @@ from src.model.train import (
     fit_with_expected_directions,
     load_model,
     make_logistic_regression,
+    predict_probability,
     save_artifacts,
     train_models,
     write_report,
@@ -226,6 +228,24 @@ def test_a_band_line_that_separates_nobody_is_pointed_out(result, config):
     assert (share > 0.9) == any("Strong line" in note for note in notes)
 
 
+def test_calibration_is_compared_out_of_fold_and_reported(result):
+    calibration = result["report"]["calibration"]
+    assert calibration["method"] in ("none", "platt", "isotonic")
+    assert set(calibration["candidates"]) == {"none", "platt", "isotonic"}
+    assert "validation period only" in calibration["fitted_on"]
+    assert result["calibrator"].method == calibration["method"]
+    chosen = calibration["candidates"][calibration["method"]]
+    assert result["report"]["validation"]["metrics"]["brier"] == pytest.approx(chosen["brier"])
+
+
+def test_the_calibrator_never_sees_training_or_test_loans(result, config):
+    """Refitting it on the validation loans alone must give the same calibrator back."""
+    split, features = result["split"], result["features"]
+    raw = result["model"].predict_proba(split.validation[features])[:, 1]
+    again = fit_calibrator(raw, split.validation["label"], result["calibrator"].method)
+    np.testing.assert_allclose(again.predict(raw), result["calibrator"].predict(raw))
+
+
 def test_training_twice_gives_the_same_model(config):
     tables, _, _ = build_tables(config, 1.0)
     dataset = build_dataset(tables, config)
@@ -246,6 +266,13 @@ def test_saved_model_scores_exactly_like_the_trained_one(result, config, tmp_pat
     )
     assert saved["features"] == result["features"]
     assert saved["version_id"] == metadata["version_id"]
+    assert metadata["calibrator"] == result["report"]["calibration"]["method"]
+
+    # The probability a score is made from goes through the saved calibrator.
+    calibrated = predict_probability(saved, result["split"].validation)
+    expected = result["calibrator"].predict(result["model"].predict_proba(rows)[:, 1])
+    np.testing.assert_allclose(calibrated, expected)
+    assert ((calibrated > 0) & (calibrated < 1)).all()
 
 
 def test_metadata_records_what_a_reader_needs(result, config, tmp_path):

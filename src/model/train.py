@@ -12,9 +12,12 @@ What a run does:
 3. Splits by time: train, validation, test (src/model/split.py).
 4. Fits a regularised logistic regression on the training period only. An input whose
    weight points against its meaning is removed, so reasons never contradict the facts.
-5. Measures it on the VALIDATION period, next to two baselines, and separately for first
-   loans and repeat loans.
-6. Saves the model and a metadata file with a version id, and writes the report.
+5. Checks calibration on the VALIDATION period and corrects it only if that clearly
+   helps (src/model/calibrate.py).
+6. Measures the result on the VALIDATION period, next to two baselines, and separately
+   for first loans and repeat loans.
+7. Saves the model, its calibrator and a metadata file with a version id, and writes the
+   report.
 
 The test period is not touched here. It is kept for the final report (Phase 11), and
 every look at it is recorded in reports/<mode>/test_set_use.json.
@@ -22,7 +25,7 @@ every look at it is recorded in reports/<mode>/test_set_use.json.
 The model outputs a probability of repaying in time. It never approves or declines
 anything: an officer decides.
 
-LightGBM, calibration and reasons are added in Phases 5 and 6.
+LightGBM and reasons are added in Phase 6.
 """
 
 from __future__ import annotations
@@ -46,6 +49,7 @@ from src.adapters import get_adapter
 from src.config import PROJECT_ROOT, load_config
 from src.features.build_features import FEATURE_GROUPS, model_feature_names
 from src.features.dictionary import expected_directions, load_dictionary
+from src.model.calibrate import choose_calibrator
 from src.model.dataset import build_dataset, dataset_summary, modelling_rows
 from src.model.evaluate import baseline_metrics, evaluate, paired_auc_gain
 from src.model.preprocess import QuantileClipper
@@ -123,8 +127,17 @@ def fit_with_expected_directions(
 
 
 def _score(model: Pipeline, rows: pd.DataFrame, features: list[str]) -> np.ndarray:
-    """Repayment probabilities for the given loans."""
+    """The model's own repayment probabilities for the given loans, before calibration."""
     return model.predict_proba(rows[features])[:, 1]
+
+
+def predict_probability(saved: dict[str, Any], rows: pd.DataFrame) -> np.ndarray:
+    """Calibrated repayment probabilities from a saved model (the output of `load_model`).
+
+    This is the number a score is made from: score = round(100 x this probability).
+    """
+    raw = _score(saved["model"], rows, saved["features"])
+    return saved["calibrator"].predict(raw)
 
 
 def _by_history(
@@ -175,7 +188,12 @@ def train_models(
     model, features, removed = fit_with_expected_directions(
         config, split.train, candidates, directions
     )
-    probabilities = _score(model, split.validation, features)
+    raw_probabilities = _score(model, split.validation, features)
+
+    # Calibration learns from the validation period only. The numbers below use the
+    # out-of-fold probabilities, so no loan is measured with a correction that saw it.
+    calibration = choose_calibrator(raw_probabilities, validation_labels, config)
+    probabilities = calibration["out_of_fold"]
     headline = evaluate(validation_labels, probabilities, config)
 
     # Baselines to beat (docs/MODEL_SPEC.md section 9).
@@ -211,6 +229,16 @@ def train_models(
         "feature_groups": {group: FEATURE_GROUPS[group] for group in HEADLINE_GROUPS},
         "inputs_used": features,
         "inputs_removed_for_pointing_the_wrong_way": removed,
+        "calibration": {
+            "method": calibration["method"],
+            "chosen_by": calibration["chosen_by"],
+            "fitted_on": "validation period only; re-checked once on the test period",
+            "compared_on": (
+                f"out-of-fold probabilities, {config['model']['calibration_folds']} folds "
+                "of the validation period"
+            ),
+            "candidates": calibration["candidates"],
+        },
         "validation": headline,
         "validation_by_history": _by_history(split.validation, probabilities, config),
         "baselines": {
@@ -222,12 +250,18 @@ def train_models(
             },
         },
         "gain_over_purchases_only": paired_auc_gain(
-            validation_labels, purchase_probabilities, probabilities, config
+            validation_labels, purchase_probabilities, raw_probabilities, config
         ),
         "coefficients": _coefficients(model, features),
         "notes": notes,
     }
-    return {"model": model, "split": split, "features": features, "report": report}
+    return {
+        "model": model,
+        "calibrator": calibration["calibrator"],
+        "split": split,
+        "features": features,
+        "report": report,
+    }
 
 
 def _coefficients(model: Pipeline, features: list[str]) -> dict[str, float]:
@@ -274,7 +308,7 @@ def save_artifacts(
         "data_seed": config["seed"],
         "delivery_signal_strength": config["data"]["delivery_signal_strength"],
         "model": report["model"],
-        "calibrator": "none yet (Phase 5)",
+        "calibrator": report["calibration"]["method"],
         "feature_list": result["features"],
         "train_window": report["split"]["boundaries"],
         "split_method": report["split"]["method"],
@@ -284,6 +318,7 @@ def save_artifacts(
     }
     saved = {
         "model": result["model"],
+        "calibrator": result["calibrator"],
         "features": result["features"],
         "version_id": metadata["version_id"],
     }
@@ -293,7 +328,10 @@ def save_artifacts(
 
 
 def load_model(mode: str, artifacts_dir: Path | None = None) -> dict[str, Any]:
-    """Load a saved model: a dict with the fitted pipeline, its feature list and version id."""
+    """Load a saved model: the fitted pipeline, its calibrator, feature list and version id.
+
+    Use `predict_probability` on the result to get calibrated probabilities.
+    """
     folder = (Path(artifacts_dir) if artifacts_dir is not None else ARTIFACTS_DIR) / mode
     path = folder / MODEL_FILE
     if not path.exists():
@@ -371,6 +409,11 @@ def main() -> int:
         f"{metrics['not_repaid_rate_in_lowest_k']:.0%} "
         f"(overall {1 - validation['share_repaid']:.0%})"
     )
+    calibration = report["calibration"]
+    compared = ", ".join(
+        f"{name} {numbers['brier']:.4f}" for name, numbers in calibration["candidates"].items()
+    )
+    print(f"    calibration: '{calibration['method']}' chosen (out-of-fold Brier: {compared})")
     gain = report["gain_over_purchases_only"]
     print(
         f"    gain over purchases only: {gain['auc_gain']:+.3f} "
