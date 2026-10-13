@@ -163,8 +163,13 @@ evaluation:
 
 score:
   scale: 100
-  band_strong_min_score: 70
-  band_min_coverage: 0.60        # below this: "Needs more info", whatever the score
+  # The three lines below were set from the validation scores of the synthetic data
+  # (PROJECT_BRIEF section 18, item 26). They are settings, not facts: set them again
+  # for any real data source.
+  band_strong_min_score: 90      # "Strong" = the model expects at least 9 in 10 such loans to be repaid in time
+  band_min_coverage: 0.45        # below this: "Needs more info", whatever the score
+  low_score_warning_below: 70    # a score under this gets an explicit low-score warning
+  by_mode: {}                    # optional own lines per data mode, e.g. taiwan_cc: {band_strong_min_score: 85}
   top_reasons_each_side: 3
 
 coverage_weights_by_mode:        # public modes: coverage = how much of what the source can provide is present

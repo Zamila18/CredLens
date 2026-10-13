@@ -116,6 +116,21 @@ def validate_config(config: dict[str, Any]) -> None:
         0 <= score["band_strong_min_score"] <= 100
     ):
         problems.append("score.band_strong_min_score must be a number between 0 and 100")
+    if not _is_number(score.get("low_score_warning_below")) or not (
+        0 <= score["low_score_warning_below"] <= 100
+    ):
+        problems.append("score.low_score_warning_below must be a number between 0 and 100")
+    for line_mode, lines in (score.get("by_mode") or {}).items():
+        if line_mode not in VALID_MODES:
+            problems.append(f"score.by_mode.{line_mode} is not a known data mode")
+        allowed = ("band_strong_min_score", "band_min_coverage", "low_score_warning_below")
+        for name, value in (lines or {}).items():
+            highest = 1 if name == "band_min_coverage" else 100
+            if name not in allowed or not _is_number(value) or not 0 <= value <= highest:
+                problems.append(
+                    f"score.by_mode.{line_mode}.{name} is not a valid band line "
+                    f"(a number between 0 and {highest})"
+                )
     if not _is_positive_int(score.get("top_reasons_each_side")):
         problems.append("score.top_reasons_each_side must be a positive whole number")
 

@@ -39,7 +39,7 @@ from sklearn.model_selection import StratifiedKFold
 from src.model.evaluate import calibration_error
 
 METHODS = ("none", "platt", "isotonic")  # simplest first
-EDGE = 1e-6  # keeps log-odds finite for probabilities of exactly 0 or 1
+EDGE = 1e-6  # keeps log-odds finite, and calibrated probabilities off exactly 0 and 1
 
 
 def _log_odds(probabilities: np.ndarray) -> np.ndarray:
@@ -78,9 +78,15 @@ class Calibrator:
             return probabilities.copy()
         if self.fitted_ is None:
             raise ValueError("This calibrator has not been fitted yet.")
+        if not np.isfinite(probabilities).all():
+            raise ValueError("Cannot calibrate a missing probability.")
         if self.method == "platt":
-            return self.fitted_.predict_proba(_log_odds(probabilities).reshape(-1, 1))[:, 1]
-        return self.fitted_.predict(probabilities)
+            result = self.fitted_.predict_proba(_log_odds(probabilities).reshape(-1, 1))[:, 1]
+        else:
+            result = self.fitted_.predict(probabilities)
+        # Isotonic steps can land on exactly 0 or 1. No loan is ever certain, so the
+        # result is kept just inside.
+        return np.clip(result, EDGE, 1 - EDGE)
 
 
 def fit_calibrator(probabilities: Any, labels: Any, method: str) -> Calibrator:

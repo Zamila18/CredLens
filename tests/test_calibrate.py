@@ -158,3 +158,21 @@ def test_too_few_loans_of_one_outcome_gives_a_clear_message(config):
     labels[:2] = 0
     with pytest.raises(ValueError, match="at least 5 loans of each outcome"):
         choose_calibrator(probabilities, labels, config)
+
+
+def test_a_calibrated_probability_is_never_exactly_zero_or_one():
+    """Isotonic steps can land on exactly 1. No loan is certain, so the result stays inside."""
+    rng = np.random.default_rng(0)
+    probabilities = rng.uniform(0.6, 0.99, 3000)
+    labels = (rng.random(3000) < probabilities).astype(int)
+    for method in ("platt", "isotonic"):
+        repaired = fit_calibrator(probabilities, labels, method).predict(probabilities)
+        assert ((repaired > 0) & (repaired < 1)).all(), method
+
+
+def test_a_missing_probability_is_not_calibrated():
+    true_probability, labels = make_loans(500)
+    for method in ("platt", "isotonic"):
+        calibrator = fit_calibrator(true_probability, labels, method)
+        with pytest.raises(ValueError, match="missing probability"):
+            calibrator.predict([0.5, float("nan")])
