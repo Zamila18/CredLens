@@ -36,6 +36,64 @@ Rules
 - Questionnaire (group D) is shown beside the score, not used in the headline model. Its reasons appear in the questionnaire panel only.
 - Public-data sources add their own entries (e.g. kiva: loan_amount_usd, term_months, repayment_interval_irregular, sector; taiwan_cc: ontime_share_6m, worst_delay_6m, pay_to_bill_ratio, limit_utilisation; homecredit: inst_ontime_rate, inst_mean_days_late, pos_months_active). Claude Code adds these to dictionary.yaml with EN/BN sentences when building the adapters.
 
+## Features of the public data modes (Phase 7)
+
+Each public mode has its own inputs, built only from fields that source really has. They live in `dictionary.yaml` under `source_features.<mode>` and are computed by a small builder per mode (`src/features/source_features.py`). Everything after the feature table is shared with the synthetic data. The same rules apply: behaviour only as model inputs, amounts of data as context and coverage, empty is not zero, every input says which way it points, and sentences are true or comparing. Sentences say "client", not "shop".
+
+### `taiwan_cc` (built Oct 13; code `src/features/taiwan_cc.py`)
+
+| Feature | Meaning | Higher is |
+|---|---|---|
+| ontime_share_6m | Of the six months in which the card was used, the share with no late payment | better |
+| worst_delay_6m | Longest payment delay in six months, in months | worse |
+| latest_delay_months | Delay in the most recent month, in months | worse |
+| delay_trend_6m | Average delay of the three newest months minus the three oldest | worse |
+| pay_to_bill_ratio | Amount paid in five months divided by the bills of the month before each | better |
+| limit_utilisation | Average bill divided by the credit limit | worse |
+| balance_growth_6m | Newest bill minus oldest bill, divided by the credit limit | worse |
+| no_payment_month_share | Of the months that followed a bill, the share in which nothing was paid | worse |
+
+Context only (never model inputs): `credit_limit`, `months_card_used`, `months_with_bill`. A month with status -2 (card not used) is left out of every lateness feature, so a client who never used the card has empty features and low coverage, not a perfect record. A negative bill (credit balance) counts as zero.
+
+### `india_ltfs` (built Oct 13; code `src/features/india_ltfs.py`)
+
+| Feature | Meaning | Higher is |
+|---|---|---|
+| down_payment_share | One minus the loan-to-value: the part of the vehicle's price paid up front | better |
+| bureau_score | Credit-bureau score at disbursement, only where the bureau gave one | better |
+| overdue_account_share | Overdue earlier loans divided by all earlier loans | worse |
+| delinquent_accounts_6m | Loans that fell behind in the six months before disbursement | worse |
+| new_accounts_6m | New loans taken in the six months before disbursement | worse |
+| loan_enquiries | Loan enquiries on the bureau record | worse |
+
+Context only (never model inputs): `loan_amount`, `asset_cost`, `earlier_loans`, `credit_history_months`, `average_account_age_months`. A borrower with no bureau record has the five bureau features empty, not zero. The small codes the file carries for "not scored" (for example 15) are not read as scores. Sentences say "borrower".
+
+### `homecredit` (built Oct 13; code `src/features/homecredit.py`; country not stated)
+
+| Feature | Meaning | Higher is |
+|---|---|---|
+| inst_ontime_rate | Share of the instalments on earlier loans paid on or before the due day | better |
+| inst_mean_days_late | Average days late over those instalments (0 for one paid on time) | worse |
+| inst_late_30d_share | Share paid more than 30 days late, or still unpaid after 30 days | worse |
+| inst_paid_short_share | Share where less than 99% of the amount due was paid | worse |
+| inst_recent_ontime_rate | The on-time share over instalments due in the last 365 days | better |
+| pos_months_overdue_share | Share of the monthly records of earlier store and cash loans with an amount overdue | worse |
+| annuity_to_income | The loan's repayment amount divided by the stated income | worse |
+| credit_to_goods_ratio | The loan amount divided by the price of the goods | worse |
+| external_score | Average of the available scores "from external data sources" (group X) | better |
+
+Context only (never model inputs): `loan_amount`, `stated_income`, `past_instalments`, `pos_months_recorded`. An instalment paid in several parts is put together before it is judged. An instalment not paid by the day of the application counts as late by the days gone by since it was due. An applicant with no earlier loans has the six history features empty. Sentences say "applicant".
+
+### `kiva_asia` (built Oct 13; code `src/features/kiva_asia.py`)
+
+| Feature | Meaning | Higher is |
+|---|---|---|
+| repayment_term_months | Months over which the loan is to be repaid (group L) | worse |
+| partner_past_default_rate | Of the field partner's earlier loans with an outcome known on the posting day, the share that defaulted (group P) | worse |
+| partner_covers_default | 1 when the field partner, not the lender, carries the loss if the borrower does not pay (group P) | better |
+
+Context only: `loan_amount_usd`, `partner_known_loans`. There is no borrower-behaviour input in this mode, and group P describes the intermediary, not the shop; results are reported with and without it. The loan's description is never read: Kiva removes it from loans that defaulted.
+
 ## How the features are computed (as built in Phase 3)
 
 Code: `src/features/build_features.py`. Thresholds: the `features` section of `config/default.yaml`.

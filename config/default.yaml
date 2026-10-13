@@ -7,12 +7,26 @@ data:
   kiva:
     regions: [Asia]
     sectors: [Retail, Food, Services]
+    posted_from: "2009-07-01"        # before this, Asian defaults are almost absent from the snapshot
+    posted_until: "2013-06-30"       # later loans were too often still being repaid when the snapshot was taken
+    default_known_lag_months: 6      # a default counts as known this long after the end of the loan's term
+    partner_min_known_loans: 30      # fewer earlier loans with a known outcome: the partner has no track record yet
   taiwan_cc:
     sample_size: null            # null = all rows (about 30,000)
+    coverage_min_months: 4       # of the six statement months: "enough history" for the coverage checklist
+    age_band_edges: [30, 40, 50] # audit only: under 30, 30 to 39, 40 to 49, 50 and over
   homecredit:
     sample_size: 50000           # applicants sampled with the seed; null = all rows
+    chunk_rows: 1000000          # the 1.1 GB of history files are read this many rows at a time
+    applicants_per_pass: 60000   # history is worked out for this many applicants per pass over the files (bounds memory)
+    late_days: 30                # an earlier instalment counts as "late" beyond this many days
+    recent_days: 365             # "the last year" for the recent on-time rate
+    coverage_min_instalments: 12 # "enough" earlier instalments for the coverage checklist
+    age_band_edges: [30, 40, 50, 60]  # audit only
   india_ltfs:
     sample_size: null            # null = all rows (about 233,000)
+    coverage_min_history_months: 12   # "long enough" credit history for the coverage checklist
+    age_band_edges: [25, 35, 45, 55]  # audit only: under 25, 25 to 34, 35 to 44, 45 to 54, 55 and over
   n_merchants: 20000
   months: 18
   thin_file_share: 0.35          # share of new merchants with very few early purchases
@@ -132,6 +146,9 @@ labels:
   good_if_days_late_at_most: 30
   min_loan_age_days: 60          # younger loans are excluded (outcome unknown)
   paid_in_full_tolerance: 0.01   # a payment counts as made only if at least 99% of the amount due was paid
+  # Public data sources whose file states the outcome of every loan. Their label is that
+  # outcome as it is; the 30-day rule above is for data with repayment records of the loan itself.
+  supplied_by_source: [taiwan_cc, india_ltfs, homecredit, kiva_asia]
 
 split:                           # by loan issue date
   train_months: 12
@@ -140,6 +157,7 @@ split:                           # by loan issue date
 
 split_by_mode:                   # a data source whose history is shorter than 18 months sets its own periods
   india_ltfs: {train_months: 1, validation_months: 1, test_months: 1}   # loans from Aug to Oct 2018 only
+  kiva_asia: {train_months: 30, validation_months: 9, test_months: 9}   # Jul 2009 to Jun 2013; each part has over 100 defaults
 
 model:
   candidates: [logistic_regression, lightgbm]
@@ -191,27 +209,26 @@ score:
   reasons_report_sample: 300     # validation loans whose reasons are checked in the training report
 
 coverage_weights_by_mode:        # public modes: coverage = how much of what the source can provide is present
-  kiva_asia:                     # provisional until the real columns are inspected; must sum to 1.0
-    loan_terms_present: 0.25
-    sector_activity_present: 0.20
-    partner_track_record: 0.30   # enough earlier closed loans for the field partner, as of the posting date
-    borrower_info_present: 0.15
-    description_present: 0.10
-  taiwan_cc:                     # provisional until the real columns are inspected; must sum to 1.0
-    credit_limit_present: 0.15
-    repayment_status_history: 0.35
-    bill_history: 0.25
-    payment_history: 0.25
-  india_ltfs:                    # provisional until Phase 7; must sum to 1.0
-    loan_terms_present: 0.20
-    bureau_record_present: 0.40    # about half the borrowers have no bureau history: real thin files
-    credit_history_long_enough: 0.25
-    employment_type_present: 0.15
-  homecredit:                    # provisional until the real columns are inspected; must sum to 1.0
-    application_data_present: 0.20
-    instalment_history_present: 0.35
-    enough_past_instalments: 0.25
-    pos_cash_history_present: 0.20
+  kiva_asia:                     # set on Oct 13 from the real fields; must sum to 1.0
+    loan_terms_present: 0.20         # the term and the amount are recorded
+    sector_activity_present: 0.20    # the sector and the activity are recorded
+    partner_track_record: 0.60       # the field partner has at least `partner_min_known_loans` earlier loans with a known outcome
+    # The loan's description is deliberately NOT here: Kiva removes it from defaulted loans.
+  taiwan_cc:                     # set on Oct 13 from the real columns; must sum to 1.0
+    credit_limit_present: 0.15       # a credit limit is recorded
+    repayment_status_history: 0.35   # the card was used in at least `coverage_min_months` of the six months
+    bill_history: 0.25               # a bill above zero in at least `coverage_min_months` months
+    payment_history: 0.25            # at least one payment recorded
+  india_ltfs:                    # set on Oct 13 from the real columns; must sum to 1.0
+    loan_terms_present: 0.20             # amount and loan-to-value are recorded
+    bureau_record_present: 0.40          # a credit-bureau record exists (about half the borrowers have none)
+    credit_history_long_enough: 0.25     # credit history of at least `coverage_min_history_months`
+    bureau_score_available: 0.15         # the bureau could give a score
+  homecredit:                    # set on Oct 13 from the real columns; must sum to 1.0
+    application_data_present: 0.20       # income, loan amount and repayment amount are recorded
+    instalment_history_present: 0.35     # at least one instalment on an earlier loan
+    enough_past_instalments: 0.25        # at least `coverage_min_instalments` earlier instalments
+    pos_cash_history_present: 0.20       # at least one monthly record of an earlier store or cash loan
 
 coverage_weights:                # synthetic_bd; must sum to 1.0
   history_6_months: 0.25
@@ -227,7 +244,7 @@ fairness:
   audit_only_columns:
     kiva_asia: [borrower_genders, country]
     taiwan_cc: [SEX, EDUCATION, MARRIAGE, age_band]
-    india_ltfs: [age_band, State_ID, Employment.Type]   # provisional until Phase 7
+    india_ltfs: [age_band, State_ID, Employment.Type]
     homecredit: [CODE_GENDER, age_band, REGION_RATING_CLIENT]
 
 sanity:

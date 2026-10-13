@@ -1,7 +1,7 @@
 # HANDOVER.md: where the project stands and what each person does next
 
 Kept up to date at the end of every phase, so a handover can happen at any time.
-Last updated: end of Phase 6 (Oct 13, 2026).
+Last updated: end of Phase 7 (Oct 13, 2026).
 
 ## 1. What is finished and tested
 
@@ -15,10 +15,14 @@ Last updated: end of Phase 6 (Oct 13, 2026).
 | 5. Calibration, score, bands | Calibration compared out of fold on validation (`none` kept: the model is already calibrated). `src/model/score.py`: score, coverage, band and low-score warning per loan. Lines: Strong 90, coverage 0.45, warning below 70 (settings in `config/default.yaml`, `score` section). On validation: Strong 56% of loans (95.2% repaid), Review 29% (82.1%), Needs more info 15% (88.3%). The sample API responses in `tests/fixtures/api/` use the new lines | `python tasks.py train`, `python tasks.py test` |
 | 6 (part 1). Second model | LightGBM with the same rules (missing data neutral, each input only pushes the way its meaning says), tuned inside the training period (`src/model/boosted.py`). Choice rule in `train.py`: the logistic regression stays unless the whole range of LightGBM's AUC gain reaches 0.01. On synthetic data: 0.710 against 0.722, gain +0.013 (+0.003 to +0.021), so the **logistic regression is in use** | `python tasks.py train` (about 40 seconds) |
 | 6 (part 2). Reasons | `src/model/explain.py`: baseline (the average merchant) plus exact contributions per input that add up to the score; top 3 up and top 3 down as dictionary sentences in English and Bangla, each with a number ("Returns 11.1% vs average 6.8%"); a sentence is shown only when it is true for the merchant. `score_card(saved, feature_row, config, mode)` returns everything `GET /merchants/{id}/score` needs | `python tasks.py test` |
+| 7 (part 1). Taiwan | Shared plumbing for public data (`source_records`, one feature builder per mode, stated outcomes as labels) and the `taiwan_cc` mode: adapter, eight behaviour inputs, coverage, audit columns kept apart, a planted-leak test. India, Home Credit and Kiva adapters follow | `python tasks.py test` |
+| 7 (part 2). India | The `india_ltfs` mode: adapter, six behaviour inputs (one from the loan, five from the bureau summary), coverage, time split by month, audit columns and organisation identifiers kept away from the model. Half the borrowers have no bureau record and get "Needs more info" | `python tasks.py test` |
+| 7 (part 3). Home Credit | The `homecredit` mode (country not stated): adapter that reads 1.1 GB of history in chunks and saves the per-applicant counts, nine inputs (six from earlier instalments, two from the loan, one outside score kept apart), coverage, a check that no history row is dated after the application | `python tasks.py test` |
+| 7 (part 4). Kiva | The `kiva_asia` mode: reads the 1.16 GB archive in place, keeps no personal data, removes repeated loans, cuts off at mid-2013, works out each field partner's track record as of the posting day. Three inputs, none about borrower behaviour. The description is never read (it reveals the outcome) | `python tasks.py test` |
 
-Not built yet: public-data adapters (7), real-label runs (8), API endpoints (9), dashboard (10), ablation and model cards (11), deployment (12).
+Not built yet: real-label runs (8), API endpoints (9), dashboard (10), ablation and model cards (11), deployment (12).
 
-Data on the lead's laptop only (never in git): Taiwan, India L&T, Home Credit, Findex, World Bank informal-sector indicators. The Kiva archive is still downloading. Details: `docs/DATA_SOURCES.md`.
+Data on the lead's laptop only (never in git): Taiwan, India L&T, Home Credit, the Kiva archive, Findex, World Bank informal-sector indicators. Details: `docs/DATA_SOURCES.md`.
 
 ## 2. How to start (every teammate)
 

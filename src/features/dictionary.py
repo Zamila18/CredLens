@@ -40,16 +40,34 @@ def reason_sentence(
     return sentences[language]
 
 
-def expected_directions(dictionary: dict[str, Any]) -> dict[str, int]:
+SYNTHETIC_MODE = "synthetic_bd"
+
+
+def features_for_mode(dictionary: dict[str, Any], mode: str | None = None) -> dict[str, Any]:
+    """The dictionary entries of one data mode.
+
+    The synthetic data uses the main `features` section. Each public data mode has its
+    own entries under `source_features`, built only from fields that source really has.
+    """
+    if mode is None or mode == SYNTHETIC_MODE:
+        return dictionary["features"]
+    entries = (dictionary.get("source_features") or {}).get(mode)
+    if entries is None:
+        raise KeyError(f"The feature dictionary has no entries for data mode {mode!r} yet.")
+    return entries
+
+
+def expected_directions(dictionary: dict[str, Any], mode: str | None = None) -> dict[str, int]:
     """For every model input: +1 if a higher value should raise the score, -1 if lower it.
 
     Read from `higher_is: better | worse` in the dictionary. Entries without it (context
-    columns, questionnaire items) are not model inputs and are left out.
+    columns, questionnaire items) are not model inputs and are left out. `mode` picks the
+    data mode; the default is the synthetic data.
     """
     meaning = {"better": 1, "worse": -1}
     return {
         name: meaning[entry["higher_is"]]
-        for name, entry in dictionary["features"].items()
+        for name, entry in features_for_mode(dictionary, mode).items()
         if entry.get("higher_is") in meaning
     }
 
@@ -100,6 +118,14 @@ def _format_value(value: float, style: str) -> str:
         return f"{value:.1f} days"
     if style == "hours":
         return f"{value:.0f} hours"
+    if style == "months":
+        return f"{value:.1f} months"
+    if style == "months_change":
+        return f"{value:+.1f} months"
+    if style == "share_change":
+        return f"{100 * value:+.1f}%"
+    if style == "ratio":
+        return f"{value:.2f}"
     if style == "count":
         return f"{value:.0f}" if float(value).is_integer() else f"{value:.1f}"
     raise ValueError(f"Unknown detail format: {style!r}")

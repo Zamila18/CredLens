@@ -19,6 +19,7 @@ from typing import Any
 import pandas as pd
 
 from src.features.build_features import build_features
+from src.features.source_features import SOURCE_RECORDS, build_source_features
 from src.model.labels import LABELLED, build_labels, latest_date
 
 
@@ -33,16 +34,28 @@ def merchants_with_valid_consent(consents: pd.DataFrame, as_of: pd.Timestamp | s
 
 
 def build_dataset(
-    tables: dict[str, pd.DataFrame], config: dict[str, Any], as_of: pd.Timestamp | str | None = None
+    tables: dict[str, pd.DataFrame],
+    config: dict[str, Any],
+    as_of: pd.Timestamp | str | None = None,
+    mode: str | None = None,
 ) -> pd.DataFrame:
     """One row per loan: features, label, label status and whether consent is valid.
 
     Every loan is kept, including pending ones and those without consent, so the caller
     can count what was left out. Use `modelling_rows` for the rows a model may use.
+
+    The synthetic data gets its features from the contract tables. A public data mode
+    brings `source_records` (only the columns known at decision time) and gets that
+    source's own features; its labels are the outcomes the file states.
     """
+    mode = mode or config["data"]["mode"]
     as_of = pd.Timestamp(as_of) if as_of is not None else latest_date(tables)
-    features = build_features(tables, config)
-    labels = build_labels(tables["loans"], tables["payments"], config, as_of)
+    if SOURCE_RECORDS in tables:
+        features = build_source_features(tables[SOURCE_RECORDS], config, mode)
+    else:
+        features = build_features(tables, config)
+    supplied = mode in config["labels"]["supplied_by_source"]
+    labels = build_labels(tables["loans"], tables["payments"], config, as_of, supplied)
     dataset = features.merge(
         labels[["loan_id", "label", "label_status", "label_source"]],
         on="loan_id",

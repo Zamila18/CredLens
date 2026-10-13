@@ -98,6 +98,11 @@ CONTRACT: dict[str, list[str]] = {
 }
 
 
+# Extra key in the tables of a public data mode: the whitelisted source columns its
+# feature builder may read (see src/features/source_features.py). Not a contract table.
+SOURCE_RECORDS = "source_records"
+
+
 def empty_frame(table: str) -> pd.DataFrame:
     """Return an empty DataFrame with the contract columns for one table."""
     return pd.DataFrame(columns=CONTRACT[table])
@@ -161,8 +166,20 @@ class DataAdapter(ABC):
     def audit_frame(self) -> pd.DataFrame:
         """Group columns for fairness checks, keyed by merchant_id. Never model inputs."""
 
+    def source_records(self) -> pd.DataFrame | None:
+        """For a public data mode: the columns known at decision time, one row per loan.
+
+        The synthetic data needs none (its features come from the contract tables), so
+        the default is None. A public adapter returns loan_id, merchant_id and its
+        whitelisted source columns: never the outcome, never a group column.
+        """
+        return None
+
     def load_all(self) -> dict[str, pd.DataFrame]:
-        """Load every contract table and check each one against the contract."""
+        """Load every contract table and check each one against the contract.
+
+        A public data mode also gets its `source_records` under that key.
+        """
         loaders = {
             "merchants": self.load_merchants,
             "purchases": self.load_purchases,
@@ -172,4 +189,8 @@ class DataAdapter(ABC):
             "questionnaire": self.load_questionnaire,
             "consents": self.load_consents,
         }
-        return {table: check_frame(table, loader()) for table, loader in loaders.items()}
+        tables = {table: check_frame(table, loader()) for table, loader in loaders.items()}
+        records = self.source_records()
+        if records is not None:
+            tables[SOURCE_RECORDS] = records
+        return tables

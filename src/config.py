@@ -109,6 +109,46 @@ def validate_config(config: dict[str, Any]) -> None:
         if not _is_positive_int(labels.get(name)):
             problems.append(f"labels.{name} must be a positive whole number")
 
+    supplied = labels.get("supplied_by_source")
+    if not isinstance(supplied, list) or any(name not in VALID_MODES for name in supplied):
+        problems.append("labels.supplied_by_source must be a list of known data modes")
+    elif "synthetic_bd" in supplied:
+        problems.append("labels.supplied_by_source must not contain synthetic_bd")
+    taiwan = data.get("taiwan_cc") or {}
+    if not _is_positive_int(taiwan.get("coverage_min_months")) or taiwan["coverage_min_months"] > 6:
+        problems.append("data.taiwan_cc.coverage_min_months must be a whole number from 1 to 6")
+    india = data.get("india_ltfs") or {}
+    if not _is_positive_int(india.get("coverage_min_history_months")):
+        problems.append(
+            "data.india_ltfs.coverage_min_history_months must be a positive whole number"
+        )
+    kiva = data.get("kiva") or {}
+    for name in ("default_known_lag_months", "partner_min_known_loans"):
+        if not _is_positive_int(kiva.get(name)):
+            problems.append(f"data.kiva.{name} must be a positive whole number")
+    for name in ("regions", "sectors"):
+        if not isinstance(kiva.get(name), list) or not kiva[name]:
+            problems.append(f"data.kiva.{name} must be a non-empty list")
+    if not (isinstance(kiva.get("posted_from"), str) and isinstance(kiva.get("posted_until"), str)):
+        problems.append("data.kiva.posted_from and posted_until must be dates written in quotes")
+    elif kiva["posted_from"] >= kiva["posted_until"]:
+        problems.append("data.kiva.posted_from must be earlier than posted_until")
+    home = data.get("homecredit") or {}
+    home_numbers = (
+        "chunk_rows",
+        "applicants_per_pass",
+        "late_days",
+        "recent_days",
+        "coverage_min_instalments",
+    )
+    for name in home_numbers:
+        if not _is_positive_int(home.get(name)):
+            problems.append(f"data.homecredit.{name} must be a positive whole number")
+    for source, settings in (("taiwan_cc", taiwan), ("india_ltfs", india), ("homecredit", home)):
+        edges = settings.get("age_band_edges")
+        if not isinstance(edges, list) or not edges or edges != sorted(set(edges)):
+            problems.append(f"data.{source}.age_band_edges must be a rising list of ages")
+
     score = config.get("score") or {}
     if not _is_number(score.get("band_min_coverage")) or not 0 <= score["band_min_coverage"] <= 1:
         problems.append("score.band_min_coverage must be a number between 0 and 1")

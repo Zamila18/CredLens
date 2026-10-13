@@ -28,6 +28,9 @@ groups:
   B: payments
   C: deliveries
   D: questionnaire
+  L: loan terms    # public data modes only
+  P: field partner # kiva_asia only: the local lender's track record, not the borrower's behaviour
+  X: outside score # homecredit only: a score from external sources, not the applicant's own records
 
 features:
   purchases_90d:
@@ -344,3 +347,469 @@ coverage_only:
   - n_deliveries_total
   - n_payments_total
   - share_of_groups_present
+
+# Features of the public data modes. Each mode has its own inputs, built only from fields
+# that source really has (src/features/source_features.py). Same rules as above: every
+# input says which way it points, sentences are observations, and a plain sentence is
+# shown only when it is true for the client (`shown_when`), else the comparing one.
+# "Client" is used instead of "shop": these sources are not merchants.
+source_features:
+  taiwan_cc:
+    ontime_share_6m:
+      group: B
+      higher_is: better
+      shown_when:
+        positive: {above: 0.5}
+        negative: {below: 0.5}
+      otherwise:
+        positive:
+          en: "More monthly bills were paid on time than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় বেশি মাসের বিল সময়মতো পরিশোধ হয়েছে।"
+        negative:
+          en: "Fewer monthly bills were paid on time than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় কম মাসের বিল সময়মতো পরিশোধ হয়েছে।"
+      detail: {label: "Months paid on time", format: share}
+      definition: Of the last six months in which the card was used, the share with no late payment
+      positive:
+        en: "Most monthly bills in the last six months were paid on time."
+        bn: "গত ছয় মাসের বেশিরভাগ বিল সময়মতো পরিশোধ হয়েছে।"
+      negative:
+        en: "Few monthly bills in the last six months were paid on time."
+        bn: "গত ছয় মাসে কম বিল সময়মতো পরিশোধ হয়েছে।"
+
+    worst_delay_6m:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {at_least: 2}
+      otherwise:
+        positive:
+          en: "The longest payment delay was shorter than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় সবচেয়ে লম্বা দেরি কম ছিল।"
+        negative:
+          en: "The longest payment delay was longer than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় সবচেয়ে লম্বা দেরি বেশি ছিল।"
+      detail: {label: "Longest delay", format: months}
+      definition: The longest payment delay, in months, in the last six months
+      positive:
+        en: "No payment was late in the last six months."
+        bn: "গত ছয় মাসে কোনো পেমেন্ট দেরিতে হয়নি।"
+      negative:
+        en: "A payment was late by two months or more in the last six months."
+        bn: "গত ছয় মাসে কোনো পেমেন্ট দুই মাস বা তার বেশি দেরিতে হয়েছে।"
+
+    latest_delay_months:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {at_least: 1}
+      otherwise:
+        positive:
+          en: "The most recent delay was shorter than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় সবচেয়ে সাম্প্রতিক দেরি কম ছিল।"
+        negative:
+          en: "The most recent delay was longer than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় সবচেয়ে সাম্প্রতিক দেরি বেশি ছিল।"
+      detail: {label: "Latest delay", format: months}
+      definition: The payment delay, in months, in the most recent month
+      positive:
+        en: "The most recent bill was paid on time."
+        bn: "সবচেয়ে সাম্প্রতিক বিল সময়মতো পরিশোধ হয়েছে।"
+      negative:
+        en: "The most recent bill was paid late."
+        bn: "সবচেয়ে সাম্প্রতিক বিল দেরিতে পরিশোধ হয়েছে।"
+
+    delay_trend_6m:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {above: 0}
+      otherwise:
+        positive:
+          en: "Payment delays are growing more slowly than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় পেমেন্টের দেরি ধীরে বাড়ছে।"
+        negative:
+          en: "Payment delays are shrinking more slowly than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় পেমেন্টের দেরি ধীরে কমছে।"
+      detail: {label: "Change in delay", format: months_change}
+      definition: Average delay in the three newest months minus the three oldest, in months
+      positive:
+        en: "Payment delays have not been getting longer."
+        bn: "পেমেন্টের দেরি বাড়ছে না।"
+      negative:
+        en: "Payment delays have been getting longer."
+        bn: "পেমেন্টের দেরি বাড়ছে।"
+
+    pay_to_bill_ratio:
+      group: B
+      higher_is: better
+      detail: {label: "Paid share of bills", format: share}
+      definition: Amount paid in five months divided by the bills of the month before each
+      positive:
+        en: "Payments covered a larger share of the bills than for similar clients."
+        bn: "সমান ধরনের গ্রাহকের তুলনায় বিলের বেশি অংশ পরিশোধ হয়েছে।"
+      negative:
+        en: "Payments covered a smaller share of the bills than for similar clients."
+        bn: "সমান ধরনের গ্রাহকের তুলনায় বিলের কম অংশ পরিশোধ হয়েছে।"
+
+    limit_utilisation:
+      group: B
+      higher_is: worse
+      detail: {label: "Credit limit in use", format: share}
+      definition: Average bill over six months divided by the credit limit
+      positive:
+        en: "A smaller share of the credit limit is in use than for similar clients."
+        bn: "সমান ধরনের গ্রাহকের তুলনায় ঋণসীমার কম অংশ ব্যবহার হচ্ছে।"
+      negative:
+        en: "A larger share of the credit limit is in use than for similar clients."
+        bn: "সমান ধরনের গ্রাহকের তুলনায় ঋণসীমার বেশি অংশ ব্যবহার হচ্ছে।"
+
+    balance_growth_6m:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {above: 0}
+      otherwise:
+        positive:
+          en: "The balance has grown more slowly than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় বকেয়া ধীরে বেড়েছে।"
+        negative:
+          en: "The balance has fallen more slowly than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় বকেয়া ধীরে কমেছে।"
+      detail: {label: "Balance change as a share of the limit", format: share_change}
+      definition: Newest bill minus oldest bill, divided by the credit limit
+      positive:
+        en: "The outstanding balance has not grown over six months."
+        bn: "ছয় মাসে বকেয়া বাড়েনি।"
+      negative:
+        en: "The outstanding balance has grown over six months."
+        bn: "ছয় মাসে বকেয়া বেড়েছে।"
+
+    no_payment_month_share:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {above: 0}
+      otherwise:
+        positive:
+          en: "Fewer months went without a payment than for similar clients."
+          bn: "সমান ধরনের গ্রাহকের তুলনায় পেমেন্ট ছাড়া মাস কম।"
+      detail: {label: "Months with a bill but no payment", format: share}
+      definition: Of the months that followed a bill, the share in which nothing was paid
+      positive:
+        en: "A payment was made in every month that followed a bill."
+        bn: "বিলের পরের প্রতিটি মাসে পেমেন্ট হয়েছে।"
+      negative:
+        en: "In some months that followed a bill, no payment was made."
+        bn: "বিলের পরের কিছু মাসে কোনো পেমেন্ট হয়নি।"
+
+  india_ltfs:
+    down_payment_share:
+      group: L
+      higher_is: better
+      detail: {label: "Paid up front", format: share}
+      definition: One minus the loan-to-value, the part of the vehicle's price the borrower paid up front
+      positive:
+        en: "A larger share of the vehicle's price was paid up front than by similar borrowers."
+        bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় গাড়ির দামের বেশি অংশ আগেই পরিশোধ করা হয়েছে।"
+      negative:
+        en: "A smaller share of the vehicle's price was paid up front than by similar borrowers."
+        bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় গাড়ির দামের কম অংশ আগেই পরিশোধ করা হয়েছে।"
+
+    bureau_score:
+      group: B
+      higher_is: better
+      detail: {label: "Bureau score", format: count}
+      definition: Credit-bureau score at disbursement, for borrowers the bureau could score
+      positive:
+        en: "The credit-bureau score is higher than for similar borrowers."
+        bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় ক্রেডিট ব্যুরোর স্কোর বেশি।"
+      negative:
+        en: "The credit-bureau score is lower than for similar borrowers."
+        bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় ক্রেডিট ব্যুরোর স্কোর কম।"
+
+    overdue_account_share:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {above: 0}
+      otherwise:
+        positive:
+          en: "A smaller share of earlier loans is overdue than for similar borrowers."
+          bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় আগের ঋণের কম অংশ বকেয়া।"
+      detail: {label: "Earlier loans overdue", format: share}
+      definition: Overdue earlier loans divided by all earlier loans, at disbursement
+      positive:
+        en: "No earlier loan is overdue."
+        bn: "আগের কোনো ঋণ বকেয়া নেই।"
+      negative:
+        en: "Some earlier loans are overdue."
+        bn: "আগের কিছু ঋণ বকেয়া আছে।"
+
+    delinquent_accounts_6m:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {at_least: 1}
+      otherwise:
+        positive:
+          en: "Fewer loans fell behind in the last six months than for similar borrowers."
+          bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় গত ছয় মাসে কম ঋণে দেরি হয়েছে।"
+        negative:
+          en: "More loans fell behind in the last six months than for similar borrowers."
+          bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় গত ছয় মাসে বেশি ঋণে দেরি হয়েছে।"
+      detail: {label: "Loans behind in six months", format: count}
+      definition: Loans that became delinquent in the six months before disbursement
+      positive:
+        en: "No loan fell behind in the last six months."
+        bn: "গত ছয় মাসে কোনো ঋণে দেরি হয়নি।"
+      negative:
+        en: "At least one loan fell behind in the last six months."
+        bn: "গত ছয় মাসে অন্তত একটি ঋণে দেরি হয়েছে।"
+
+    new_accounts_6m:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {at_least: 1}
+      otherwise:
+        positive:
+          en: "Fewer new loans were taken in the last six months than by similar borrowers."
+          bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় গত ছয় মাসে কম নতুন ঋণ নেওয়া হয়েছে।"
+        negative:
+          en: "More new loans were taken in the last six months than by similar borrowers."
+          bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় গত ছয় মাসে বেশি নতুন ঋণ নেওয়া হয়েছে।"
+      detail: {label: "New loans in six months", format: count}
+      definition: New loans taken in the six months before disbursement
+      positive:
+        en: "No new loan was taken in the last six months."
+        bn: "গত ছয় মাসে কোনো নতুন ঋণ নেওয়া হয়নি।"
+      negative:
+        en: "New loans were taken in the last six months."
+        bn: "গত ছয় মাসে নতুন ঋণ নেওয়া হয়েছে।"
+
+    loan_enquiries:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {at_least: 1}
+      otherwise:
+        positive:
+          en: "Fewer loan enquiries are on record than for similar borrowers."
+          bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় ঋণের অনুসন্ধান কম।"
+        negative:
+          en: "More loan enquiries are on record than for similar borrowers."
+          bn: "সমান ধরনের ঋণগ্রহীতার তুলনায় ঋণের অনুসন্ধান বেশি।"
+      detail: {label: "Loan enquiries", format: count}
+      definition: Enquiries the borrower made for loans, as recorded by the bureau
+      positive:
+        en: "No loan enquiries are on record."
+        bn: "কোনো ঋণের অনুসন্ধান রেকর্ডে নেই।"
+      negative:
+        en: "Loan enquiries are on record."
+        bn: "ঋণের অনুসন্ধান রেকর্ডে আছে।"
+
+  homecredit:
+    inst_ontime_rate:
+      group: B
+      higher_is: better
+      shown_when:
+        positive: {above: 0.5}
+        negative: {below: 0.5}
+      otherwise:
+        positive:
+          en: "More earlier instalments were paid on time than for similar applicants."
+          bn: "সমান ধরনের আবেদনকারীর তুলনায় আগের বেশি কিস্তি সময়মতো পরিশোধ হয়েছে।"
+        negative:
+          en: "Fewer earlier instalments were paid on time than for similar applicants."
+          bn: "সমান ধরনের আবেদনকারীর তুলনায় আগের কম কিস্তি সময়মতো পরিশোধ হয়েছে।"
+      detail: {label: "Earlier instalments on time", format: share}
+      definition: Share of the instalments on earlier loans paid on or before the due day
+      positive:
+        en: "Most earlier instalments were paid on time."
+        bn: "আগের বেশিরভাগ কিস্তি সময়মতো পরিশোধ হয়েছে।"
+      negative:
+        en: "Few earlier instalments were paid on time."
+        bn: "আগের কম কিস্তি সময়মতো পরিশোধ হয়েছে।"
+
+    inst_mean_days_late:
+      group: B
+      higher_is: worse
+      detail: {label: "Average days late", format: days}
+      definition: Average days late over the instalments on earlier loans (0 for one paid on time)
+      positive:
+        en: "Earlier instalments were late by fewer days than for similar applicants."
+        bn: "সমান ধরনের আবেদনকারীর তুলনায় আগের কিস্তিতে কম দিন দেরি হয়েছে।"
+      negative:
+        en: "Earlier instalments were late by more days than for similar applicants."
+        bn: "সমান ধরনের আবেদনকারীর তুলনায় আগের কিস্তিতে বেশি দিন দেরি হয়েছে।"
+
+    inst_late_30d_share:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {above: 0}
+      otherwise:
+        positive:
+          en: "Fewer earlier instalments were over 30 days late than for similar applicants."
+          bn: "সমান ধরনের আবেদনকারীর তুলনায় ৩০ দিনের বেশি দেরির কিস্তি কম।"
+      detail: {label: "Instalments over 30 days late", format: share}
+      definition: Share of the instalments on earlier loans paid more than 30 days late, or still unpaid after 30 days
+      positive:
+        en: "No earlier instalment was more than 30 days late."
+        bn: "আগের কোনো কিস্তি ৩০ দিনের বেশি দেরিতে হয়নি।"
+      negative:
+        en: "Some earlier instalments were more than 30 days late."
+        bn: "আগের কিছু কিস্তি ৩০ দিনের বেশি দেরিতে হয়েছে।"
+
+    inst_paid_short_share:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {above: 0}
+      otherwise:
+        positive:
+          en: "Fewer earlier instalments were paid short than for similar applicants."
+          bn: "সমান ধরনের আবেদনকারীর তুলনায় কম কিস্তি আংশিক পরিশোধ হয়েছে।"
+      detail: {label: "Instalments paid short", format: share}
+      definition: Share of the instalments on earlier loans where less than 99% of the amount due was paid
+      positive:
+        en: "Every earlier instalment was paid in full."
+        bn: "আগের প্রতিটি কিস্তি পুরো পরিশোধ হয়েছে।"
+      negative:
+        en: "Some earlier instalments were not paid in full."
+        bn: "আগের কিছু কিস্তি পুরো পরিশোধ হয়নি।"
+
+    inst_recent_ontime_rate:
+      group: B
+      higher_is: better
+      shown_when:
+        positive: {above: 0.5}
+        negative: {below: 0.5}
+      otherwise:
+        positive:
+          en: "More instalments in the last year were paid on time than for similar applicants."
+          bn: "সমান ধরনের আবেদনকারীর তুলনায় গত এক বছরে বেশি কিস্তি সময়মতো পরিশোধ হয়েছে।"
+        negative:
+          en: "Fewer instalments in the last year were paid on time than for similar applicants."
+          bn: "সমান ধরনের আবেদনকারীর তুলনায় গত এক বছরে কম কিস্তি সময়মতো পরিশোধ হয়েছে।"
+      detail: {label: "Last year's instalments on time", format: share}
+      definition: The on-time share over instalments due in the 365 days before the application
+      positive:
+        en: "Most instalments in the last year were paid on time."
+        bn: "গত এক বছরের বেশিরভাগ কিস্তি সময়মতো পরিশোধ হয়েছে।"
+      negative:
+        en: "Few instalments in the last year were paid on time."
+        bn: "গত এক বছরে কম কিস্তি সময়মতো পরিশোধ হয়েছে।"
+
+    pos_months_overdue_share:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {above: 0}
+      otherwise:
+        positive:
+          en: "Fewer months showed an overdue amount than for similar applicants."
+          bn: "সমান ধরনের আবেদনকারীর তুলনায় বকেয়া থাকা মাস কম।"
+      detail: {label: "Months with an overdue amount", format: share}
+      definition: Share of the monthly records of earlier store and cash loans with an amount overdue
+      positive:
+        en: "No month of the earlier store or cash loans showed an overdue amount."
+        bn: "আগের দোকান বা নগদ ঋণের কোনো মাসে বকেয়া ছিল না।"
+      negative:
+        en: "Some months of the earlier store or cash loans showed an overdue amount."
+        bn: "আগের দোকান বা নগদ ঋণের কিছু মাসে বকেয়া ছিল।"
+
+    annuity_to_income:
+      group: L
+      higher_is: worse
+      detail: {label: "Repayment compared with stated income", format: share}
+      definition: The loan's repayment amount divided by the income stated in the application
+      positive:
+        en: "The repayment is a smaller share of stated income than for similar applicants."
+        bn: "সমান ধরনের আবেদনকারীর তুলনায় কিস্তি উল্লিখিত আয়ের কম অংশ।"
+      negative:
+        en: "The repayment is a larger share of stated income than for similar applicants."
+        bn: "সমান ধরনের আবেদনকারীর তুলনায় কিস্তি উল্লিখিত আয়ের বেশি অংশ।"
+
+    credit_to_goods_ratio:
+      group: L
+      higher_is: worse
+      detail: {label: "Loan compared with the price of the goods", format: ratio}
+      definition: The loan amount divided by the price of the goods it pays for
+      positive:
+        en: "The loan is smaller, compared with the price of the goods, than for similar applicants."
+        bn: "সমান ধরনের আবেদনকারীর তুলনায় পণ্যের দামের অনুপাতে ঋণ কম।"
+      negative:
+        en: "The loan is larger, compared with the price of the goods, than for similar applicants."
+        bn: "সমান ধরনের আবেদনকারীর তুলনায় পণ্যের দামের অনুপাতে ঋণ বেশি।"
+
+    external_score:
+      group: X
+      higher_is: better
+      detail: {label: "Outside score", format: ratio}
+      definition: Average of the scores "from external data sources" that the application has (up to three)
+      positive:
+        en: "The score from outside data sources is higher than for similar applicants."
+        bn: "সমান ধরনের আবেদনকারীর তুলনায় বাইরের তথ্যসূত্রের স্কোর বেশি।"
+      negative:
+        en: "The score from outside data sources is lower than for similar applicants."
+        bn: "সমান ধরনের আবেদনকারীর তুলনায় বাইরের তথ্যসূত্রের স্কোর কম।"
+
+  kiva_asia:
+    repayment_term_months:
+      group: L
+      higher_is: worse
+      detail: {label: "Loan term", format: months}
+      definition: The number of months over which the loan is to be repaid
+      positive:
+        en: "The loan runs for fewer months than similar loans."
+        bn: "সমান ধরনের ঋণের তুলনায় এই ঋণের মেয়াদ কম।"
+      negative:
+        en: "The loan runs for more months than similar loans."
+        bn: "সমান ধরনের ঋণের তুলনায় এই ঋণের মেয়াদ বেশি।"
+
+    partner_past_default_rate:
+      group: P
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {above: 0}
+      otherwise:
+        positive:
+          en: "A smaller share of this field partner's earlier loans had defaulted than for similar loans."
+          bn: "সমান ধরনের ঋণের তুলনায় এই সহযোগী সংস্থার আগের ঋণের কম অংশ খেলাপি হয়েছিল।"
+      detail: {label: "Field partner's earlier loans that defaulted", format: share}
+      definition: Of the field partner's earlier loans with an outcome known on the posting day, the share that defaulted
+      positive:
+        en: "None of this field partner's earlier loans had defaulted when the loan was posted."
+        bn: "ঋণটি প্রকাশের সময় এই সহযোগী সংস্থার আগের কোনো ঋণ খেলাপি হয়নি।"
+      negative:
+        en: "Some of this field partner's earlier loans had defaulted when the loan was posted."
+        bn: "ঋণটি প্রকাশের সময় এই সহযোগী সংস্থার আগের কিছু ঋণ খেলাপি হয়েছিল।"
+
+    partner_covers_default:
+      group: P
+      higher_is: better
+      shown_when:
+        positive: {at_least: 1}
+        negative: {at_most: 0}
+      definition: 1 when the field partner, not the lender, carries the loss if the borrower does not pay
+      positive:
+        en: "The field partner carries the loss if the borrower does not repay."
+        bn: "ঋণগ্রহীতা পরিশোধ না করলে ক্ষতি সহযোগী সংস্থা বহন করে।"
+      negative:
+        en: "The lender carries the loss if the borrower does not repay."
+        bn: "ঋণগ্রহীতা পরিশোধ না করলে ক্ষতি ঋণদাতা বহন করে।"
