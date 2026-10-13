@@ -4,7 +4,6 @@
 # Data
 pandas~=2.3.3
 numpy~=2.2.6
-faker~=40.43.0
 pyyaml~=6.0.3
 xlrd~=2.0.2            # reads the old .xls format of the Taiwan credit-card file
 

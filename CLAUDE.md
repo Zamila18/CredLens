@@ -11,7 +11,7 @@ Project: CredLens, a Merchant Readiness Dashboard, Team 4Bytes (2026 Data, AI & 
 
 ## Current stage and data plan
 - Fresh start. Work in phases from `docs/PROMPTS.md`, beginning with Phase 0. Stop after each phase.
-- Dataset first, build finished by Oct 20 (Oct 21 buffer). Lead track: 0 → 1 → 2 → 3 → 7 → 12 → 13. The ML teammate (labels, 4, 5, 6, 8, 11) and the full-stack teammate (9, 10) start the night Phase 0 ends, working against fixtures. See PROJECT_BRIEF sections 10 and 18.
+- Dataset first, build finished by Oct 20 (Oct 21 buffer). As of Oct 13 the lead works through the data and model phases with Claude Code, in this order: 0, 1, 2, 3 (done), then 4, 5, 6, 7, 8, 11, 12, 13. The full-stack teammate (Humayra) takes Phases 9 and 10 once the lead hands over; her work needs only the API contract and fixtures, which exist. `docs/HANDOVER.md` is the current plan; where it differs from older schedules in PROJECT_BRIEF section 10 or docs/PROMPTS.md, HANDOVER.md is right.
 - Asian context only. Never add generated purchases, deliveries or payments to real public rows. Coverage is per data mode (`coverage_weights_by_mode`).
 - The build must stay consistent with the team's Phase 2 submission (summarised in PROJECT_BRIEF section 18). If a change would drift from it, say so before making it.
 - Stack: Python for data, model and FastAPI; React + Vite + TypeScript + Tailwind dashboard in `web/`; Supabase PostgreSQL as the shared database with SQLite for local development and tests; Hostinger VPS for hosting.
@@ -79,3 +79,5 @@ See section 12 of `PROJECT_BRIEF.md` and `docs/ACCEPTANCE_CHECKLIST.md`.
 - The lead prefers replies in Banglish (Bangla in Latin letters mixed with English) with short, simple sentences. Code, commands, file contents and documents stay in English.
 - The lead works through the phases with Claude Code and hands over to teammates (Humayra: heavy work; Dipto: light work) when they choose. Keep `docs/HANDOVER.md` up to date at the end of every phase so a handover can happen at any time.
 - Synthetic data: `python tasks.py data` (one strength) or `python tasks.py data --all-strengths`. The hidden-truth file `_latent_truth.csv` is for generator tests only; nothing in the pipeline may read it.
+- Each phase is delivered in small parts. After each part: run lint and tests, stop, and give the lead the exact `git add <files>` and `git commit` commands for that part (the lead wants several meaningful commits per phase).
+- Model inputs describe how a merchant behaves. Columns that describe how much data exists (counts, totals, shares of active weeks) are context only: a thin file must never lower the score (PROJECT_BRIEF section 18, item 23). Measure on validation months; every look at the test months goes in `reports/<mode>/test_set_use.json`.

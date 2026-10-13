@@ -70,11 +70,11 @@ Rules for every source:
 | Audit-only columns | `CODE_GENDER`, age band from `DAYS_BIRTH`, `REGION_RATING_CLIENT` |
 | Limits | **The data does not state its country**, so it is labelled "country not stated" and does not support an Asian claim. Consumer loans, not merchants. All history is dated in days relative to the application (always earlier), with no absolute dates, so the split is stratified random and marked weaker |
 
-## 2. Sources that calibrate the synthetic generator (never used for training)
+## 2. Public figures collected for the synthetic data and the slides (never used for training)
 
-The figures themselves are in `config/calibration/`, with the source and the check for each in its README.
+The figures themselves are in `config/calibration/`, with the source and the check for each in its README. **Only the Bangladesh Bank series is read by the generator** (it sets the seasonal shape of purchases). The other rows are context for slides and for anyone who extends the generator; no code reads them today. The generator's remaining numbers (purchase rates, amounts, parcel volumes, loan limits) are the team's own assumptions.
 
-| Source | Link | What we take | Status |
+| Source | Link | What it gives | Status |
 |---|---|---|---|
 | Bangladesh Bank, Mobile Financial Services monthly statements | https://www.bb.org.bd/en/index.php/financialactivity/mfsdata | "Merchant Payment" (crore BDT) for Jan 2023 to Feb 2025: the seasonal shape of purchases | Checked Oct 12: read by hand by the lead; every pair of months reproduces the percentage change printed on the page |
 | World Bank Enterprise Surveys, Informal Sector Enterprise Survey | https://www.enterprisesurveys.org/en/data | Indicators for Chittagong MA, Cox's Bazar and Dhaka MA, 2022 (about 3,700 businesses): selling and buying on credit, loans, bank accounts, mobile money, workers | Checked Oct 12 against the Excel export with observation counts |

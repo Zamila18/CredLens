@@ -11,7 +11,7 @@ Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2
 
 ## Status
 
-**Phases 0 (scaffold), 1 (synthetic data), 2 (database) and 3 (features and labels) are done. No model is trained yet.**
+**Phases 0 to 4 are done: scaffold, synthetic data, database, features and labels, and a first model (logistic regression) measured on the validation period. Calibration, scores and reasons come next.**
 
 | Works now | Not built yet |
 |---|---|
@@ -20,6 +20,7 @@ Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2
 | Synthetic data generator: 20,000 merchants, three delivery signal strengths | |
 | Database (SQLite locally): tables, loader, backup, Mifos X-style export; append-only decisions and audit log | |
 | Features built only from data before each loan, labels from the 30-day rule, and a leakage guard | |
+| First model: logistic regression with a time split, validation metrics with ranges, saved with a version id | |
 | Feature dictionary with English and Bangla sentences | Model, calibration, reasons (Phases 4 to 6) |
 | API contract, sample responses, `GET /health` | Public-data adapters (Phase 7), real-label runs (Phase 8) |
 | Lint, tests and CI | API endpoints (Phase 9), React dashboard (Phase 10) |
@@ -57,11 +58,12 @@ python tasks.py setup     # create .venv and install dependencies
 python tasks.py test      # run the tests
 python tasks.py lint      # run ruff
 python tasks.py data      # generate the synthetic data and load the local database (about 55 seconds)
+python tasks.py train     # train the model, measure it on the validation period, save it
 python tasks.py backup    # copy the database with a timestamp
 python tasks.py api       # start the API, then open http://localhost:8000/docs
 ```
 
-`python tasks.py data --all-strengths` generates all three delivery signal strengths. `python tasks.py data --reset-db` wipes the database first, including recorded decisions. `train` and `app` exist as commands and say "not implemented yet" until their phase.
+`python tasks.py data --all-strengths` generates all three delivery signal strengths. `python tasks.py data --reset-db` wipes the database first, including recorded decisions. `app` exists as a command and say "not implemented yet" until their phase.
 
 To use a shared database, copy `.env.example` to `.env` and fill in `DATABASE_URL`. Without it, a local SQLite file is used. Never commit `.env`.
 

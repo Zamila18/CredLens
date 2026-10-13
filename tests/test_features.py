@@ -8,7 +8,13 @@ from __future__ import annotations
 
 import pytest
 
-from src.features.dictionary import DIRECTIONAL_WORDS, load_dictionary, reason_sentence
+from src.features.build_features import CONTEXT_COLUMNS, model_feature_names
+from src.features.dictionary import (
+    DIRECTIONAL_WORDS,
+    expected_directions,
+    load_dictionary,
+    reason_sentence,
+)
 
 # Feature names listed in docs/FEATURE_DICTIONARY.md.
 DOCUMENTED_FEATURES = {
@@ -94,3 +100,29 @@ def test_reason_sentence_picks_side_and_language(dictionary):
     assert reason_sentence(dictionary, feature, True) == "Most payments arrive on time."
     assert reason_sentence(dictionary, feature, False, "bn") == "কম পেমেন্ট সময়মতো আসে।"
 
+
+def test_dictionary_marks_exactly_the_context_columns_as_not_model_inputs(dictionary):
+    """The dictionary and the code must agree on what the model may see."""
+    marked = {n for n, e in dictionary["features"].items() if e.get("model_input") is False}
+    assert marked == set(CONTEXT_COLUMNS)
+    assert not marked & set(model_feature_names("ABC"))
+
+
+def test_every_model_input_says_which_way_it_points(dictionary):
+    """Training relies on this to stop a reason from contradicting the facts."""
+    directions = expected_directions(dictionary)
+    assert set(directions) == set(model_feature_names("ABC"))
+    assert directions["supplier_repeat_share"] == 1
+    assert directions["avg_pay_delay_days"] == -1
+    assert directions["return_rate_90d"] == -1
+    assert set(directions.values()) == {1, -1}
+
+
+def test_sentences_agree_with_the_stated_direction(dictionary):
+    """For a "higher is worse" input, the negative sentence must describe a high value."""
+    entry = dictionary["features"]["avg_pay_delay_days"]
+    assert entry["higher_is"] == "worse"
+    assert "late" in entry["negative"]["en"]
+    entry = dictionary["features"]["ontime_payment_rate"]
+    assert entry["higher_is"] == "better"
+    assert "on time" in entry["positive"]["en"]

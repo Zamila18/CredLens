@@ -10,6 +10,14 @@
 # - If a feature is missing for a merchant, no reason is generated for it.
 # - The Bangla text must be reviewed by a native speaker before the demo.
 # - Public-data modes (kiva_asia, taiwan_cc) add their own entries in Phase 7.
+# - Every model input says which way it points: `higher_is: better` or `higher_is: worse`.
+#   Training removes an input whose learned weight points the other way, so a reason
+#   sentence can never contradict the facts.
+# - `delivered_rate` is context only: it falls when a rider or an address fails, which is
+#   not the merchant's doing, and it repeats what the return and failure rates say.
+# - Entries marked `model_input: false` describe how MUCH data a merchant has (number of
+#   purchases, total value, number of parcels). They are shown to the officer and feed
+#   coverage, but the model never sees them, so a thin file cannot lower the score.
 
 groups:
   A: purchases
@@ -20,6 +28,7 @@ groups:
 features:
   purchases_90d:
     group: A
+    model_input: false           # context only: shown on the profile, never given to the model
     definition: Mokam purchase orders placed by the merchant in the 90 days before cutoff
     higher_means: active restocking
     positive:
@@ -31,6 +40,7 @@ features:
 
   purchase_value_90d:
     group: A
+    model_input: false           # context only: shown on the profile, never given to the model
     definition: Total purchase value, 90 days
     higher_means: larger business
     positive:
@@ -42,6 +52,7 @@ features:
 
   basket_growth:
     group: A
+    higher_is: better
     definition: Purchase value last 90 days vs the 90 before, %
     higher_means: growth
     positive:
@@ -53,6 +64,7 @@ features:
 
   purchase_volatility:
     group: A
+    model_input: false           # context only: shown on the profile, never given to the model
     definition: Std. dev. of weekly purchase value / mean
     higher_means: unstable
     positive:
@@ -64,6 +76,7 @@ features:
 
   purchase_regularity:
     group: A
+    model_input: false           # context only: shown on the profile, never given to the model
     definition: Share of weeks with at least one purchase
     higher_means: consistent
     positive:
@@ -75,6 +88,7 @@ features:
 
   category_diversity:
     group: A
+    model_input: false           # context only: shown on the profile, never given to the model
     definition: Number of product categories purchased
     higher_means: diversified
     positive:
@@ -86,7 +100,11 @@ features:
 
   supplier_repeat_share:
     group: A
-    definition: Share of purchases from suppliers used before
+    higher_is: better
+    definition: >-
+      Chance that two of the merchant's purchases in the last 90 days came from the same
+      supplier (counted over all pairs of purchases, so it does not depend on how many
+      purchases there were)
     higher_means: stable sourcing
     positive:
       en: "The shop buys steadily from familiar suppliers."
@@ -97,6 +115,7 @@ features:
 
   parcel_volume_90d:
     group: C
+    model_input: false           # context only: shown on the profile, never given to the model
     sales_proxy: true
     definition: Outgoing REDX parcels, 90 days (only for merchants who sell online)
     higher_means: more sales
@@ -109,6 +128,7 @@ features:
 
   avg_pay_delay_days:
     group: B
+    higher_is: worse
     definition: Mean days late over past payments
     higher_means: worse
     positive:
@@ -120,6 +140,7 @@ features:
 
   late_pay_count_90d:
     group: B
+    higher_is: worse
     definition: Payments over 7 days late, 90 days
     higher_means: worse
     positive:
@@ -131,6 +152,7 @@ features:
 
   ontime_payment_rate:
     group: B
+    higher_is: better
     definition: Share of payments within 3 days of due
     higher_means: reliable
     positive:
@@ -142,6 +164,7 @@ features:
 
   credit_utilisation:
     group: B
+    higher_is: worse
     definition: Used limit / limit
     higher_means: stretched
     positive:
@@ -153,6 +176,7 @@ features:
 
   delivered_rate:
     group: C
+    model_input: false           # context only: shown on the profile, never given to the model
     definition: Delivered parcels / dispatched, 90 days
     higher_means: reliable fulfilment
     positive:
@@ -164,6 +188,7 @@ features:
 
   return_rate_90d:
     group: C
+    higher_is: worse
     definition: >-
       Merchant-attributable returns (refused, wrong item) / total, 90 days;
       address/rider returns excluded when return_reason is known
@@ -177,7 +202,9 @@ features:
 
   failed_rate_90d:
     group: C
-    definition: Failed parcels / total
+    higher_is: worse
+    definition: >-
+      Failed parcels not tagged as an address or rider problem / total, 90 days
     higher_means: worse
     positive:
       en: "Few delivery failures."
@@ -188,6 +215,7 @@ features:
 
   cod_remit_ontime_rate:
     group: C
+    higher_is: better
     definition: Share of cash-on-delivery money passed back on time
     higher_means: reliable
     positive:
@@ -199,6 +227,7 @@ features:
 
   dispatch_to_delivery_hours:
     group: C
+    higher_is: worse
     definition: Median hours from dispatch to delivery
     higher_means: slower
     positive:
@@ -210,6 +239,7 @@ features:
 
   delivery_data_thin:
     group: C
+    model_input: false           # context only: shown on the profile, never given to the model
     definition: Fewer than 20 parcels in 90 days (flag)
     higher_means: less certain
     positive: null

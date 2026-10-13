@@ -10,7 +10,8 @@ The rule:
 - label 1: every payment that was due was made within `good_if_days_late_at_most` (30)
   days of its due date;
 - label 0: a payment was made later than that, or is still unpaid more than that many
-  days after its due date;
+  days after its due date. A part payment does not count as paid: the amount paid must be
+  at least 99% of the amount due (`paid_in_full_tolerance`);
 - no label: the loan is younger than `min_loan_age_days` (60), or a payment is unpaid
   but not yet overdue by more than the limit. The outcome is unknown, so the loan is
   left out of training and testing. A young loan is never counted as a default.
@@ -82,7 +83,11 @@ def build_labels(
     # From payment records: how late was each payment, as far as is known today?
     due = pd.to_datetime(payments["due_date"])
     paid = pd.to_datetime(payments["paid_date"])
-    is_paid = paid.notna() & (paid <= as_of)
+    # A payment counts only when (nearly) the full amount due was paid.
+    enough = payments["amount_paid_bdt"].astype(float) >= (
+        1 - rules["paid_in_full_tolerance"]
+    ) * payments["amount_due_bdt"].astype(float)
+    is_paid = paid.notna() & (paid <= as_of) & enough
     days_late = (paid - due).dt.days.where(is_paid, (as_of - due).dt.days)
     per_payment = pd.DataFrame(
         {

@@ -5,7 +5,9 @@ Tick before the demo. Claude Code should help produce evidence for each item (te
 ## Data
 - [ ] `python tasks.py data` is reproducible with seed 42 (same row counts and hashes).
 - [ ] No duplicate merchant_id; all foreign keys resolve (test_master_data).
-- [ ] Thin-file share near 35%; 25% of merchants without delivery data; repayment share 75-85%.
+- [ ] Thin-file share near 35%; 25% of merchants without delivery data; repayment share about 90% (the team's assumption, `generator.repayment_share_target`).
+- [ ] Thin-file merchants do not score lower for having little history: no model input depends on the amount of data (test_feature_builder).
+- [ ] No merchant without valid consent is used to train or test a model (test_dataset).
 - [ ] At signal strength 0, correlation of delivery features with hidden reliability is about 0.
 
 ## Model

@@ -9,6 +9,9 @@ Safety rules:
 - The loader never overwrites data silently. If the database already holds merchants,
   it stops and says so. To start again, pass `reset=True` (command line: --reset), which
   removes every table, including recorded decisions and the audit log.
+- It also notices when the database holds different data from the files (for example
+  after the generator settings changed). That is reported as an error, because scores
+  computed from the files would not match what the dashboard reads from the database.
 - Only synthetic data is loaded here. Raw public files are never uploaded to the shared
   database (CLAUDE.md, non-negotiable rules).
 - The database URL is a secret. This module never prints it.
@@ -21,6 +24,8 @@ Run it:
 from __future__ import annotations
 
 import argparse
+import hashlib
+from datetime import datetime
 from typing import Any
 
 import pandas as pd
@@ -28,7 +33,7 @@ from sqlalchemy import func, insert, select
 
 from src.adapters import check_frame, get_adapter
 from src.config import get_database_url, load_config
-from src.db.models import CONTRACT_TABLES, Base, User, drop_tables, make_engine
+from src.db.models import CONTRACT_TABLES, Base, LoadInfo, User, drop_tables, make_engine
 
 CHUNK_ROWS = 50_000
 LOADABLE_MODES = ("synthetic_bd",)
@@ -52,7 +57,27 @@ DEMO_USERS = [
 
 
 class DataAlreadyLoaded(RuntimeError):
-    """Raised when the database already holds data and no reset was asked for."""
+    """Raised when the database already holds this same data and no reset was asked for."""
+
+
+class DataMismatch(RuntimeError):
+    """Raised when the database holds different data from the tables being loaded."""
+
+
+def data_fingerprint(tables: dict[str, pd.DataFrame]) -> str:
+    """A short code that changes whenever the data changes.
+
+    Built from the number of rows in every table and the full contents of the three
+    small tables (merchants, loans, payments). Two data sets with the same code are, for
+    practical purposes, the same data.
+    """
+    digest = hashlib.sha256()
+    for name in CONTRACT_TABLES:
+        digest.update(f"{name}:{len(tables[name])};".encode())
+    for name in ("merchants", "loans", "payments"):
+        frame = check_frame(name, tables[name]).astype(str)
+        digest.update(pd.util.hash_pandas_object(frame, index=False).to_numpy().tobytes())
+    return digest.hexdigest()[:16]
 
 
 def _to_records(table: str, frame: pd.DataFrame) -> list[dict[str, Any]]:
@@ -85,16 +110,29 @@ def load_tables(
     Base.metadata.create_all(engine)
 
     counts: dict[str, int] = {}
+    fingerprint = data_fingerprint(tables)
+    how_to_reset = (
+        "To wipe everything (including decisions and the audit log) and reload, run: "
+        "python tasks.py data --reset-db"
+    )
     try:
         with engine.begin() as connection:
             existing = connection.execute(
                 select(func.count()).select_from(Base.metadata.tables["merchants"])
             ).scalar_one()
             if existing:
-                raise DataAlreadyLoaded(
-                    f"The database already holds {existing} merchants. Nothing was changed. "
-                    "To wipe everything (including decisions and the audit log) and reload, "
-                    "run: python -m src.db.load --reset"
+                loaded = connection.execute(
+                    select(LoadInfo.value).where(LoadInfo.key == "data_fingerprint")
+                ).scalar_one_or_none()
+                if loaded == fingerprint:
+                    raise DataAlreadyLoaded(
+                        f"The database already holds this data ({existing} merchants). "
+                        f"Nothing was changed. {how_to_reset}"
+                    )
+                raise DataMismatch(
+                    f"The database holds DIFFERENT data from the files ({existing} merchants in "
+                    "the database). Scores and pages would not match the data files. Nothing "
+                    f"was changed. {how_to_reset}"
                 )
             for name in CONTRACT_TABLES:
                 target = Base.metadata.tables[name]
@@ -105,6 +143,13 @@ def load_tables(
                 counts[name] = len(frame)
             connection.execute(insert(User.__table__), DEMO_USERS)
             counts["users"] = len(DEMO_USERS)
+            connection.execute(
+                insert(LoadInfo.__table__),
+                [
+                    {"key": "data_fingerprint", "value": fingerprint},
+                    {"key": "loaded_at", "value": datetime.now().isoformat(timespec="seconds")},
+                ],
+            )
     finally:
         engine.dispose()
     return counts
@@ -134,6 +179,9 @@ def main(argv: list[str] | None = None) -> int:
     except DataAlreadyLoaded as error:
         print(error)
         return 0
+    except DataMismatch as error:
+        print(f"STOP: {error}")
+        return 1
     for name, rows in counts.items():
         print(f"  {name:<14}{rows:>10,}")
     return 0

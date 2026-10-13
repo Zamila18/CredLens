@@ -19,7 +19,9 @@ from src.config import load_config
 from src.features.build_features import (
     CHECKLIST_COLUMNS,
     CHECKLIST_PREFIX,
+    CONTEXT_COLUMNS,
     COVERAGE_COLUMNS,
+    DELIVERY_CONTEXT,
     DELIVERY_FEATURES,
     FEATURE_GROUPS,
     PAYMENT_FEATURES,
@@ -152,9 +154,9 @@ def test_basket_growth_compares_with_the_window_before(worked_example):
     assert worked_example.loc["L1", "basket_growth"] == pytest.approx(100 * (6500 / 4700 - 1))
 
 
-def test_supplier_repeat_share_counts_suppliers_used_earlier(worked_example):
-    # recent purchases: S3 (new), S2 (new), S1 (used before), S1 (used before)
-    assert worked_example.loc["L1", "supplier_repeat_share"] == pytest.approx(0.5)
+def test_supplier_repeat_share_is_the_chance_two_purchases_share_a_supplier(worked_example):
+    # recent purchases come from S3, S2, S1, S1: of the 6 pairs, one is from the same supplier
+    assert worked_example.loc["L1", "supplier_repeat_share"] == pytest.approx(1 / 6)
 
 
 def test_purchase_regularity_is_the_share_of_weeks_with_a_purchase(worked_example):
@@ -182,6 +184,7 @@ def test_a_merchant_known_for_days_has_no_weekly_statistics(worked_example):
     row = worked_example.loc["L3"]
     assert row["days_known"] == 3
     assert row["purchases_90d"] == 1
+    assert np.isnan(row["supplier_repeat_share"]), "one purchase makes no pair"
     assert np.isnan(row["purchase_regularity"])
     assert np.isnan(row["purchase_volatility"])
     assert np.isnan(row["basket_growth"])
@@ -362,7 +365,24 @@ def test_delivery_rates_use_only_parcels_whose_outcome_was_known(delivery_exampl
     # Settled parcels: 1, 2, 3, 4, 5, 6. Three delivered, two returned, one failed.
     row = delivery_example.loc["L1"]
     assert row["delivered_rate"] == pytest.approx(3 / 6)
-    assert row["failed_rate_90d"] == pytest.approx(1 / 6)
+
+
+def test_failed_rate_leaves_out_address_and_rider_problems(delivery_example, config):
+    # The one failed parcel was a rider problem, so it is not counted against the merchant.
+    assert delivery_example.loc["L1", "failed_rate_90d"] == 0
+
+    tables = make_tables(
+        merchants=[merchant("M1", "2025-01-01")],
+        loans=[loan("L1", "M1")],
+        deliveries=[
+            parcel(1, "2025-06-01T10:00:00", "failed", None, "other"),
+            parcel(2, "2025-06-02T10:00:00", "failed", None, "rider_issue"),
+            parcel(3, "2025-06-03T10:00:00", "failed", None, None),
+            parcel(4, "2025-06-04T10:00:00", "delivered", "2025-06-05T10:00:00"),
+        ],
+    )
+    row = build_features(tables, config).iloc[0]
+    assert row["failed_rate_90d"] == pytest.approx(2 / 4)  # "other" and no stated reason
 
 
 def test_return_rate_leaves_out_address_and_rider_problems(delivery_example):
@@ -388,7 +408,7 @@ def test_few_parcels_are_flagged_as_thin(delivery_example, config):
 def test_no_parcels_means_no_delivery_features_not_zeros(delivery_example):
     """Missing delivery data must never look like bad delivery data."""
     row = delivery_example.loc["L2"]
-    for name in DELIVERY_FEATURES:
+    for name in DELIVERY_FEATURES + DELIVERY_CONTEXT:
         assert np.isnan(row[name]), name
 
 
@@ -485,6 +505,7 @@ def test_missing_delivery_data_changes_coverage_but_no_other_feature(config):
 
 def test_coverage_columns_are_not_model_inputs():
     assert not set(COVERAGE_COLUMNS) & set(model_feature_names("ABC"))
+    assert not set(CONTEXT_COLUMNS) & set(model_feature_names("ABC"))
     assert model_feature_names("A") == PURCHASE_FEATURES
     assert model_feature_names("AB") == PURCHASE_FEATURES + PAYMENT_FEATURES
 
@@ -508,6 +529,7 @@ def test_one_row_per_loan_with_every_feature(synthetic_features):
     for group, names in FEATURE_GROUPS.items():
         for name in names:
             assert name in features.columns, f"{group}: {name}"
+    assert set(CONTEXT_COLUMNS) <= set(features.columns)
 
 
 def test_every_feature_is_in_the_dictionary():
@@ -531,6 +553,7 @@ def test_delivery_features_stay_in_sensible_ranges(synthetic_features):
     features, tables = synthetic_features
     for name in ("delivered_rate", "return_rate_90d", "failed_rate_90d", "cod_remit_ontime_rate"):
         assert features[name].dropna().between(0, 1).all(), name
+    assert "delivered_rate" not in model_feature_names("ABC"), "it falls with rider problems"
     assert (features["dispatch_to_delivery_hours"].dropna() > 0).all()
     assert set(features["delivery_data_thin"].dropna().unique()) <= {0.0, 1.0}
 
@@ -561,3 +584,26 @@ def test_no_group_column_is_a_feature(synthetic_features):
     features, _ = synthetic_features
     for column in ("town_tier", "shop_type", "has_trade_license", "district"):
         assert column not in features.columns
+
+
+# --- a thin file must not look like a bad file ---------------------------------------
+
+
+def test_no_model_input_depends_on_how_much_data_a_merchant_has(config):
+    """Thin-file merchants repay like everyone else in the synthetic data, so their model
+    inputs must look like everyone else's. A feature that shifts with the amount of data
+    would lower their score for having little history."""
+    small = copy.deepcopy(config)
+    small["data"]["n_merchants"] = 4000
+    tables, latent, _ = build_tables(small, 0.5)
+    features = build_features(tables, small).merge(
+        latent[["merchant_id", "thin_file", "has_delivery_data"]], on="merchant_id"
+    )
+    thin, rest = features[features["thin_file"]], features[~features["thin_file"]]
+    for name in model_feature_names("ABC"):
+        spread = features[name].std()
+        gap = abs(thin[name].mean() - rest[name].mean()) / spread
+        assert gap < 0.25, f"{name} differs by {gap:.2f} standard deviations for thin files"
+
+    # The context columns DO differ: that is exactly why they are kept out of the model.
+    assert thin["purchases_90d"].mean() < 0.8 * rest["purchases_90d"].mean()

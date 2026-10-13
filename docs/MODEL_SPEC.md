@@ -42,6 +42,7 @@ See `docs/FEATURE_DICTIONARY.md`. Feature groups: A purchases, B payments, C del
 - Check: bin validation predictions (0-0.1 ... 0.9-1.0), plot predicted mean vs actual repayment rate.
 - Fix with Platt scaling or isotonic regression, fitted on validation only, then frozen. Re-check on test.
 - Calibration preserves ranking; it fixes the meaning of the number.
+- As built (`src/model/calibrate.py`): three choices, `none`, `platt`, `isotonic`. A correction measured on the loans it learned from always looks good, so the validation loans are cut into `model.calibration_folds` folds and each choice is compared on out-of-fold probabilities. With `model.calibration: auto` the simplest choice stays unless a more flexible one lowers the Brier score by at least `model.calibration_min_brier_gain`. The saved calibrator is fitted on all validation loans. The validation numbers in the report use the out-of-fold probabilities. On synthetic data (seed 42, strength 0.5) the logistic regression is already calibrated (error 0.012; Brier 0.0819 with none, 0.0818 with either correction), so `none` is kept.
 
 ## 7. Score, coverage, band
 - score = round(100 x calibrated probability).
@@ -50,8 +51,11 @@ See `docs/FEATURE_DICTIONARY.md`. Feature groups: A purchases, B payments, C del
 - Band:
   - coverage < `band_min_coverage` -> "Needs more info" (regardless of score)
   - else score >= `band_strong_min_score` -> "Strong"
-  - else "Review"; if score is also low (for example < 40), attach a low-score warning.
-- Example: probability 0.72, coverage 85% -> score 72, band Strong. Probability 0.66, coverage 35% -> score 66, band Needs more info.
+  - else "Review".
+  - A score below `low_score_warning_below` also carries an explicit low-score warning.
+- Lines as set on Oct 13 (`score` section of the config): Strong line 90, coverage line 0.45, low-score warning below 70. They were set from the validation scores of the synthetic data and are settings, not facts: about nine in ten loans are repaid, so most scores sit between 80 and 99, and the first lines (70 and 0.60) put 97% of loans at or above the Strong line and 91% of first-loan merchants in "Needs more info". A data mode can have its own lines under `score.by_mode`; set them again for any real data source.
+- Examples (tests in `tests/test_score.py`): probability 0.92, coverage 85% -> score 92, Strong. Probability 0.84, coverage 85% -> score 84, Review. Probability 0.93, coverage 35% -> score 93, Needs more info. Probability 0.62, coverage 85% -> score 62, Review with a low-score warning.
+- As built (`src/model/score.py`): `score_table` gives probability, score, coverage, band and warning per loan; `band_summary` gives the share of loans and the share repaid per band. On synthetic validation data (seed 42, strength 0.5): Strong 56% of loans (95.2% repaid), Review 29% (82.1% repaid), Needs more info 15% (88.3% repaid). 28% of first loans and under 1% of repeat loans are "Needs more info".
 
 ## 8. Explanations
 - SHAP (tree explainer) for LightGBM; coefficient x standardised value for Logistic Regression.
@@ -104,5 +108,5 @@ Random split; features after the cutoff; counting young loans as defaults; tunin
 - Group audit: bootstrap range per group; flag only when ranges do not overlap or the gap persists across seeds.
 - Model card "Known limits": copy from docs/DATASET_PLAN.md section 4 and the review list, and add one card per data mode.
 - india_ltfs: real disbursal dates over three months (Aug to Oct 2018), so split by time: train on August, validate on September, test on October, and say in the model card that the window is short. Label = 1 - loan_default, where loan_default is "payment default in the first EMI on due date" (an early-warning outcome). Treat branch and employee identifiers with care: never as headline reasons.
-- synthetic_bd label timing: every loan issued in the 18-month main window has an outcome; loans issued in the 60-day tail are unlabelled and must be excluded from training and testing (they are the pending cases).
+- synthetic_bd label timing: every loan issued in the 18-month main window has an outcome; loans issued in the 61-day tail are unlabelled and must be excluded from training and testing (they are the pending cases).
 - synthetic_bd repayment share is about 90%, so the classes are imbalanced: report PR-AUC and top-k next to AUC here too.

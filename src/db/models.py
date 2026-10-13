@@ -219,6 +219,15 @@ class ModelVersion(Base):
     artifact_path: Mapped[str | None] = mapped_column(String(256))
 
 
+class LoadInfo(Base):
+    """Small notes about what was loaded, for example a fingerprint of the data."""
+
+    __tablename__ = "load_info"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[str] = mapped_column(Text)
+
+
 class Decision(Base):
     """An officer's decision on a merchant. Append-only.
 
@@ -291,6 +300,11 @@ def _append_only_triggers(table: str) -> None:
 
     The SQLite triggers are covered by tests. The PostgreSQL ones follow the same idea
     but have not been run yet: check them when the Supabase database is first created.
+
+    What triggers cannot do: whoever owns the database can drop a trigger and then change
+    a row. On the shared PostgreSQL database the application's own account must therefore
+    also have UPDATE and DELETE on these tables revoked. Triggers stop mistakes and bugs;
+    access rights stop a determined person.
     """
     message = _APPEND_ONLY_MESSAGE.format(table=table)
     target = Base.metadata.tables[table]
@@ -301,6 +315,16 @@ def _append_only_triggers(table: str) -> None:
             f"BEGIN SELECT RAISE(ABORT, '{message}'); END"
         )
         event.listen(target, "after_create", sqlite.execute_if(dialect="sqlite"))
+
+    # "INSERT OR REPLACE" with an existing key would silently swap a row without firing
+    # the triggers above, so an insert that reuses a key is refused as well.
+    key = target.primary_key.columns.keys()[0]
+    no_replace = DDL(
+        f"CREATE TRIGGER IF NOT EXISTS {table}_no_replace BEFORE INSERT ON {table} "
+        f"WHEN EXISTS (SELECT 1 FROM {table} WHERE {key} = NEW.{key}) "
+        f"BEGIN SELECT RAISE(ABORT, '{message}'); END"
+    )
+    event.listen(target, "after_create", no_replace.execute_if(dialect="sqlite"))
 
     function = DDL(
         f"CREATE OR REPLACE FUNCTION {table}_append_only() RETURNS trigger AS $$ "

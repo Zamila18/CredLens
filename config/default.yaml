@@ -131,22 +131,45 @@ database:
 labels:
   good_if_days_late_at_most: 30
   min_loan_age_days: 60          # younger loans are excluded (outcome unknown)
+  paid_in_full_tolerance: 0.01   # a payment counts as made only if at least 99% of the amount due was paid
 
 split:                           # by loan issue date
   train_months: 12
   validation_months: 3
   test_months: 3
 
+split_by_mode:                   # a data source whose history is shorter than 18 months sets its own periods
+  india_ltfs: {train_months: 1, validation_months: 1, test_months: 1}   # loans from Aug to Oct 2018 only
+
 model:
   candidates: [logistic_regression, lightgbm]
-  calibration: auto              # platt | isotonic | auto (pick on validation)
+  calibration: auto              # none | platt | isotonic | auto (compare on validation, keep the simplest that is good enough)
+  calibration_folds: 5           # validation loans are cut into this many folds to compare the choices honestly
+  calibration_min_brier_gain: 0.0002   # a more flexible calibrator must lower the Brier score by at least this
   prefer_simple_if_auc_gain_below: 0.01
   bootstrap_resamples: 500
+  logistic_regression:
+    C: 1.0                       # regularisation strength (smaller = stronger)
+    max_iter: 1000
+    clip_quantiles: [0.01, 0.99] # extreme feature values are pulled in to these training quantiles
+
+evaluation:
+  calibration_bins: 10           # predictions are grouped into this many bins
+  calibration_binning: quantile  # quantile = the same number of loans in each bin; width = equal-width bins.
+                                 # With about 90% repaid, equal-width bins leave most bins empty
+  top_k: 20                      # looks at the k highest-scored and the k lowest-scored loans
+  lowest_share: 0.20             # share of the not-repaid loans found in the lowest-scored 20%
+  bootstrap_level: 0.95          # width of the reported ranges
 
 score:
   scale: 100
-  band_strong_min_score: 70
-  band_min_coverage: 0.60        # below this: "Needs more info", whatever the score
+  # The three lines below were set from the validation scores of the synthetic data
+  # (PROJECT_BRIEF section 18, item 26). They are settings, not facts: set them again
+  # for any real data source.
+  band_strong_min_score: 90      # "Strong" = the model expects at least 9 in 10 such loans to be repaid in time
+  band_min_coverage: 0.45        # below this: "Needs more info", whatever the score
+  low_score_warning_below: 70    # a score under this gets an explicit low-score warning
+  by_mode: {}                    # optional own lines per data mode, e.g. taiwan_cc: {band_strong_min_score: 85}
   top_reasons_each_side: 3
 
 coverage_weights_by_mode:        # public modes: coverage = how much of what the source can provide is present
@@ -193,3 +216,4 @@ sanity:
   useful_auc_benchmark: 0.70     # CGAP: transactional MSE models around 0.70+ are useful
   suspicious_auc: 0.95           # synthetic AUC above this => look for leakage
   zero_signal_max_auc_gain: 0.01 # at signal strength 0, delivery features must not add more than this
+  min_not_repaid_for_stable_metrics: 100   # fewer not-repaid loans than this: warn that the numbers are shaky

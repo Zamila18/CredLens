@@ -1,0 +1,314 @@
+{
+  "data_mode": "synthetic_bd",
+  "measured_on": "validation period (the test period is not touched in training)",
+  "split": {
+    "method": "time",
+    "note": "Split by loan issue date. Each period ends the day before the next begins.",
+    "boundaries": {
+      "train_from": "2025-01-01",
+      "validation_from": "2026-01-01",
+      "test_from": "2026-04-01",
+      "test_until": "2026-07-01"
+    },
+    "sizes": {
+      "train": 13318,
+      "validation": 5853,
+      "test": 6023
+    },
+    "left_out": {
+      "before_train_period": 0,
+      "after_test_period": 54,
+      "no_date": 0
+    }
+  },
+  "dataset": {
+    "loans": 30907,
+    "used_for_modelling": 25248,
+    "left_out_no_outcome_yet": 4317,
+    "left_out_no_valid_consent": 1342
+  },
+  "model": "logistic_regression",
+  "feature_groups": {
+    "A": [
+      "basket_growth",
+      "supplier_repeat_share"
+    ],
+    "B": [
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation"
+    ],
+    "C": [
+      "return_rate_90d",
+      "failed_rate_90d",
+      "cod_remit_ontime_rate",
+      "dispatch_to_delivery_hours"
+    ]
+  },
+  "inputs_used": [
+    "basket_growth",
+    "supplier_repeat_share",
+    "avg_pay_delay_days",
+    "late_pay_count_90d",
+    "ontime_payment_rate",
+    "credit_utilisation",
+    "return_rate_90d",
+    "failed_rate_90d",
+    "cod_remit_ontime_rate",
+    "dispatch_to_delivery_hours"
+  ],
+  "inputs_removed_for_pointing_the_wrong_way": [],
+  "calibration": {
+    "method": "none",
+    "chosen_by": "auto: the simplest method is kept unless a more flexible one lowers the out-of-fold Brier score by at least 0.0002",
+    "fitted_on": "validation period only; re-checked once on the test period",
+    "compared_on": "out-of-fold probabilities, 5 folds of the validation period",
+    "candidates": {
+      "none": {
+        "brier": 0.08191852475007164,
+        "calibration_error": 0.011723266973884145,
+        "roc_auc": 0.7095343071194196
+      },
+      "platt": {
+        "brier": 0.0817556355952457,
+        "calibration_error": 0.01074101588748598,
+        "roc_auc": 0.7090229085121134
+      },
+      "isotonic": {
+        "brier": 0.08181058668908578,
+        "calibration_error": 0.010575197508145631,
+        "roc_auc": 0.7025029534065751
+      }
+    }
+  },
+  "validation": {
+    "loans": 5853,
+    "not_repaid_loans": 564,
+    "share_repaid": 0.9036391594054332,
+    "metrics": {
+      "roc_auc": 0.7095343071194196,
+      "pr_auc_not_repaid": 0.22963155925406012,
+      "brier": 0.08191852475007164,
+      "calibration_error": 0.011723266973884145,
+      "not_repaid_rate_in_lowest_k": 0.55,
+      "not_repaid_caught_in_lowest": 0.4326241134751773,
+      "precision_at_top_k": 0.95,
+      "share_at_or_above_strong_line": 0.6647872885699642
+    },
+    "ranges": {
+      "roc_auc": [
+        0.6879206245533557,
+        0.7287520030974041
+      ],
+      "pr_auc_not_repaid": [
+        0.2000945761703809,
+        0.2652321501557503
+      ],
+      "brier": [
+        0.07682075871424861,
+        0.08780054896863185
+      ],
+      "calibration_error": [
+        0.010015510379825248,
+        0.021075473364463217
+      ],
+      "resamples_used": 500
+    },
+    "range_level": 0.95,
+    "calibration": [
+      {
+        "lowest": 0.1209,
+        "highest": 0.8022,
+        "loans": 586,
+        "mean_predicted": 0.6972,
+        "share_repaid": 0.7474
+      },
+      {
+        "lowest": 0.8027,
+        "highest": 0.8582,
+        "loans": 585,
+        "mean_predicted": 0.8333,
+        "share_repaid": 0.8359
+      },
+      {
+        "lowest": 0.8582,
+        "highest": 0.8882,
+        "loans": 585,
+        "mean_predicted": 0.8743,
+        "share_repaid": 0.8598
+      },
+      {
+        "lowest": 0.8882,
+        "highest": 0.9074,
+        "loans": 585,
+        "mean_predicted": 0.8978,
+        "share_repaid": 0.9043
+      },
+      {
+        "lowest": 0.9074,
+        "highest": 0.9229,
+        "loans": 586,
+        "mean_predicted": 0.9154,
+        "share_repaid": 0.9215
+      },
+      {
+        "lowest": 0.9229,
+        "highest": 0.9358,
+        "loans": 585,
+        "mean_predicted": 0.9291,
+        "share_repaid": 0.9282
+      },
+      {
+        "lowest": 0.9358,
+        "highest": 0.9479,
+        "loans": 585,
+        "mean_predicted": 0.942,
+        "share_repaid": 0.947
+      },
+      {
+        "lowest": 0.9479,
+        "highest": 0.9589,
+        "loans": 585,
+        "mean_predicted": 0.9534,
+        "share_repaid": 0.9385
+      },
+      {
+        "lowest": 0.9589,
+        "highest": 0.972,
+        "loans": 585,
+        "mean_predicted": 0.9653,
+        "share_repaid": 0.9778
+      },
+      {
+        "lowest": 0.972,
+        "highest": 0.9945,
+        "loans": 586,
+        "mean_predicted": 0.98,
+        "share_repaid": 0.9761
+      }
+    ],
+    "benchmark": {
+      "useful_auc": 0.7,
+      "point_estimate_reaches_it": true,
+      "whole_range_reaches_it": false
+    },
+    "warnings": []
+  },
+  "validation_by_history": {
+    "first_loans": {
+      "loans": 3148,
+      "not_repaid_loans": 332,
+      "roc_auc": 0.6645395502464403,
+      "roc_auc_range": [
+        0.633003204147382,
+        0.6940530438823631
+      ],
+      "warnings": []
+    },
+    "repeat_loans": {
+      "loans": 2705,
+      "not_repaid_loans": 232,
+      "roc_auc": 0.7695176875775617,
+      "roc_auc_range": [
+        0.7379677431895082,
+        0.8011746323030381
+      ],
+      "warnings": []
+    }
+  },
+  "validation_bands": {
+    "lines": {
+      "band_strong_min_score": 90,
+      "band_min_coverage": 0.45,
+      "low_score_warning_below": 70
+    },
+    "bands": {
+      "Strong": {
+        "loans": 3274,
+        "share": 0.5593712626003758,
+        "share_repaid": 0.9517409896151496
+      },
+      "Review": {
+        "loans": 1680,
+        "share": 0.2870322911327524,
+        "share_repaid": 0.8208333333333333
+      },
+      "Needs more info": {
+        "loans": 899,
+        "share": 0.1535964462668717,
+        "share_repaid": 0.8832035595105673
+      }
+    },
+    "needs_more_info_share_first_loans": 0.2846251588310038,
+    "needs_more_info_share_repeat_loans": 0.0011090573012939,
+    "low_score_warning_share": 0.03399965829489151
+  },
+  "baselines": {
+    "always_average_rate": {
+      "predicted_rate": 0.8997597236822346,
+      "roc_auc": 0.5,
+      "pr_auc_not_repaid": 0.09636084059456688,
+      "brier": 0.08709047901600578,
+      "calibration_error": 0.0038794357231985988
+    },
+    "purchases_only": {
+      "features": [
+        "basket_growth",
+        "supplier_repeat_share"
+      ],
+      "metrics": {
+        "roc_auc": 0.6668435023043946,
+        "pr_auc_not_repaid": 0.16636880530027523,
+        "brier": 0.08449037669005006,
+        "calibration_error": 0.01382773758820921,
+        "not_repaid_rate_in_lowest_k": 0.45,
+        "not_repaid_caught_in_lowest": 0.38475177304964536,
+        "precision_at_top_k": 0.95,
+        "share_at_or_above_strong_line": 0.6253203485392107
+      },
+      "ranges": {
+        "roc_auc": [
+          0.6449169444551006,
+          0.6885955570451284
+        ],
+        "pr_auc_not_repaid": [
+          0.14911047139154712,
+          0.18964738585940394
+        ],
+        "brier": [
+          0.07924005586816896,
+          0.09088388566070868
+        ],
+        "calibration_error": [
+          0.010952456660766025,
+          0.023381863882374676
+        ],
+        "resamples_used": 500
+      }
+    }
+  },
+  "gain_over_purchases_only": {
+    "auc_gain": 0.04269080481502496,
+    "range": [
+      0.02807320537029424,
+      0.06030167448186165
+    ],
+    "clearly_better": true,
+    "resamples_used": 500
+  },
+  "coefficients": {
+    "basket_growth": 0.0741,
+    "supplier_repeat_share": 0.494,
+    "avg_pay_delay_days": -0.1189,
+    "late_pay_count_90d": -0.0187,
+    "ontime_payment_rate": 0.0585,
+    "credit_utilisation": -0.2007,
+    "return_rate_90d": -0.1849,
+    "failed_rate_90d": -0.0722,
+    "cod_remit_ontime_rate": 0.2064,
+    "dispatch_to_delivery_hours": -0.2317
+  },
+  "notes": [],
+  "model_version": "synthetic_bd-20261013-164901-9445dcd"
+}

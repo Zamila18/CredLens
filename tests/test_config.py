@@ -128,3 +128,54 @@ def test_home_credit_is_never_presented_as_asian_data():
     assert "country not stated" in banner_text("homecredit")
     assert "Asia" in banner_text("kiva_asia")
     assert "Taiwan" in banner_text("taiwan_cc")
+
+
+# --- the newer sections are checked too ----------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("section", "key", "bad_value"),
+    [
+        ("evaluation", "top_k", -5),
+        ("evaluation", "calibration_bins", 0),
+        ("evaluation", "calibration_binning", "magic"),
+        ("evaluation", "bootstrap_level", 95),
+        ("features", "window_days", "ninety"),
+        ("features", "delivery_settle_days", None),
+        ("generator", "repayment_share_target", 3),
+        ("labels", "paid_in_full_tolerance", -1),
+        ("sanity", "min_not_repaid_for_stable_metrics", 0),
+        ("model", "bootstrap_resamples", 0),
+        ("model", "calibration", "magic"),
+        ("score", "low_score_warning_below", 150),
+        ("score", "by_mode", {"mars": {"band_min_coverage": 0.5}}),
+        ("score", "by_mode", {"taiwan_cc": {"made_up_line": 5}}),
+        ("score", "by_mode", {"taiwan_cc": {"band_min_coverage": 5}}),
+        ("model", "calibration_folds", 1),
+        ("model", "calibration_min_brier_gain", -0.1),
+    ],
+)
+def test_a_wrong_setting_is_named_when_the_config_loads(config, section, key, bad_value):
+    broken = copy.deepcopy(config)
+    broken[section][key] = bad_value
+    with pytest.raises(ConfigError, match=f"{section}.{key}"):
+        validate_config(broken)
+
+
+@pytest.mark.parametrize("section", ["evaluation", "features"])
+def test_a_missing_section_is_reported(config, section):
+    broken = copy.deepcopy(config)
+    del broken[section]
+    with pytest.raises(ConfigError, match=section):
+        validate_config(broken)
+
+
+def test_split_by_mode_is_checked(config):
+    broken = copy.deepcopy(config)
+    broken["split_by_mode"]["india_ltfs"]["test_months"] = 0
+    with pytest.raises(ConfigError, match="split_by_mode.india_ltfs.test_months"):
+        validate_config(broken)
+    unknown = copy.deepcopy(config)
+    unknown["split_by_mode"]["mars"] = {"train_months": 1, "validation_months": 1, "test_months": 1}
+    with pytest.raises(ConfigError, match="split_by_mode.mars"):
+        validate_config(unknown)

@@ -116,6 +116,21 @@ def validate_config(config: dict[str, Any]) -> None:
         0 <= score["band_strong_min_score"] <= 100
     ):
         problems.append("score.band_strong_min_score must be a number between 0 and 100")
+    if not _is_number(score.get("low_score_warning_below")) or not (
+        0 <= score["low_score_warning_below"] <= 100
+    ):
+        problems.append("score.low_score_warning_below must be a number between 0 and 100")
+    for line_mode, lines in (score.get("by_mode") or {}).items():
+        if line_mode not in VALID_MODES:
+            problems.append(f"score.by_mode.{line_mode} is not a known data mode")
+        allowed = ("band_strong_min_score", "band_min_coverage", "low_score_warning_below")
+        for name, value in (lines or {}).items():
+            highest = 1 if name == "band_min_coverage" else 100
+            if name not in allowed or not _is_number(value) or not 0 <= value <= highest:
+                problems.append(
+                    f"score.by_mode.{line_mode}.{name} is not a valid band line "
+                    f"(a number between 0 and {highest})"
+                )
     if not _is_positive_int(score.get("top_reasons_each_side")):
         problems.append("score.top_reasons_each_side must be a positive whole number")
 
@@ -133,6 +148,26 @@ def validate_config(config: dict[str, Any]) -> None:
     database = config.get("database") or {}
     if not database.get("url_env") or not database.get("default_url"):
         problems.append("database.url_env and database.default_url are required")
+
+    problems.extend(
+        _check_values(config, POSITIVE_WHOLE_NUMBERS, _is_positive_int, "a positive whole number")
+    )
+    problems.extend(_check_values(config, SHARES, _is_share, "a number between 0 and 1"))
+    model = config.get("model") or {}
+    if model.get("calibration") not in ("auto", "none", "platt", "isotonic"):
+        problems.append("model.calibration must be 'auto', 'none', 'platt' or 'isotonic'")
+    folds = model.get("calibration_folds")
+    if not _is_positive_int(folds) or folds < 2:
+        problems.append("model.calibration_folds must be a whole number of at least 2")
+    binning = (config.get("evaluation") or {}).get("calibration_binning")
+    if binning not in ("quantile", "width"):
+        problems.append("evaluation.calibration_binning must be 'quantile' or 'width'")
+    for mode, months in (config.get("split_by_mode") or {}).items():
+        if mode not in VALID_MODES:
+            problems.append(f"split_by_mode.{mode} is not a known data mode")
+        for name in ("train_months", "validation_months", "test_months"):
+            if not _is_positive_int((months or {}).get(name)):
+                problems.append(f"split_by_mode.{mode}.{name} must be a positive whole number")
 
     if problems:
         raise ConfigError("Invalid configuration:\n- " + "\n- ".join(problems))
@@ -178,6 +213,61 @@ def banner_text(mode: str) -> str:
     if mode not in SOURCE_LABELS:
         raise ConfigError(f"Unknown data mode: {mode!r}")
     return f"{SOURCE_LABELS[mode]} {DECISION_SUPPORT_NOTE}"
+
+
+# Settings checked by kind. A typo or a missing section is reported when the config is
+# loaded, not later as a confusing error deep inside a run.
+POSITIVE_WHOLE_NUMBERS = (
+    "model.bootstrap_resamples",
+    "model.logistic_regression.max_iter",
+    "evaluation.calibration_bins",
+    "evaluation.top_k",
+    "features.window_days",
+    "features.weekly_window_weeks",
+    "features.ontime_payment_days",
+    "features.late_payment_days",
+    "features.delivery_settle_days",
+    "features.thin_delivery_parcels",
+    "features.coverage_history_days",
+    "features.coverage_purchase_months",
+    "features.recent_activity_days",
+    "generator.observation_tail_days",
+    "generator.loans.term_days",
+    "generator.loans.max_loans",
+    "sanity.min_not_repaid_for_stable_metrics",
+)
+SHARES = (
+    "evaluation.lowest_share",
+    "evaluation.bootstrap_level",
+    "features.coverage_purchase_month_share",
+    "generator.repayment_share_target",
+    "labels.paid_in_full_tolerance",
+    "model.prefer_simple_if_auc_gain_below",
+    "model.calibration_min_brier_gain",
+    "sanity.useful_auc_benchmark",
+    "sanity.suspicious_auc",
+    "sanity.zero_signal_max_auc_gain",
+)
+
+
+def _lookup(config: dict[str, Any], dotted: str) -> Any:
+    """Return config["a"]["b"]["c"] for "a.b.c", or None if any part is missing."""
+    value: Any = config
+    for part in dotted.split("."):
+        if not isinstance(value, dict) or part not in value:
+            return None
+        value = value[part]
+    return value
+
+
+def _check_values(config: dict[str, Any], names: tuple[str, ...], is_valid, kind: str) -> list[str]:
+    """One problem line for each setting that is missing or of the wrong kind."""
+    return [f"{name} must be {kind}" for name in names if not is_valid(_lookup(config, name))]
+
+
+def _is_share(value: Any) -> bool:
+    """True for a number between 0 and 1."""
+    return _is_number(value) and 0 <= value <= 1
 
 
 def _is_number(value: Any) -> bool:

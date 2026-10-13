@@ -408,3 +408,28 @@ def test_seasonality_strength_zero_means_no_seasonality():
     purchases = load_config()["generator"]["purchases"]
     index = monthly_index(purchases["seasonality_file"], strength=0.0)
     assert all(value == pytest.approx(1.0) for value in index.values())
+
+
+# --- the planted-bias switch for the fairness audit ----------------------------------
+
+
+def repaid_share_by_tier(config: dict) -> pd.Series:
+    built, _, _ = build_tables(config, 0.5)
+    loans = built["loans"].dropna(subset=["outcome_label"]).merge(
+        built["merchants"][["merchant_id", "town_tier"]], on="merchant_id"
+    )
+    return loans.groupby("town_tier")["outcome_label"].apply(lambda s: s.astype(int).mean())
+
+
+def test_by_default_repayment_does_not_depend_on_town_tier():
+    share = repaid_share_by_tier(small_config())
+    assert share.max() - share.min() < 0.04
+
+
+def test_inject_group_bias_plants_a_gap_against_small_towns():
+    """The switch exists so the fairness audit can be shown to catch a gap that is there."""
+    biased = small_config()
+    biased["generator"]["inject_group_bias"] = 1.5
+    share = repaid_share_by_tier(biased)
+    assert share["small_town"] < share["metro"] - 0.08
+    assert share["small_town"] < share["city"] - 0.08

@@ -38,3 +38,17 @@ def reason_sentence(
     if sentences is None:
         return None
     return sentences[language]
+
+
+def expected_directions(dictionary: dict[str, Any]) -> dict[str, int]:
+    """For every model input: +1 if a higher value should raise the score, -1 if lower it.
+
+    Read from `higher_is: better | worse` in the dictionary. Entries without it (context
+    columns, questionnaire items) are not model inputs and are left out.
+    """
+    meaning = {"better": 1, "worse": -1}
+    return {
+        name: meaning[entry["higher_is"]]
+        for name, entry in dictionary["features"].items()
+        if entry.get("higher_is") in meaning
+    }
