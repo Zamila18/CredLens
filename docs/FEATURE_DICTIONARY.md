@@ -84,6 +84,16 @@ Context only (never model inputs): `loan_amount`, `asset_cost`, `earlier_loans`,
 
 Context only (never model inputs): `loan_amount`, `stated_income`, `past_instalments`, `pos_months_recorded`. An instalment paid in several parts is put together before it is judged. An instalment not paid by the day of the application counts as late by the days gone by since it was due. An applicant with no earlier loans has the six history features empty. Sentences say "applicant".
 
+### `kiva_asia` (built Oct 13; code `src/features/kiva_asia.py`)
+
+| Feature | Meaning | Higher is |
+|---|---|---|
+| repayment_term_months | Months over which the loan is to be repaid (group L) | worse |
+| partner_past_default_rate | Of the field partner's earlier loans with an outcome known on the posting day, the share that defaulted (group P) | worse |
+| partner_covers_default | 1 when the field partner, not the lender, carries the loss if the borrower does not pay (group P) | better |
+
+Context only: `loan_amount_usd`, `partner_known_loans`. There is no borrower-behaviour input in this mode, and group P describes the intermediary, not the shop; results are reported with and without it. The loan's description is never read: Kiva removes it from loans that defaulted.
+
 ## How the features are computed (as built in Phase 3)
 
 Code: `src/features/build_features.py`. Thresholds: the `features` section of `config/default.yaml`.

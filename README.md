@@ -11,12 +11,12 @@ Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2
 
 ## Status
 
-**Phases 0 to 6 are done (Oct 13, 2026): scaffold, synthetic data, database, features and labels, two models with a rule for choosing between them, calibration, score, coverage and bands, and the reasons behind a score. The API endpoints, the dashboard and the public-data checks are being built now.**
+**Phases 0 to 7 are done (Oct 13, 2026): scaffold, synthetic data, database, features and labels, two models with a rule for choosing between them, calibration, score, coverage and bands, the reasons behind a score, and adapters for four public data sources. The API endpoints, the dashboard and the runs on public data are being built now.**
 
 | Works now | Not built yet |
 |---|---|
-| Project structure, config loading and checks | Public-data adapter still to build: Kiva (Phase 7). Taiwan, India and Home Credit are built |
-| Data contract and adapter interface | Runs on the public data with real outcomes (Phase 8) |
+| Project structure, config loading and checks | |
+| Data contract and adapter interface; adapters and features for all four public sources (Taiwan, India, Home Credit, Kiva) | Runs on the public data with real outcomes (Phase 8) |
 | Synthetic data generator: 20,000 merchants, three delivery signal strengths | API endpoints for the queue, profile, score, decisions and audit (Phase 9) |
 | Database (SQLite locally): tables, loader, backup, Mifos X-style export; append-only decisions and audit log | React dashboard (Phase 10) |
 | Features built only from data before each loan, labels from the 30-day rule, and a leakage guard | Ablation, group audit, model cards, final check on the held-back test months (Phase 11) |
@@ -25,7 +25,7 @@ Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2
 | Reasons: three up and three down, in English and Bangla, with numbers that add up to the score (exact SHAP values) | |
 | Scoring service for the API: review queue and score card, nothing scored without consent | |
 | API contract, sample responses, `GET /health` | |
-| Lint, 544 tests and CI | |
+| Lint, 570 tests and CI | |
 
 ### Where the model stands (synthetic data, validation months, seed 42)
 
@@ -57,12 +57,12 @@ No partner data is used. Every screen names its data source.
 | Data mode | Source | What it is for |
 |---|---|---|
 | `synthetic_bd` | Generated, calibrated to public Bangladesh figures | The main demo, with every data stream |
-| `kiva_asia` | Kiva loans, filtered to Asia (2016 archive: 157,162 repaid and 2,743 defaulted in retail, food and services; no Bangladesh loans) | Checks the method on real Asian small-business outcomes |
+| `kiva_asia` | Kiva loans to shops in Asia, 2009 to 2013 (2016 archive: 65,304 loans, 2,512 defaulted; no Bangladesh loans) | Real Asian small-business outcomes, but with no borrower behaviour to score: it shows the limits, not the method |
 | `taiwan_cc` | UCI Taiwan credit-card default data | Checks the method on real Asian payment behaviour |
 | `india_ltfs` | India L&T vehicle loans (Kaggle) | Checks the method on real Indian borrowers, half of them with no credit record |
 | `homecredit` | Kaggle Home Credit (country not stated) | Checks the method at larger scale |
 
-`synthetic_bd` runs end to end today; `taiwan_cc`, `india_ltfs` and `homecredit` are mapped and have their features, and their model runs come in Phase 8. The Kiva file is checked and its adapter is next. Results on synthetic data show that the pipeline is sound. They say nothing about real merchants. The public datasets test the method; none of them is ShopUp data. Sources and licences: [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md).
+`synthetic_bd` runs end to end today; The four public sources are mapped and have their features; their model runs come in Phase 8. Results on synthetic data show that the pipeline is sound. They say nothing about real merchants. The public datasets test the method; none of them is ShopUp data. Sources and licences: [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md).
 
 ## Run it
 
