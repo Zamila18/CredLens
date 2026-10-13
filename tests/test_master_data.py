@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 
 from src.config import load_config
 from src.db.backup import backup_database
-from src.db.load import DEMO_USERS, DataAlreadyLoaded, load_tables
+from src.db.load import DEMO_USERS, DataAlreadyLoaded, DataMismatch, data_fingerprint, load_tables
 from src.db.mifos_adapter import export_mifos
 from src.db.models import (
     APPEND_ONLY_TABLES,
@@ -115,6 +115,26 @@ def test_loading_twice_changes_nothing_and_says_why(database_url, tables, engine
     with pytest.raises(DataAlreadyLoaded, match="--reset"):
         load_tables(tables, database_url)
     assert count(engine, "merchants") == N_MERCHANTS
+
+
+def test_loading_different_data_over_existing_data_is_an_error(database_url, tables, engine):
+    """If the files changed but the database did not, pages and scores would disagree."""
+    changed = {name: frame.copy() for name, frame in tables.items()}
+    changed["loans"] = changed["loans"].iloc[:-5]
+    changed["payments"] = changed["payments"][
+        changed["payments"]["loan_id"].isin(changed["loans"]["loan_id"])
+    ]
+    assert data_fingerprint(changed) != data_fingerprint(tables)
+    with pytest.raises(DataMismatch, match="DIFFERENT data"):
+        load_tables(changed, database_url)
+    assert count(engine, "loans") == len(tables["loans"]), "nothing was changed"
+
+
+def test_the_fingerprint_is_stable_and_sensitive(tables):
+    assert data_fingerprint(tables) == data_fingerprint({k: v.copy() for k, v in tables.items()})
+    edited = {name: frame.copy() for name, frame in tables.items()}
+    edited["loans"].loc[edited["loans"].index[0], "limit_bdt"] += 1
+    assert data_fingerprint(edited) != data_fingerprint(tables)
 
 
 def test_reset_wipes_and_reloads(database_url, tables, engine):
@@ -231,6 +251,39 @@ def test_the_database_itself_refuses_to_change_a_decision(engine, tables):
     with engine.connect() as connection:
         shown = connection.execute(text("SELECT score_shown FROM decisions")).scalar_one()
     assert shown == 72
+
+
+def test_insert_or_replace_cannot_overwrite_a_decision(engine, tables):
+    """Reusing a decision id to swap in a new row is refused, like an update would be."""
+    merchant_id = tables["merchants"]["merchant_id"].iloc[0]
+    with engine.begin() as connection:
+        connection.execute(insert(Decision.__table__), [a_decision(merchant_id)])
+
+    overwrite = text(
+        "INSERT OR REPLACE INTO decisions (decision_id, merchant_id, officer_id, model_version, "
+        "score_shown, officer_action, reason_text, decided_at) VALUES "
+        "('DEC-1', :merchant, 'officer-1', 'test-0', 5, 'accept', NULL, '2026-08-02 00:00:00')"
+    )
+    with pytest.raises(IntegrityError, match="append-only"):
+        with engine.begin() as connection:
+            connection.execute(overwrite, {"merchant": merchant_id})
+
+    with engine.connect() as connection:
+        shown = connection.execute(text("SELECT score_shown FROM decisions")).scalar_one()
+    assert shown == 72
+    assert count(engine, "decisions") == 1
+
+
+def test_a_second_decision_with_a_new_id_is_still_accepted(engine, tables):
+    """Append-only means rows can be added: a later decision does not replace an earlier one."""
+    merchant_id = tables["merchants"]["merchant_id"].iloc[0]
+    with engine.begin() as connection:
+        connection.execute(insert(Decision.__table__), [a_decision(merchant_id)])
+        connection.execute(
+            insert(Decision.__table__),
+            [a_decision(merchant_id, decision_id="DEC-2", officer_action="needs_more_info")],
+        )
+    assert count(engine, "decisions") == 2
 
 
 def test_the_audit_log_is_append_only_too(engine):

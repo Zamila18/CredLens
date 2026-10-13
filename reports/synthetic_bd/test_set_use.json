@@ -1,0 +1,14 @@
+[
+  {
+    "number": 1,
+    "when": "2026-10-13T13:44:49",
+    "purpose": "generator difficulty check (Phase 1, Oct 12-13)",
+    "detail": "A rough logistic regression on crude features was scored on the test months several times while the generator noise levels were tuned, and once more after the observation tail became 61 days. Reported AUC about 0.69 to 0.75."
+  },
+  {
+    "number": 2,
+    "when": "2026-10-13T13:44:49",
+    "purpose": "audit probes (Oct 13)",
+    "detail": "During the fault review, a quick logistic regression on the Phase 3 features was scored on the test months once (AUC 0.745) to compare scores of thin-file merchants. No model was selected or tuned from it; later probes used validation months."
+  }
+]

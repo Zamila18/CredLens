@@ -11,8 +11,13 @@ Implements: docs/GENERATOR_SPEC.md ("Required self-checks") and PROJECT_BRIEF se
 
 It builds a handful of crude features for each loan, using only events dated before
 the loan was issued, fits a plain logistic regression on the first 12 months of loans
-and scores the last 3 months. The numbers are a sanity check on the generator. They
-must not be quoted as model results.
+and scores the VALIDATION months (the 3 months after training). It never looks at the
+test months, which are kept for the final report. The numbers are a sanity check on the
+generator. They must not be quoted as model results.
+
+History, stated openly: until Oct 13, 2026 this check scored the test months, and the
+generator's difficulty was tuned with those numbers. That use is recorded in
+reports/synthetic_bd/test_set_use.json.
 
 Run it:
     python -m src.synth.difficulty_check
@@ -32,6 +37,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 from src.config import load_config
+from src.model.split import split_for_mode
 from src.synth.generate import ALL_STRENGTHS, build_tables
 
 LOOKBACK_DAYS = 90
@@ -122,15 +128,9 @@ def build_check_features(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
 def _split_by_time(
     frame: pd.DataFrame, config: dict[str, Any]
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Train on the first months of loans, test on the last ones. Never a random split."""
-    start = pd.Timestamp(config["generator"]["start_date"])
-    split = config["split"]
-    train_end = start + pd.DateOffset(months=split["train_months"])
-    test_start = train_end + pd.DateOffset(months=split["validation_months"])
-    test_end = test_start + pd.DateOffset(months=split["test_months"])
-    train = frame[frame["issue_date"] < train_end]
-    test = frame[(frame["issue_date"] >= test_start) & (frame["issue_date"] < test_end)]
-    return train, test
+    """Train on the first months of loans, score the validation months. Never the test months."""
+    split = split_for_mode(frame, config, mode="synthetic_bd", date_column="issue_date")
+    return split.train, split.validation
 
 
 def _auc(train: pd.DataFrame, test: pd.DataFrame, features: list[str]) -> float:
@@ -148,23 +148,24 @@ def check(config: dict[str, Any], strength: float) -> dict[str, Any]:
     """Generate data at one signal strength and measure how predictable it is."""
     tables, latent, facts = build_tables(config, strength)
     frame = build_check_features(tables)
-    train, test = _split_by_time(frame, config)
+    train, scored = _split_by_time(frame, config)
 
     set_a = PURCHASE_FEATURES
     set_b = set_a + PAYMENT_FEATURES
     set_c = set_b + DELIVERY_FEATURES
-    auc_b = _auc(train, test, set_b)
-    auc_c = _auc(train, test, set_c)
+    auc_b = _auc(train, scored, set_b)
+    auc_c = _auc(train, scored, set_c)
 
     # The best any model could do: predicting from the hidden reliability itself.
-    truth = test.merge(latent[["merchant_id", "reliability"]], on="merchant_id")
+    truth = scored.merge(latent[["merchant_id", "reliability"]], on="merchant_id")
     return {
         "delivery_signal_strength": strength,
+        "scored_on": "validation months",
         "train_loans": int(len(train)),
-        "test_loans": int(len(test)),
-        "test_bad_loans": int((test["label"] == 0).sum()),
-        "repaid_share_test": round(float(test["label"].mean()), 4),
-        "auc_purchases_only": round(_auc(train, test, set_a), 4),
+        "validation_loans": int(len(scored)),
+        "validation_not_repaid_loans": int((scored["label"] == 0).sum()),
+        "repaid_share_validation": round(float(scored["label"].mean()), 4),
+        "auc_purchases_only": round(_auc(train, scored, set_a), 4),
         "auc_plus_payments": round(auc_b, 4),
         "auc_plus_deliveries": round(auc_c, 4),
         "delivery_gain": round(auc_c - auc_b, 4),
