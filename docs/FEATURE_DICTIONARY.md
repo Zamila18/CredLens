@@ -68,6 +68,22 @@ Context only (never model inputs): `credit_limit`, `months_card_used`, `months_w
 
 Context only (never model inputs): `loan_amount`, `asset_cost`, `earlier_loans`, `credit_history_months`, `average_account_age_months`. A borrower with no bureau record has the five bureau features empty, not zero. The small codes the file carries for "not scored" (for example 15) are not read as scores. Sentences say "borrower".
 
+### `homecredit` (built Oct 13; code `src/features/homecredit.py`; country not stated)
+
+| Feature | Meaning | Higher is |
+|---|---|---|
+| inst_ontime_rate | Share of the instalments on earlier loans paid on or before the due day | better |
+| inst_mean_days_late | Average days late over those instalments (0 for one paid on time) | worse |
+| inst_late_30d_share | Share paid more than 30 days late, or still unpaid after 30 days | worse |
+| inst_paid_short_share | Share where less than 99% of the amount due was paid | worse |
+| inst_recent_ontime_rate | The on-time share over instalments due in the last 365 days | better |
+| pos_months_overdue_share | Share of the monthly records of earlier store and cash loans with an amount overdue | worse |
+| annuity_to_income | The loan's repayment amount divided by the stated income | worse |
+| credit_to_goods_ratio | The loan amount divided by the price of the goods | worse |
+| external_score | Average of the available scores "from external data sources" (group X) | better |
+
+Context only (never model inputs): `loan_amount`, `stated_income`, `past_instalments`, `pos_months_recorded`. An instalment paid in several parts is put together before it is judged. An instalment not paid by the day of the application counts as late by the days gone by since it was due. An applicant with no earlier loans has the six history features empty. Sentences say "applicant".
+
 ## How the features are computed (as built in Phase 3)
 
 Code: `src/features/build_features.py`. Thresholds: the `features` section of `config/default.yaml`.
