@@ -96,6 +96,7 @@ def test_dates_are_read_day_first_and_the_label_is_one_minus_default(tables):
 
 def test_audit_columns_are_kept_apart(adapter, tables, features):
     audit = adapter.audit_frame().set_index("merchant_id")
+    assert list(audit.columns) == load_config()["fairness"]["audit_only_columns"][MODE]
     assert list(audit.columns) == ["age_band", "State_ID", "Employment.Type"]
     assert audit.loc["IN1001", "age_band"] == "25 to 34"  # born 1990
     assert audit.loc["IN1005", "age_band"] == "under 25"  # born 1999

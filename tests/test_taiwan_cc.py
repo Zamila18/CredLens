@@ -111,6 +111,7 @@ def test_payments_are_the_six_monthly_statements(tables):
 
 def test_audit_columns_are_kept_apart(adapter, tables, features):
     audit = adapter.audit_frame().set_index("merchant_id")
+    assert list(audit.columns) == load_config()["fairness"]["audit_only_columns"][MODE]
     assert list(audit.columns) == ["SEX", "EDUCATION", "MARRIAGE", "age_band"]
     assert audit.loc["TW000001", "age_band"] == "under 30"
     assert audit.loc["TW000005", "age_band"] == "30 to 39"

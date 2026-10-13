@@ -180,6 +180,7 @@ def test_no_name_story_or_town_survives(adapter, tables, folder):
 
 def test_audit_columns_are_kept_apart(adapter, tables, features):
     audit = adapter.audit_frame().set_index("merchant_id")
+    assert list(audit.columns) == load_config()["fairness"]["audit_only_columns"][MODE]
     assert list(audit.columns) == ["borrower_genders", "country"]
     assert audit["borrower_genders"].to_dict() == {
         "KV1": "female", "KV2": "female", "KV3": "male", "KV4": "mixed", "KV9": "not stated",

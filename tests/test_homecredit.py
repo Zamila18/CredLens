@@ -107,6 +107,7 @@ def test_the_country_is_never_claimed():
 
 def test_audit_columns_are_kept_apart(adapter, tables, features):
     audit = adapter.audit_frame().set_index("merchant_id")
+    assert list(audit.columns) == load_config()["fairness"]["audit_only_columns"][MODE]
     assert list(audit.columns) == ["CODE_GENDER", "age_band", "REGION_RATING_CLIENT"]
     assert audit.loc["HC100001", "age_band"] == "30 to 39"  # 12,000 days is 32.9 years
     assert audit.loc["HC100003", "age_band"] == "under 30"
@@ -208,6 +209,23 @@ def test_history_dated_after_the_application_stops_the_build(config, tmp_path):
     rows.to_csv(tmp_path / INSTALMENT_FILE, index=False)
     with pytest.raises(ValueError, match="on or after the application"):
         HomeCreditAdapter(config, folder=tmp_path, use_cache=False).load_all()
+
+
+def test_monthly_records_dated_after_the_application_stop_the_build(config, tmp_path):
+    copy_fixture(tmp_path)
+    rows = pd.read_csv(tmp_path / POS_FILE)
+    rows.loc[0, "MONTHS_BALANCE"] = 1
+    rows.to_csv(tmp_path / POS_FILE, index=False)
+    with pytest.raises(ValueError, match="on or after the application"):
+        HomeCreditAdapter(config, folder=tmp_path, use_cache=False).load_all()
+
+
+def test_working_through_the_applicants_in_batches_gives_the_same_counts(config, records):
+    """With every applicant in use the history is built in several passes to bound memory."""
+    batched = copy.deepcopy(config)
+    batched["data"][MODE]["applicants_per_pass"] = 2
+    again = HomeCreditAdapter(batched, folder=FIXTURE_FOLDER, use_cache=False).source_records()
+    pd.testing.assert_frame_equal(again.set_index("merchant_id"), records)
 
 
 def test_features_do_not_change_when_the_outcome_changes(config, tmp_path, features):
