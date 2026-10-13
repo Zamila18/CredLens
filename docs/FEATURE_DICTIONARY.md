@@ -36,6 +36,25 @@ Rules
 - Questionnaire (group D) is shown beside the score, not used in the headline model. Its reasons appear in the questionnaire panel only.
 - Public-data sources add their own entries (e.g. kiva: loan_amount_usd, term_months, repayment_interval_irregular, sector; taiwan_cc: ontime_share_6m, worst_delay_6m, pay_to_bill_ratio, limit_utilisation; homecredit: inst_ontime_rate, inst_mean_days_late, pos_months_active). Claude Code adds these to dictionary.yaml with EN/BN sentences when building the adapters.
 
+## Features of the public data modes (Phase 7)
+
+Each public mode has its own inputs, built only from fields that source really has. They live in `dictionary.yaml` under `source_features.<mode>` and are computed by a small builder per mode (`src/features/source_features.py`). Everything after the feature table is shared with the synthetic data. The same rules apply: behaviour only as model inputs, amounts of data as context and coverage, empty is not zero, every input says which way it points, and sentences are true or comparing. Sentences say "client", not "shop".
+
+### `taiwan_cc` (built Oct 13; code `src/features/taiwan_cc.py`)
+
+| Feature | Meaning | Higher is |
+|---|---|---|
+| ontime_share_6m | Of the six months in which the card was used, the share with no late payment | better |
+| worst_delay_6m | Longest payment delay in six months, in months | worse |
+| latest_delay_months | Delay in the most recent month, in months | worse |
+| delay_trend_6m | Average delay of the three newest months minus the three oldest | worse |
+| pay_to_bill_ratio | Amount paid in five months divided by the bills of the month before each | better |
+| limit_utilisation | Average bill divided by the credit limit | worse |
+| balance_growth_6m | Newest bill minus oldest bill, divided by the credit limit | worse |
+| no_payment_month_share | Of the months that followed a bill, the share in which nothing was paid | worse |
+
+Context only (never model inputs): `credit_limit`, `months_card_used`, `months_with_bill`. A month with status -2 (card not used) is left out of every lateness feature, so a client who never used the card has empty features and low coverage, not a perfect record. A negative bill (credit balance) counts as zero.
+
 ## How the features are computed (as built in Phase 3)
 
 Code: `src/features/build_features.py`. Thresholds: the `features` section of `config/default.yaml`.

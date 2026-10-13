@@ -28,6 +28,12 @@ Rules for every source:
 | Audit-only columns | `SEX`, `EDUCATION`, `MARRIAGE`, age band from `AGE` |
 | Quirks | An extra header row (`X1`, `X2`, ...) above the real names. A few undocumented codes in `EDUCATION` (0, 5, 6) and `MARRIAGE` (0) |
 | Limits | Consumer credit cards, not merchants. One fixed window with no per-row dates, so the split is stratified random and marked weaker. Data from 2005 |
+| Adapter (built Oct 13) | `src/adapters/taiwan_cc.py`. One merchant, one loan and one "public_dataset" consent row per client; the six monthly statements go into `payments` (bill, amount paid, month end as a nominal date: the source gives months only); purchases, deliveries and questionnaire stay empty. Amounts are New Taiwan dollars, not converted, although the contract's column names end in `_bdt` |
+| What a feature may read | `LIMIT_BAL`, the six `PAY_` status codes, the six `BILL_AMT` and the six `PAY_AMT` columns: all known at the end of September 2005, before the October outcome. The outcome, `ID`, `SEX`, `EDUCATION`, `MARRIAGE` and `AGE` never reach the feature builder; a test plants each one and checks it is refused |
+| Status codes | -2 = card not used that month, -1 = paid in full, 0 = minimum paid, 1 to 8 = months late. The UCI page documents -1 and 1 to 9 only; the reading of -2 and 0 comes from the data set's author and is the one generally used. 2,759 to 4,895 clients per month have -2 |
+| Model inputs (8) | Share of used months paid on time, longest delay, latest delay, change in delay, share of bills paid, share of the limit in use, balance growth, share of months with a bill but no payment. The credit limit itself is context, not an input: it is the lender's view, not the client's behaviour |
+| Coverage | Limit recorded (15%), card used in at least 4 of 6 months (35%), a bill in at least 4 months (25%), at least one payment (25%). 24,527 clients have full coverage; 2,725 fall under the 45% line. The 1,269 clients with only a credit limit repaid less often (67%) than the rest (78%): the model cannot see that, by design, and they get "Needs more info" |
+| First look (not the reported result) | A quick fit on the training part, read on the validation part: AUC about 0.74 for the logistic regression and 0.76 for LightGBM from behaviour inputs alone. The proper run with ranges, calibration and bands is Phase 8 |
 
 ### 1.2 India L&T vehicle loans, Kaggle (`india_ltfs`)
 

@@ -15,7 +15,7 @@ Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2
 
 | Works now | Not built yet |
 |---|---|
-| Project structure, config loading and checks | Public-data adapters: Taiwan, India, Home Credit, Kiva (Phase 7) |
+| Project structure, config loading and checks | Public-data adapters still to build: India, Home Credit, Kiva (Phase 7). Taiwan is built |
 | Data contract and adapter interface | Runs on the public data with real outcomes (Phase 8) |
 | Synthetic data generator: 20,000 merchants, three delivery signal strengths | API endpoints for the queue, profile, score, decisions and audit (Phase 9) |
 | Database (SQLite locally): tables, loader, backup, Mifos X-style export; append-only decisions and audit log | React dashboard (Phase 10) |
@@ -25,7 +25,7 @@ Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2
 | Reasons: three up and three down, in English and Bangla, with numbers that add up to the score (exact SHAP values) | |
 | Scoring service for the API: review queue and score card, nothing scored without consent | |
 | API contract, sample responses, `GET /health` | |
-| Lint, 449 tests and CI | |
+| Lint, 482 tests and CI | |
 
 ### Where the model stands (synthetic data, validation months, seed 42)
 
@@ -62,7 +62,7 @@ No partner data is used. Every screen names its data source.
 | `india_ltfs` | India L&T vehicle loans (Kaggle) | Checks the method on real Indian borrowers, half of them with no credit record |
 | `homecredit` | Kaggle Home Credit (country not stated) | Checks the method at larger scale |
 
-Only `synthetic_bd` runs today; the other four have their files checked and their adapters are being built. Results on synthetic data show that the pipeline is sound. They say nothing about real merchants. The public datasets test the method; none of them is ShopUp data. Sources and licences: [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md).
+`synthetic_bd` runs end to end today; `taiwan_cc` is mapped and has its features, and its model run comes in Phase 8. The other three have their files checked and their adapters are being built. Results on synthetic data show that the pipeline is sound. They say nothing about real merchants. The public datasets test the method; none of them is ShopUp data. Sources and licences: [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md).
 
 ## Run it
 
