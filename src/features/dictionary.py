@@ -52,3 +52,68 @@ def expected_directions(dictionary: dict[str, Any]) -> dict[str, int]:
         for name, entry in dictionary["features"].items()
         if entry.get("higher_is") in meaning
     }
+
+
+CONDITIONS = {
+    "above": lambda value, limit: value > limit,
+    "below": lambda value, limit: value < limit,
+    "at_least": lambda value, limit: value >= limit,
+    "at_most": lambda value, limit: value <= limit,
+}
+
+
+def statement_holds(entry: dict[str, Any], raised_score: bool, value: float) -> bool:
+    """True when the sentence for this direction is a true statement about the value.
+
+    A contribution is measured against the average merchant, but some sentences make a
+    plain claim: "No recent late payments" must mean none, and "purchases are growing"
+    must mean growth above zero. `shown_when` in the dictionary holds those conditions.
+    An entry without one has sentences that compare with similar shops, which are true
+    whenever the contribution points that way.
+    """
+    conditions = (entry.get("shown_when") or {}).get("positive" if raised_score else "negative")
+    if not conditions:
+        return True
+    return all(CONDITIONS[name](value, limit) for name, limit in conditions.items())
+
+
+def reason_sentences(
+    entry: dict[str, Any], raised_score: bool, value: float
+) -> dict[str, str] | None:
+    """The sentence to show for an input that raised or lowered the score, in both languages.
+
+    The plain sentence if it is true for this value; else the comparing sentence under
+    `otherwise`; else None (nothing truthful to say, so no reason is shown).
+    """
+    side = "positive" if raised_score else "negative"
+    if entry.get(side) and statement_holds(entry, raised_score, value):
+        return entry[side]
+    return (entry.get("otherwise") or {}).get(side)
+
+
+def _format_value(value: float, style: str) -> str:
+    if style == "share":
+        return f"{100 * value:.1f}%"
+    if style == "percent_change":
+        return f"{value:+.0f}%"
+    if style == "days":
+        return f"{value:.1f} days"
+    if style == "hours":
+        return f"{value:.0f} hours"
+    if style == "count":
+        return f"{value:.0f}" if float(value).is_integer() else f"{value:.1f}"
+    raise ValueError(f"Unknown detail format: {style!r}")
+
+
+def detail_text(entry: dict[str, Any], value: float, average: float) -> str | None:
+    """The number shown beside a reason, e.g. "Returns 7.5% vs average 7.0%".
+
+    `average` is the training average of that input (the "average merchant" a score is
+    explained against). Returns None for an entry with no `detail` in the dictionary.
+    """
+    detail = entry.get("detail")
+    if not detail:
+        return None
+    style = detail["format"]
+    shown, typical = _format_value(value, style), _format_value(average, style)
+    return f"{detail['label']} {shown} vs average {typical}"

@@ -146,12 +146,27 @@ model:
   calibration: auto              # none | platt | isotonic | auto (compare on validation, keep the simplest that is good enough)
   calibration_folds: 5           # validation loans are cut into this many folds to compare the choices honestly
   calibration_min_brier_gain: 0.0002   # a more flexible calibrator must lower the Brier score by at least this
-  prefer_simple_if_auc_gain_below: 0.01
+  prefer_simple_if_auc_gain_below: 0.01   # LightGBM is used only if the WHOLE range of its AUC gain reaches this
   bootstrap_resamples: 500
   logistic_regression:
     C: 1.0                       # regularisation strength (smaller = stronger)
     max_iter: 1000
     clip_quantiles: [0.01, 0.99] # extreme feature values are pulled in to these training quantiles
+  lightgbm:
+    clip_quantiles: [0.01, 0.99]
+    tuning_months: 3             # the last months of the TRAINING period, held back to tune on (time split)
+    tuning_share: 0.25           # the share of training loans held back to tune on (random split)
+    max_trees: 2000              # upper limit; early stopping decides the real number
+    early_stopping_rounds: 100   # stop when the tuning part has not improved for this many trees
+    row_share_per_tree: 0.8      # each tree sees this share of the loans
+    input_share_per_tree: 0.8    # and this share of the inputs
+    l2_penalty: 5.0              # larger = more cautious trees
+    grid:                        # every setting is tried; the lowest log loss on the tuning part wins
+      - {num_leaves: 4, learning_rate: 0.05, min_child_samples: 100}
+      - {num_leaves: 8, learning_rate: 0.05, min_child_samples: 100}
+      - {num_leaves: 8, learning_rate: 0.03, min_child_samples: 200}
+      - {num_leaves: 16, learning_rate: 0.03, min_child_samples: 200}
+      - {num_leaves: 4, learning_rate: 0.03, min_child_samples: 300}
 
 evaluation:
   calibration_bins: 10           # predictions are grouped into this many bins
@@ -171,6 +186,9 @@ score:
   low_score_warning_below: 70    # a score under this gets an explicit low-score warning
   by_mode: {}                    # optional own lines per data mode, e.g. taiwan_cc: {band_strong_min_score: 85}
   top_reasons_each_side: 3
+  min_reason_points: 0.1         # a contribution smaller than this many score points is not shown as a reason
+  max_inputs_for_exact_reasons: 14   # reasons are computed exactly; 14 inputs = 16,384 combinations per merchant
+  reasons_report_sample: 300     # validation loans whose reasons are checked in the training report
 
 coverage_weights_by_mode:        # public modes: coverage = how much of what the source can provide is present
   kiva_asia:                     # provisional until the real columns are inspected; must sum to 1.0

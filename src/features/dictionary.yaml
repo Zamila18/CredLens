@@ -10,6 +10,10 @@
 # - If a feature is missing for a merchant, no reason is generated for it.
 # - The Bangla text must be reviewed by a native speaker before the demo.
 # - Public-data modes (kiva_asia, taiwan_cc) add their own entries in Phase 7.
+# - `shown_when` says when a plain sentence is true for a merchant (above / below /
+#   at_least / at_most a value). When it is not true, the comparing sentence under
+#   `otherwise` is shown instead ("... than at similar shops"), which is true whenever the
+#   input moved the score that way. `detail` says how the number beside a reason is written.
 # - Every model input says which way it points: `higher_is: better` or `higher_is: worse`.
 #   Training removes an input whose learned weight points the other way, so a reason
 #   sentence can never contradict the facts.
@@ -53,6 +57,17 @@ features:
   basket_growth:
     group: A
     higher_is: better
+    shown_when:                  # the sentence must be true, not just "better than average"
+      positive: {above: 0}
+      negative: {below: 0}
+    otherwise:                   # used when the plain sentence is not true for the merchant
+      positive:
+        en: "Stock purchases are growing faster than at similar shops."
+        bn: "সমান ধরনের দোকানের তুলনায় মাল কেনা দ্রুত বাড়ছে।"
+      negative:
+        en: "Stock purchases are growing more slowly than at similar shops."
+        bn: "সমান ধরনের দোকানের তুলনায় মাল কেনা ধীরে বাড়ছে।"
+    detail: {label: "Purchase growth", format: percent_change}
     definition: Purchase value last 90 days vs the 90 before, %
     higher_means: growth
     positive:
@@ -101,6 +116,7 @@ features:
   supplier_repeat_share:
     group: A
     higher_is: better
+    detail: {label: "Repeat-supplier share", format: share}
     definition: >-
       Chance that two of the merchant's purchases in the last 90 days came from the same
       supplier (counted over all pairs of purchases, so it does not depend on how many
@@ -129,6 +145,13 @@ features:
   avg_pay_delay_days:
     group: B
     higher_is: worse
+    shown_when:
+      positive: {at_most: 3}     # "close to the due date" = within the on-time window
+    otherwise:
+      positive:
+        en: "Past payments were late by fewer days than at similar shops."
+        bn: "সমান ধরনের দোকানের তুলনায় আগের পেমেন্টে কম দিন দেরি হয়েছে।"
+    detail: {label: "Average payment delay", format: days}
     definition: Mean days late over past payments
     higher_means: worse
     positive:
@@ -141,6 +164,17 @@ features:
   late_pay_count_90d:
     group: B
     higher_is: worse
+    shown_when:
+      positive: {at_most: 0}     # "No recent late payments" needs exactly none
+      negative: {at_least: 1}
+    otherwise:
+      positive:
+        en: "Fewer recent late payments than at similar shops."
+        bn: "সমান ধরনের দোকানের তুলনায় সাম্প্রতিক দেরির পেমেন্ট কম।"
+      negative:
+        en: "More recent late payments than at similar shops."
+        bn: "সমান ধরনের দোকানের তুলনায় সাম্প্রতিক দেরির পেমেন্ট বেশি।"
+    detail: {label: "Late payments in 90 days", format: count}
     definition: Payments over 7 days late, 90 days
     higher_means: worse
     positive:
@@ -153,6 +187,17 @@ features:
   ontime_payment_rate:
     group: B
     higher_is: better
+    shown_when:
+      positive: {above: 0.5}     # "Most payments" = more than half
+      negative: {below: 0.5}
+    otherwise:
+      positive:
+        en: "More payments arrive on time than at similar shops."
+        bn: "সমান ধরনের দোকানের তুলনায় বেশি পেমেন্ট সময়মতো আসে।"
+      negative:
+        en: "Fewer payments arrive on time than at similar shops."
+        bn: "সমান ধরনের দোকানের তুলনায় কম পেমেন্ট সময়মতো আসে।"
+    detail: {label: "Payments on time", format: share}
     definition: Share of payments within 3 days of due
     higher_means: reliable
     positive:
@@ -165,6 +210,13 @@ features:
   credit_utilisation:
     group: B
     higher_is: worse
+    shown_when:
+      negative: {above: 0.8}     # "close to the limit"
+    otherwise:
+      negative:
+        en: "Credit use is higher than at similar shops."
+        bn: "সমান ধরনের দোকানের তুলনায় ঋণের ব্যবহার বেশি।"
+    detail: {label: "Credit limit in use", format: share}
     definition: Used limit / limit
     higher_means: stretched
     positive:
@@ -189,6 +241,7 @@ features:
   return_rate_90d:
     group: C
     higher_is: worse
+    detail: {label: "Returns", format: share}
     definition: >-
       Merchant-attributable returns (refused, wrong item) / total, 90 days;
       address/rider returns excluded when return_reason is known
@@ -203,6 +256,7 @@ features:
   failed_rate_90d:
     group: C
     higher_is: worse
+    detail: {label: "Failed deliveries", format: share}
     definition: >-
       Failed parcels not tagged as an address or rider problem / total, 90 days
     higher_means: worse
@@ -216,6 +270,13 @@ features:
   cod_remit_ontime_rate:
     group: C
     higher_is: better
+    shown_when:
+      positive: {above: 0.5}
+    otherwise:
+      positive:
+        en: "More cash-on-delivery money is passed back on time than at similar shops."
+        bn: "সমান ধরনের দোকানের তুলনায় ক্যাশ-অন-ডেলিভারির টাকা বেশি সময়মতো ফেরত আসে।"
+    detail: {label: "Cash-on-delivery passed back on time", format: share}
     definition: Share of cash-on-delivery money passed back on time
     higher_means: reliable
     positive:
@@ -228,6 +289,7 @@ features:
   dispatch_to_delivery_hours:
     group: C
     higher_is: worse
+    detail: {label: "Delivery time", format: hours}
     definition: Median hours from dispatch to delivery
     higher_means: slower
     positive:

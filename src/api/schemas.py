@@ -42,7 +42,7 @@ class Reason(BaseModel):
     sentence_bn: str
     contribution: float = Field(description="Score points this reason added (+) or removed (-).")
     detail: str | None = Field(
-        default=None, description="Optional number for context, e.g. 'Returns 7.5% vs typical 4%'."
+        default=None, description="Number for context, e.g. 'Returns 7.5% vs average 7.0%'."
     )
 
 

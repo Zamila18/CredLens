@@ -28,6 +28,221 @@
     "left_out_no_valid_consent": 1342
   },
   "model": "logistic_regression",
+  "model_choice": {
+    "chosen": "logistic_regression",
+    "reason": "LightGBM adds +0.013 AUC over the logistic regression (range +0.003 to +0.021; the whole range must reach +0.010). Not met: whole gain range reaches the threshold.",
+    "auc_gain_of_lightgbm": {
+      "auc_gain": 0.01281932660989149,
+      "range": [
+        0.003219869314441788,
+        0.02120551877989509
+      ],
+      "clearly_better": true,
+      "resamples_used": 500
+    },
+    "brier": {
+      "logistic_regression": 0.08191852475007164,
+      "lightgbm": 0.08149975538339983
+    },
+    "checks": {
+      "whole_gain_range_reaches_the_threshold": false,
+      "brier_is_not_worse": true
+    }
+  },
+  "candidates": {
+    "logistic_regression": {
+      "inputs_used": [
+        "basket_growth",
+        "supplier_repeat_share",
+        "avg_pay_delay_days",
+        "late_pay_count_90d",
+        "ontime_payment_rate",
+        "credit_utilisation",
+        "return_rate_90d",
+        "failed_rate_90d",
+        "cod_remit_ontime_rate",
+        "dispatch_to_delivery_hours"
+      ],
+      "inputs_removed_for_pointing_the_wrong_way": [],
+      "calibration_method": "none",
+      "train_roc_auc": 0.7282549779478482,
+      "validation_metrics": {
+        "roc_auc": 0.7095343071194196,
+        "pr_auc_not_repaid": 0.22963155925406012,
+        "brier": 0.08191852475007164,
+        "calibration_error": 0.011723266973884145,
+        "not_repaid_rate_in_lowest_k": 0.55,
+        "not_repaid_caught_in_lowest": 0.4326241134751773,
+        "precision_at_top_k": 0.95,
+        "share_at_or_above_strong_line": 0.6647872885699642
+      },
+      "validation_ranges": {
+        "roc_auc": [
+          0.6879206245533557,
+          0.7287520030974041
+        ],
+        "pr_auc_not_repaid": [
+          0.2000945761703809,
+          0.2652321501557503
+        ],
+        "brier": [
+          0.07682075871424861,
+          0.08780054896863185
+        ],
+        "calibration_error": [
+          0.010015510379825248,
+          0.021075473364463217
+        ],
+        "resamples_used": 500
+      },
+      "validation_by_history": {
+        "first_loans": {
+          "loans": 3148,
+          "not_repaid_loans": 332,
+          "roc_auc": 0.6645395502464403,
+          "roc_auc_range": [
+            0.633003204147382,
+            0.6940530438823631
+          ],
+          "warnings": []
+        },
+        "repeat_loans": {
+          "loans": 2705,
+          "not_repaid_loans": 232,
+          "roc_auc": 0.7695176875775617,
+          "roc_auc_range": [
+            0.7379677431895082,
+            0.8011746323030381
+          ],
+          "warnings": []
+        }
+      }
+    },
+    "lightgbm": {
+      "inputs_used": [
+        "basket_growth",
+        "supplier_repeat_share",
+        "avg_pay_delay_days",
+        "late_pay_count_90d",
+        "ontime_payment_rate",
+        "credit_utilisation",
+        "return_rate_90d",
+        "failed_rate_90d",
+        "cod_remit_ontime_rate",
+        "dispatch_to_delivery_hours"
+      ],
+      "inputs_removed_for_pointing_the_wrong_way": [],
+      "calibration_method": "platt",
+      "train_roc_auc": 0.7626784949089862,
+      "validation_metrics": {
+        "roc_auc": 0.722353633729311,
+        "pr_auc_not_repaid": 0.2287128855569931,
+        "brier": 0.08149975538339983,
+        "calibration_error": 0.009409031591004955,
+        "not_repaid_rate_in_lowest_k": 0.5,
+        "not_repaid_caught_in_lowest": 0.42730496453900707,
+        "precision_at_top_k": 1.0,
+        "share_at_or_above_strong_line": 0.6418930463010422
+      },
+      "validation_ranges": {
+        "roc_auc": [
+          0.7010432117397644,
+          0.7416489390239573
+        ],
+        "pr_auc_not_repaid": [
+          0.19917631218957577,
+          0.26236304564715385
+        ],
+        "brier": [
+          0.07641279779572634,
+          0.08746433411733592
+        ],
+        "calibration_error": [
+          0.007699436270024635,
+          0.01863318285135934
+        ],
+        "resamples_used": 500
+      },
+      "validation_by_history": {
+        "first_loans": {
+          "loans": 3148,
+          "not_repaid_loans": 332,
+          "roc_auc": 0.6678420001026835,
+          "roc_auc_range": [
+            0.6377052967038782,
+            0.6973373505471483
+          ],
+          "warnings": []
+        },
+        "repeat_loans": {
+          "loans": 2705,
+          "not_repaid_loans": 232,
+          "roc_auc": 0.777410690631231,
+          "roc_auc_range": [
+            0.7458641930493599,
+            0.8038149101458766
+          ],
+          "warnings": []
+        }
+      },
+      "tuning": {
+        "tuned_on": "the last 3 months of the training period",
+        "fit_part_loans": 7796,
+        "tuning_part_loans": 5522,
+        "chosen": {
+          "num_leaves": 8,
+          "learning_rate": 0.03,
+          "min_child_samples": 200,
+          "trees": 198,
+          "tuning_log_loss": 0.275429354143431,
+          "tuning_roc_auc": 0.7653073219037252
+        },
+        "tried": [
+          {
+            "num_leaves": 4,
+            "learning_rate": 0.05,
+            "min_child_samples": 100,
+            "trees": 164,
+            "tuning_log_loss": 0.27622859839298314,
+            "tuning_roc_auc": 0.763512374516207
+          },
+          {
+            "num_leaves": 8,
+            "learning_rate": 0.05,
+            "min_child_samples": 100,
+            "trees": 124,
+            "tuning_log_loss": 0.2758771253547944,
+            "tuning_roc_auc": 0.7632867304668601
+          },
+          {
+            "num_leaves": 8,
+            "learning_rate": 0.03,
+            "min_child_samples": 200,
+            "trees": 198,
+            "tuning_log_loss": 0.275429354143431,
+            "tuning_roc_auc": 0.7653073219037252
+          },
+          {
+            "num_leaves": 16,
+            "learning_rate": 0.03,
+            "min_child_samples": 200,
+            "trees": 195,
+            "tuning_log_loss": 0.2755401607589878,
+            "tuning_roc_auc": 0.7648728531688437
+          },
+          {
+            "num_leaves": 4,
+            "learning_rate": 0.03,
+            "min_child_samples": 300,
+            "trees": 331,
+            "tuning_log_loss": 0.2759268359036103,
+            "tuning_roc_auc": 0.764777795416062
+          }
+        ],
+        "note": "Tuned inside the training period only; the validation period was not used. The final model is fitted on the whole training period."
+      }
+    }
+  },
   "feature_groups": {
     "A": [
       "basket_growth",
@@ -217,6 +432,32 @@
       "warnings": []
     }
   },
+  "validation_predicted_against_actual": {
+    "first_loans": {
+      "loans": 3148,
+      "mean_predicted": 0.9056621574304485,
+      "share_repaid": 0.8945362134688691,
+      "predicted_minus_actual": 0.011125943961579399
+    },
+    "repeat_loans": {
+      "loans": 2705,
+      "mean_predicted": 0.8907331925192998,
+      "share_repaid": 0.9142329020332717,
+      "predicted_minus_actual": -0.023499709513971845
+    },
+    "under_6_months_history": {
+      "loans": 3748,
+      "mean_predicted": 0.9029572398221962,
+      "share_repaid": 0.8980789754535753,
+      "predicted_minus_actual": 0.004878264368620933
+    },
+    "6_months_history_or_more": {
+      "loans": 2105,
+      "mean_predicted": 0.8912940724475854,
+      "share_repaid": 0.9135391923990499,
+      "predicted_minus_actual": -0.022245119951464498
+    }
+  },
   "validation_bands": {
     "lines": {
       "band_strong_min_score": 90,
@@ -297,6 +538,59 @@
     "clearly_better": true,
     "resamples_used": 500
   },
+  "reasons_check": {
+    "loans_checked": 300,
+    "largest_gap": 1.4210854715202004e-14,
+    "loans_with_no_reason": 0,
+    "size_of_all_other_inputs": {
+      "median": 0.425,
+      "nine_in_ten_below": 2.1120000000000005,
+      "largest": 22.16
+    },
+    "times_each_input_was_a_top_reason": {
+      "supplier_repeat_share": {
+        "positive": 127,
+        "negative": 143
+      },
+      "dispatch_to_delivery_hours": {
+        "positive": 108,
+        "negative": 73
+      },
+      "return_rate_90d": {
+        "positive": 114,
+        "negative": 66
+      },
+      "cod_remit_ontime_rate": {
+        "positive": 107,
+        "negative": 81
+      },
+      "failed_rate_90d": {
+        "positive": 64,
+        "negative": 52
+      },
+      "credit_utilisation": {
+        "positive": 53,
+        "negative": 59
+      },
+      "avg_pay_delay_days": {
+        "positive": 49,
+        "negative": 22
+      },
+      "ontime_payment_rate": {
+        "positive": 29,
+        "negative": 37
+      },
+      "basket_growth": {
+        "positive": 26,
+        "negative": 88
+      },
+      "late_pay_count_90d": {
+        "positive": 12,
+        "negative": 4
+      }
+    }
+  },
+  "notes": [],
   "coefficients": {
     "basket_growth": 0.0741,
     "supplier_repeat_share": 0.494,
@@ -309,6 +603,5 @@
     "cod_remit_ontime_rate": 0.2064,
     "dispatch_to_delivery_hours": -0.2317
   },
-  "notes": [],
-  "model_version": "synthetic_bd-20261013-164901-9445dcd"
+  "model_version": "synthetic_bd-20261013-205545-219ee98"
 }

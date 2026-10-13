@@ -87,9 +87,12 @@ def test_missing_values_are_neutral_for_the_model(config):
 
 def test_the_model_gets_no_missing_flag(result):
     """One weight per input: no extra 'was missing' columns."""
-    weights = result["model"].named_steps["model"].coef_[0]
-    assert len(weights) == len(result["features"])
-    assert 1 <= len(result["features"]) <= 10
+    simple = result["candidates"]["logistic_regression"]
+    weights = simple["model"].named_steps["model"].coef_[0]
+    assert len(weights) == len(simple["features"])
+    assert 1 <= len(simple["features"]) <= 10
+    boosted = result["candidates"]["lightgbm"]
+    assert boosted["model"].named_steps["model"].n_features_in_ == len(boosted["features"])
 
 
 # --- what the model may see ----------------------------------------------------------
@@ -154,11 +157,11 @@ def test_every_weight_points_the_way_its_meaning_says(result):
     """So a reason sentence can never contradict what the merchant actually did."""
     directions = expected_directions(load_dictionary())
     weights = result["report"]["coefficients"]
-    assert set(weights) == set(result["features"])
+    simple = result["candidates"]["logistic_regression"]
+    assert set(weights) == set(simple["features"])
     for name, weight in weights.items():
         assert weight * directions[name] >= 0, name
-    report = result["report"]
-    used, removed = report["inputs_used"], report["inputs_removed_for_pointing_the_wrong_way"]
+    used, removed = simple["features"], simple["removed"]
     assert not set(used) & set(removed)
     assert set(used) | set(removed) == set(directions)
 
@@ -260,12 +263,18 @@ def test_the_calibrator_never_sees_training_or_test_loans(result, config):
     np.testing.assert_allclose(again.predict(raw), result["calibrator"].predict(raw))
 
 
-def test_training_twice_gives_the_same_model(config):
+def test_training_twice_gives_the_same_model(result, config):
+    """Both candidates, the choice and every validation number."""
     tables, _, _ = build_tables(config, 1.0)
-    dataset = build_dataset(tables, config)
-    first = train_models(dataset, config)["report"]["coefficients"]
-    second = train_models(dataset, config)["report"]["coefficients"]
-    assert first == second
+    again = train_models(build_dataset(tables, config), config)["report"]
+    first = result["report"]
+    assert again["coefficients"] == first["coefficients"]
+    assert again["model"] == first["model"]
+    for name in first["candidates"]:
+        assert (
+            again["candidates"][name]["validation_metrics"]
+            == first["candidates"][name]["validation_metrics"]
+        ), name
 
 
 # --- saving and loading ------------------------------------------------------------
@@ -300,6 +309,7 @@ def test_metadata_records_what_a_reader_needs(result, config, tmp_path):
         "train_window",
         "feature_list",
         "calibrator",
+        "model",
         "validation_metrics",
     ):
         assert key in metadata, key

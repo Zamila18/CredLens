@@ -37,7 +37,7 @@
       "sentence_en": "Returns are higher than similar shops; this may reflect delivery conditions.",
       "sentence_bn": "সমান ধরনের দোকানের তুলনায় ফেরত বেশি; এটা ডেলিভারির পরিস্থিতির কারণেও হতে পারে।",
       "contribution": -1.5,
-      "detail": "Returns 7.5% vs typical 4%"
+      "detail": "Returns 7.5% vs average 4.0%"
     },
     {
       "code": "late_pay_count_90d",
