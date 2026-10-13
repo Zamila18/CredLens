@@ -156,6 +156,22 @@ def validate_config(config: dict[str, Any]) -> None:
     model = config.get("model") or {}
     if model.get("calibration") not in ("auto", "none", "platt", "isotonic"):
         problems.append("model.calibration must be 'auto', 'none', 'platt' or 'isotonic'")
+    known = ("logistic_regression", "lightgbm")
+    wanted = model.get("candidates")
+    if not isinstance(wanted, list) or not wanted or any(name not in known for name in wanted):
+        problems.append(f"model.candidates must be a non-empty list drawn from {list(known)}")
+    grid = (model.get("lightgbm") or {}).get("grid")
+    grid_keys = {"num_leaves", "learning_rate", "min_child_samples"}
+    if not isinstance(grid, list) or not grid:
+        problems.append("model.lightgbm.grid must be a non-empty list of settings")
+    else:
+        for number, entry in enumerate(grid, start=1):
+            if not isinstance(entry, dict) or set(entry) != grid_keys:
+                problems.append(
+                    f"model.lightgbm.grid entry {number} must have exactly {sorted(grid_keys)}"
+                )
+            elif not all(_is_number(value) and value > 0 for value in entry.values()):
+                problems.append(f"model.lightgbm.grid entry {number} must hold positive numbers")
     folds = model.get("calibration_folds")
     if not _is_positive_int(folds) or folds < 2:
         problems.append("model.calibration_folds must be a whole number of at least 2")
@@ -220,6 +236,9 @@ def banner_text(mode: str) -> str:
 POSITIVE_WHOLE_NUMBERS = (
     "model.bootstrap_resamples",
     "model.logistic_regression.max_iter",
+    "model.lightgbm.tuning_months",
+    "model.lightgbm.max_trees",
+    "model.lightgbm.early_stopping_rounds",
     "evaluation.calibration_bins",
     "evaluation.top_k",
     "features.window_days",
@@ -244,6 +263,9 @@ SHARES = (
     "labels.paid_in_full_tolerance",
     "model.prefer_simple_if_auc_gain_below",
     "model.calibration_min_brier_gain",
+    "model.lightgbm.tuning_share",
+    "model.lightgbm.row_share_per_tree",
+    "model.lightgbm.input_share_per_tree",
     "sanity.useful_auc_benchmark",
     "sanity.suspicious_auc",
     "sanity.zero_signal_max_auc_gain",
