@@ -117,6 +117,10 @@ features:                        # how features are computed; see docs/FEATURE_D
   late_payment_days: 7           # a payment more than this many days late counts as late
   delivery_settle_days: 3        # a parcel's outcome is treated as known this many days after dispatch
   thin_delivery_parcels: 20      # fewer parcels than this in the window: delivery history is thin
+  coverage_history_days: 180     # 'history of at least 6 months' in the coverage checklist
+  coverage_purchase_months: 6    # look at this many 30-day blocks before the cutoff ...
+  coverage_purchase_month_share: 0.5   # ... purchases are 'present' if more than this share of them has a purchase
+  recent_activity_days: 30       # a purchase or parcel within this many days counts as recent activity
 
 database:
   url_env: DATABASE_URL          # Supabase Postgres connection string lives in this environment variable (.env, never committed)

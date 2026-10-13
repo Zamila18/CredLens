@@ -57,6 +57,28 @@ FEATURE_GROUPS: dict[str, list[str]] = {
     "C": DELIVERY_FEATURES,
 }
 
+# Coverage columns describe how much history a score rests on. They are never model
+# inputs and never appear as reasons for a score.
+COVERAGE_COUNTS = [
+    "history_months",
+    "n_purchases_total",
+    "n_deliveries_total",
+    "n_payments_total",
+    "share_of_groups_present",
+]
+# One yes/no column per item of `coverage_weights` in the config, prefixed "cov_".
+CHECKLIST_PREFIX = "cov_"
+CHECKLIST_ITEMS = [
+    "history_6_months",
+    "purchases_present",
+    "payments_present",
+    "deliveries_present",
+    "questionnaire_done",
+    "recent_activity_30d",
+]
+CHECKLIST_COLUMNS = [CHECKLIST_PREFIX + item for item in CHECKLIST_ITEMS]
+COVERAGE_COLUMNS = COVERAGE_COUNTS + CHECKLIST_COLUMNS
+
 # Return reasons that are logistics problems, not the merchant's doing.
 LOGISTICS_RETURN_REASONS = ("address_issue", "rider_issue")
 
@@ -288,12 +310,95 @@ def delivery_features(
     return features[DELIVERY_FEATURES]
 
 
+def coverage_features(
+    cutoffs: pd.DataFrame,
+    tables: dict[str, pd.DataFrame],
+    model_features: pd.DataFrame,
+    config: dict[str, Any],
+) -> pd.DataFrame:
+    """How much history each score rests on, as known on the cutoff day. Indexed by loan_id.
+
+    Two kinds of columns:
+    - counts (history_months, n_purchases_total, ...), for display;
+    - the coverage checklist: one yes/no column per item of `coverage_weights` in the
+      config. Phase 5 turns the checklist into the coverage percentage and the band.
+
+    Nothing here is a model input. Missing delivery data makes `cov_deliveries_present`
+    False, which lowers coverage; it does not touch the score.
+    """
+    settings = config["features"]
+    index = pd.Index(cutoffs["loan_id"], name="loan_id")
+    days_known = cutoffs.set_index("loan_id")["days_known"]
+
+    def count_before(events: pd.DataFrame, date_column: str, max_age_days: int | None = None):
+        paired = events_before_cutoff(cutoffs, events, date_column, max_age_days)
+        return paired, paired.groupby("loan_id").size().reindex(index).fillna(0)
+
+    purchases, n_purchases = count_before(tables["purchases"], "purchase_date")
+    parcels = tables["deliveries"]
+    parcels, n_parcels = count_before(parcels[parcels["status"] != "cancelled"], "dispatched_at")
+    answered = events_before_cutoff(cutoffs, tables["questionnaire"], "answered_at")
+
+    coverage = pd.DataFrame(index=index)
+    coverage["history_months"] = days_known / 30.44
+    coverage["n_purchases_total"] = n_purchases
+    coverage["n_deliveries_total"] = n_parcels
+    # Earlier payments whose status was known on the cutoff day (see payment_features).
+    has_payments = model_features["avg_pay_delay_days"].notna()
+    known_payments = _known_payment_counts(cutoffs, tables["loans"], tables["payments"])
+    coverage["n_payments_total"] = known_payments.reindex(index).fillna(0)
+
+    has_purchases = model_features["purchases_90d"] > 0
+    has_parcels = model_features["parcel_volume_90d"].notna()
+    present = pd.concat([has_purchases, has_payments, has_parcels], axis=1)
+    coverage["share_of_groups_present"] = present.mean(axis=1)
+
+    # Purchases "present for most months": more than half of the recent 30-day blocks
+    # the merchant has existed for contain a purchase.
+    blocks = settings["coverage_purchase_months"]
+    recent = purchases[purchases["age_days"] <= 30 * blocks]
+    block_number = (recent["age_days"] - 1) // 30
+    active_blocks = (
+        recent.assign(block=block_number).groupby("loan_id")["block"].nunique().reindex(index)
+    ).fillna(0)
+    blocks_known = np.minimum(np.ceil(days_known / 30), blocks).clip(lower=1)
+    purchase_share = active_blocks / blocks_known
+
+    activity = pd.concat([purchases[["loan_id", "age_days"]], parcels[["loan_id", "age_days"]]])
+    is_recent = activity["age_days"] <= settings["recent_activity_days"]
+    recently_active = activity.loc[is_recent, "loan_id"].unique()
+
+    coverage["cov_history_6_months"] = days_known >= settings["coverage_history_days"]
+    coverage["cov_purchases_present"] = purchase_share > settings["coverage_purchase_month_share"]
+    coverage["cov_payments_present"] = has_payments
+    coverage["cov_deliveries_present"] = has_parcels
+    coverage["cov_questionnaire_done"] = index.isin(answered["loan_id"])
+    coverage["cov_recent_activity_30d"] = index.isin(recently_active)
+    return coverage[COVERAGE_COLUMNS]
+
+
+def _known_payment_counts(
+    cutoffs: pd.DataFrame, loans: pd.DataFrame, payments: pd.DataFrame
+) -> pd.Series:
+    """Number of earlier payments whose status was already known on the cutoff day."""
+    earlier_loans = loans[["loan_id", "issued_at"]].rename(columns={"loan_id": "earlier_loan_id"})
+    history = payments.rename(columns={"loan_id": "earlier_loan_id"}).merge(
+        earlier_loans, on="earlier_loan_id", how="left"
+    )
+    history = events_before_cutoff(cutoffs, history, "issued_at")
+    paid = pd.to_datetime(history["paid_date"])
+    due = pd.to_datetime(history["due_date"])
+    known = (paid.notna() & (paid < history["cutoff_date"])) | (due < history["cutoff_date"])
+    return history[known].groupby("loan_id").size()
+
+
 def build_features(tables: dict[str, pd.DataFrame], config: dict[str, Any]) -> pd.DataFrame:
     """Return one row per loan with features built only from data before its cutoff.
 
     Columns: loan_id, merchant_id, cutoff_date, days_known, then every feature in
-    FEATURE_GROUPS. A feature that cannot be computed is left empty (NaN); it is never
-    filled in silently (docs/MODEL_SPEC.md section 1).
+    FEATURE_GROUPS (the model inputs), then COVERAGE_COLUMNS (never model inputs).
+    A feature that cannot be computed is left empty (NaN); it is never filled in
+    silently (docs/MODEL_SPEC.md section 1).
     """
     cutoffs = loan_cutoffs(tables)
     parts = [
@@ -301,5 +406,12 @@ def build_features(tables: dict[str, pd.DataFrame], config: dict[str, Any]) -> p
         payment_features(cutoffs, tables["loans"], tables["payments"], config),
         delivery_features(cutoffs, tables["deliveries"], config),
     ]
-    features = cutoffs.set_index("loan_id").join(parts)
+    model_features = pd.concat(parts, axis=1)
+    coverage = coverage_features(cutoffs, tables, model_features, config)
+    features = cutoffs.set_index("loan_id").join([model_features, coverage])
     return features.reset_index()
+
+
+def model_feature_names(groups: str = "ABC") -> list[str]:
+    """The model inputs for the given feature groups, for example "A" or "AB" or "ABC"."""
+    return [name for group in groups for name in FEATURE_GROUPS[group]]

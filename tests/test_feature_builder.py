@@ -17,6 +17,9 @@ import pytest
 from src.adapters import CONTRACT, empty_frame
 from src.config import load_config
 from src.features.build_features import (
+    CHECKLIST_COLUMNS,
+    CHECKLIST_PREFIX,
+    COVERAGE_COLUMNS,
     DELIVERY_FEATURES,
     FEATURE_GROUPS,
     PAYMENT_FEATURES,
@@ -24,6 +27,7 @@ from src.features.build_features import (
     build_features,
     events_before_cutoff,
     loan_cutoffs,
+    model_feature_names,
 )
 from src.features.dictionary import load_dictionary
 from src.synth.generate import build_tables
@@ -386,6 +390,103 @@ def test_no_parcels_means_no_delivery_features_not_zeros(delivery_example):
     row = delivery_example.loc["L2"]
     for name in DELIVERY_FEATURES:
         assert np.isnan(row[name]), name
+
+
+# --- coverage ------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def coverage_example(config) -> pd.DataFrame:
+    """M1: long, full history. M2: joined a month ago with one purchase. M3: nothing at all."""
+    first_loan, first_payment = earlier_loan(
+        "OLD", "M1", "2025-02-01", 10000, "2025-03-03", "2025-03-03", 5000
+    )
+    monthly = [
+        purchase(n, "M1", day, 1000, "a", "S1")
+        for n, day in enumerate(
+            ["2025-01-15", "2025-02-15", "2025-03-15", "2025-04-15", "2025-05-15", "2025-06-15"]
+        )
+    ]
+    tables = make_tables(
+        merchants=[
+            merchant("M1", "2024-12-01"),
+            merchant("M2", "2025-06-01"),
+            merchant("M3", "2025-06-01"),
+        ],
+        loans=[first_loan, loan("L1", "M1"), loan("L2", "M2"), loan("L3", "M3")],
+        payments=[first_payment],
+        purchases=monthly + [purchase(99, "M2", "2025-06-10", 500, "a", "S1")],
+        deliveries=[parcel(1, "2025-06-01T10:00:00", "delivered", "2025-06-02T10:00:00")],
+        questionnaire=[
+            {"merchant_id": "M1", "answered_at": "2024-12-05"},
+            {"merchant_id": "M2", "answered_at": "2025-07-03"},  # answered after the cutoff
+        ],
+    )
+    return build_features(tables, config).set_index("loan_id")
+
+
+def test_coverage_checklist_for_a_merchant_with_full_history(coverage_example):
+    row = coverage_example.loc["L1"]
+    for column in CHECKLIST_COLUMNS:
+        assert row[column], column
+    assert row["n_purchases_total"] == 6
+    assert row["n_deliveries_total"] == 1
+    assert row["n_payments_total"] == 1
+    assert row["share_of_groups_present"] == pytest.approx(1.0)
+    assert row["history_months"] == pytest.approx(212 / 30.44)
+
+
+def test_coverage_checklist_for_a_new_merchant(coverage_example):
+    row = coverage_example.loc["L2"]
+    assert not row["cov_history_6_months"]
+    assert row["cov_purchases_present"]  # one 30-day block known, and it has a purchase
+    assert not row["cov_payments_present"]
+    assert not row["cov_deliveries_present"]
+    assert row["cov_recent_activity_30d"]
+    assert row["share_of_groups_present"] == pytest.approx(1 / 3)
+
+
+def test_a_questionnaire_answered_after_the_cutoff_does_not_count_yet(coverage_example):
+    assert coverage_example.loc["L1", "cov_questionnaire_done"]
+    assert not coverage_example.loc["L2", "cov_questionnaire_done"]
+
+
+def test_a_merchant_with_no_data_has_an_empty_checklist(coverage_example):
+    row = coverage_example.loc["L3"]
+    for column in CHECKLIST_COLUMNS:
+        assert not row[column], column
+    assert row["share_of_groups_present"] == 0
+
+
+def test_checklist_matches_the_coverage_weights_in_the_config(config):
+    """Every weighted item has a column, so Phase 5 can compute coverage from config."""
+    expected = {CHECKLIST_PREFIX + item for item in config["coverage_weights"]}
+    assert set(CHECKLIST_COLUMNS) == expected
+
+
+def test_missing_delivery_data_changes_coverage_but_no_other_feature(config):
+    """Without parcels, the delivery features are empty and only coverage reflects it."""
+    with_parcels = make_tables(
+        merchants=[merchant("M1", "2025-01-01")],
+        loans=[loan("L1", "M1")],
+        purchases=[purchase(1, "M1", "2025-06-10", 1000, "a", "S1")],
+        deliveries=[parcel(1, "2025-06-01T10:00:00", "returned", None, "refused")],
+    )
+    without_parcels = {**with_parcels, "deliveries": empty_frame("deliveries")}
+    first = build_features(with_parcels, config).iloc[0]
+    second = build_features(without_parcels, config).iloc[0]
+
+    assert first["cov_deliveries_present"] and not second["cov_deliveries_present"]
+    assert second[DELIVERY_FEATURES].isna().all()
+    for name in PURCHASE_FEATURES + PAYMENT_FEATURES:
+        both_empty = pd.isna(first[name]) and pd.isna(second[name])
+        assert both_empty or first[name] == second[name], name
+
+
+def test_coverage_columns_are_not_model_inputs():
+    assert not set(COVERAGE_COLUMNS) & set(model_feature_names("ABC"))
+    assert model_feature_names("A") == PURCHASE_FEATURES
+    assert model_feature_names("AB") == PURCHASE_FEATURES + PAYMENT_FEATURES
 
 
 # --- the whole table -----------------------------------------------------------------
