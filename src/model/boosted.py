@@ -91,16 +91,26 @@ def tuning_parts(
     """Cut the training period into a part to fit on and a part to tune on.
 
     With a time split the tuning part is the last `tuning_months` of the training period,
-    so tuning also looks forward in time. Without dates it is a random share, with the
-    same repaid share in both parts. Returns the two parts and a sentence describing them.
+    so tuning also looks forward in time. Without dates, or when the training period is
+    too short for that cut to leave both outcomes in the earlier part (India has one
+    training month), it is a random share with the same repaid share in both parts.
+    Returns the two parts and a sentence describing them.
     """
     settings = config["model"]["lightgbm"]
+    fit_part = None
     if split_method == TIME_SPLIT and DATE_COLUMN in train.columns:
         dates = pd.to_datetime(train[DATE_COLUMN])
         start = dates.max() - pd.DateOffset(months=settings["tuning_months"])
         fit_part, tune_part = train[dates <= start], train[dates > start]
         how = f"the last {settings['tuning_months']} months of the training period"
-    else:
+        if len(fit_part) < len(tune_part) or fit_part["label"].nunique() < 2:
+            fit_part = None  # too short to cut by time
+    if fit_part is None:
+        if train["label"].nunique() < 2 or train["label"].value_counts().min() < 2:
+            raise ValueError(
+                "The training period has only one outcome (or a single loan of one "
+                "outcome); LightGBM cannot be tuned."
+            )
         fit_part, tune_part = train_test_split(
             train,
             test_size=settings["tuning_share"],
@@ -108,6 +118,8 @@ def tuning_parts(
             random_state=config["seed"],
         )
         how = f"a random {settings['tuning_share']:.0%} of the training loans"
+        if split_method == TIME_SPLIT:
+            how += " (the training period is too short to hold back its last months)"
     for name, part in (("fit", fit_part), ("tuning", tune_part)):
         if len(part) == 0 or part["label"].nunique() < 2:
             raise ValueError(

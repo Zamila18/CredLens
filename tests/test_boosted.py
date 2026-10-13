@@ -113,6 +113,17 @@ def test_without_dates_the_tuning_part_is_a_random_share(result, config):
     assert "random" in how
 
 
+def test_a_training_period_too_short_to_cut_by_time_falls_back_to_a_random_share(result, config):
+    """India has one training month: holding back three months would leave nothing to fit on."""
+    train = result["split"].train
+    last_weeks = train[train["cutoff_date"] >= train["cutoff_date"].max() - pd.DateOffset(days=40)]
+    fit_part, tune_part, how = tuning_parts(last_weeks, config, TIME_SPLIT)
+    assert len(fit_part) + len(tune_part) == len(last_weeks)
+    assert len(fit_part) > len(tune_part) > 0
+    assert fit_part["label"].nunique() == tune_part["label"].nunique() == 2
+    assert "too short" in how
+
+
 def test_tuning_report_says_what_was_tried(boosted, config):
     tuning = boosted["tuning"]
     assert len(tuning["tried"]) == len(config["model"]["lightgbm"]["grid"])

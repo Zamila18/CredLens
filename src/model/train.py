@@ -27,7 +27,7 @@ every look at it is recorded in reports/<mode>/test_set_use.json.
 The model outputs a probability of repaying in time. It never approves or declines
 anything: an officer decides.
 
-Reasons are added in src/model/explain.py.
+The reasons behind a score are computed in src/model/explain.py.
 """
 
 from __future__ import annotations
@@ -56,6 +56,7 @@ from src.model.boosted import tune_lightgbm
 from src.model.calibrate import choose_calibrator
 from src.model.dataset import build_dataset, dataset_summary, modelling_rows
 from src.model.evaluate import baseline_metrics, evaluate, paired_auc_gain
+from src.model.explain import reasons_summary
 from src.model.preprocess import QuantileClipper
 from src.model.score import NEEDS_MORE_INFO, band_lines, band_summary, score_table
 from src.model.split import split_for_mode
@@ -433,6 +434,11 @@ def train_models(
         "gain_over_purchases_only": paired_auc_gain(
             validation_labels, purchase_probabilities, winner["raw"], config
         ),
+        "reasons_check": reasons_summary(
+            {"model": model, "calibrator": calibration["calibrator"], "features": features},
+            split.validation,
+            config,
+        ),
         "notes": notes,
     }
     if LOGISTIC_REGRESSION in fitted:
@@ -642,6 +648,12 @@ def main() -> int:
             f"    {name.replace('_', ' ')}: predicted {part['mean_predicted']:.1%}, "
             f"repaid {part['share_repaid']:.1%}"
         )
+    check = report["reasons_check"]
+    print(
+        f"  Reasons checked on {check['loans_checked']} validation loans: parts and score "
+        f"differ by at most {check['largest_gap']:.6f}; "
+        f"{check['loans_with_no_reason']} loans had no reason to show"
+    )
     removed = report["inputs_removed_for_pointing_the_wrong_way"]
     print(f"  inputs used: {len(report['inputs_used'])}")
     print(f"  inputs removed for pointing the wrong way: {removed or 'none'}")

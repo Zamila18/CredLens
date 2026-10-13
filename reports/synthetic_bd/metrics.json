@@ -538,6 +538,58 @@
     "clearly_better": true,
     "resamples_used": 500
   },
+  "reasons_check": {
+    "loans_checked": 300,
+    "largest_gap": 1.4210854715202004e-14,
+    "loans_with_no_reason": 0,
+    "size_of_all_other_inputs": {
+      "median": 0.425,
+      "nine_in_ten_below": 2.1120000000000005,
+      "largest": 22.16
+    },
+    "times_each_input_was_a_top_reason": {
+      "supplier_repeat_share": {
+        "positive": 127,
+        "negative": 143
+      },
+      "dispatch_to_delivery_hours": {
+        "positive": 108,
+        "negative": 73
+      },
+      "return_rate_90d": {
+        "positive": 114,
+        "negative": 66
+      },
+      "cod_remit_ontime_rate": {
+        "positive": 107,
+        "negative": 81
+      },
+      "failed_rate_90d": {
+        "positive": 64,
+        "negative": 52
+      },
+      "credit_utilisation": {
+        "positive": 53,
+        "negative": 59
+      },
+      "avg_pay_delay_days": {
+        "positive": 49,
+        "negative": 22
+      },
+      "ontime_payment_rate": {
+        "positive": 29,
+        "negative": 37
+      },
+      "basket_growth": {
+        "positive": 26,
+        "negative": 88
+      },
+      "late_pay_count_90d": {
+        "positive": 12,
+        "negative": 4
+      }
+    }
+  },
   "notes": [],
   "coefficients": {
     "basket_growth": 0.0741,
@@ -551,5 +603,5 @@
     "cod_remit_ontime_rate": 0.2064,
     "dispatch_to_delivery_hours": -0.2317
   },
-  "model_version": "synthetic_bd-20261013-201436-17aef90"
+  "model_version": "synthetic_bd-20261013-205545-219ee98"
 }
