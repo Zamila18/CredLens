@@ -55,21 +55,24 @@ She can start now. The API contract and sample responses exist, and since Oct 13
 
 Must hold on every page: the banner names the data source and says "Decision support only."; a score is never shown without coverage and band; officers see sentences, never feature names; there is no approve or decline button; an override needs a written reason; the browser calls only the API, never the database.
 
-#### What the API can call for a real score (ready since Oct 13)
+#### What the API can call for real scores (ready since Oct 13)
 
 ```python
 from src.config import load_config
-from src.model.explain import score_card
-from src.model.train import load_model
+from src.model.explain import ConsentRequired
+from src.model.scoring import Scorer, UnknownMerchant
 
-config = load_config()
-saved = load_model(config["data"]["mode"])        # needs `python tasks.py train` once
-card = score_card(saved, feature_row, config)      # feature_row: one row of the feature table
+scorer = Scorer(load_config())      # ONCE, when the API starts (about 30 seconds); keep it
+queue = scorer.queue()              # review queue as a table, oldest first
+card = scorer.card("M0000123")      # one merchant's score card
 ```
 
-`score_card` raises `ConsentRequired` (from `src.model.explain`) and computes nothing when the merchant has no valid consent: it reads the `consent_valid` column of the row, or takes `consent_valid=True/False` as an argument. Turn that into the API's "consent needed" response.
-
-`card` has every field of `ScoreResponse` in `src/api/schemas.py` except `merchant_id`, plus `banner`. `feature_row` is one row from `src.model.dataset.build_dataset(tables, config)` (or `src.features.build_features.build_features`), which holds the model inputs and the `cov_...` coverage columns. Rules for the endpoint: check consent first and refuse to score without it; write an audit entry; never turn a band into an approve or decline.
+- Create the `Scorer` once at start-up and reuse it. It builds the feature table, which takes about half a minute for 20,000 merchants; never do that per request. It needs `python tasks.py data` and `python tasks.py train` to have been run.
+- `scorer.card(id)` has every field of `ScoreResponse` in `src/api/schemas.py`, plus `banner`. It raises `ConsentRequired` when the merchant has no valid consent (turn that into the API's "consent needed" response) and `UnknownMerchant` for an id with no loan (a 404).
+- `scorer.queue()` has `merchant_id`, `loan_id`, `pending_since`, `consent_valid`, `score`, `coverage`, `band`, `low_score_warning`. A merchant without consent is listed with no score, coverage or band. It does not know whether an officer has already decided: add `status` from the decisions table, and the district, town tier and shop type from the merchants table.
+- A merchant is scored on their most recent loan. The queue holds the merchants whose most recent loan has no outcome yet (about 4,000 on the synthetic data).
+- To look at a real card: `python -m src.model.scoring` (first merchant of the queue) or `python -m src.model.scoring <merchant_id>`.
+- Rules for the endpoints: write an audit entry on every profile read; never turn a band into an approve or decline; never change a loan.
 
 Sample numbers changed on Oct 13: scores in `tests/fixtures/api/` now follow the new band lines (Strong from 90, coverage from 45%). A real baseline score is about 92 and most reasons move the score by 0.2 to 6 points, so design the reason bars for small numbers.
 
