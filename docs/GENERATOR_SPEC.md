@@ -52,7 +52,7 @@ Set these from public sources and cite them in docs/DATA_SOURCES.md; never inven
 Where this section differs from the text above, this section is what the code does. Every number is in
 `config/default.yaml` under `generator`.
 
-- **Size and window.** 20,000 merchants. An 18-month main window (onboarding; every loan issued here has an outcome) plus a 60-day tail in which activity continues and new loans have no outcome yet (the pending cases).
+- **Size and window.** 20,000 merchants. An 18-month main window (onboarding; every loan issued here has an outcome) plus a 61-day tail (loan term 30 + allowed days late 30 + 1, because a loan can only be called bad once it is more than 30 days past due) in which activity continues and new loans have no outcome yet (the pending cases).
 - **Repayment share.** Target 90%, not 75 to 85%. The outcome intercept is solved so the average repayment probability hits the target. It is a team assumption; see the comment in the config.
 - **Outcome.** P(repaid in time) = sigmoid(intercept + 1.5 x reliability + 0.3 x noise). A merchant who never repaid gets no further loan.
 - **Purchases.** Reliability effect on the weekly rate is 0.20 (not 0.5) and the growth trend is 0.015 per month per unit of reliability (not 0.1): the original values made purchases alone reveal almost everything, leaving nothing for payments or deliveries to add, and the trend compounded too fast over 18 months.
@@ -66,13 +66,13 @@ Where this section differs from the text above, this section is what the code do
 
 `python -m src.synth.difficulty_check` fits a plain logistic regression on ten crude features, trains on
 the first 12 months of loans and scores the last 3. Seed 42, 20,000 merchants, 6,346 test loans of which
-614 were not repaid in time:
+614 were not repaid in time (re-run on Oct 13 after the tail became 61 days):
 
 | Signal strength | Purchases only | + payments | + deliveries | Gain from deliveries |
 |---|---|---|---|---|
-| 0 (control) | 0.693 | 0.702 | 0.702 | -0.000 |
-| 0.5 | 0.693 | 0.702 | 0.726 | +0.023 |
-| 1 | 0.693 | 0.702 | 0.747 | +0.045 |
+| 0 (control) | 0.696 | 0.706 | 0.706 | +0.000 |
+| 0.5 | 0.696 | 0.706 | 0.729 | +0.023 |
+| 1 | 0.696 | 0.706 | 0.749 | +0.043 |
 
 The best possible AUC, predicting from hidden reliability itself, is 0.824. So the task sits in the
 intended range (about 0.72 to 0.82), the negative control behaves (no gain at strength 0), and the gain

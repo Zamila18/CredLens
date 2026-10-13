@@ -1,4 +1,4 @@
-"""Tests for the feature dictionary (now) and the feature builder (Phase 3).
+"""Tests for the feature dictionary. The feature builder is tested in test_feature_builder.py.
 
 Owner role: B (data engineer).
 Implements: docs/FEATURE_DICTIONARY.md; PROJECT_BRIEF section 6.
@@ -94,7 +94,3 @@ def test_reason_sentence_picks_side_and_language(dictionary):
     assert reason_sentence(dictionary, feature, True) == "Most payments arrive on time."
     assert reason_sentence(dictionary, feature, False, "bn") == "কম পেমেন্ট সময়মতো আসে।"
 
-
-@pytest.mark.skip(reason="Phase 3: feature builder")
-def test_features_are_built_as_of_each_loan_cutoff():
-    """Every feature in the dictionary is computed from data strictly before the cutoff."""

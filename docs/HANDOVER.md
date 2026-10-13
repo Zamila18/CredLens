@@ -1,7 +1,7 @@
 # HANDOVER.md: where the project stands and what each person does next
 
 Kept up to date at the end of every phase, so a handover can happen at any time.
-Last updated: end of Phase 2 (Oct 12, 2026).
+Last updated: end of Phase 3 (Oct 13, 2026).
 
 ## 1. What is finished and tested
 
@@ -10,8 +10,9 @@ Last updated: end of Phase 2 (Oct 12, 2026).
 | 0. Scaffold | Folders, config loading and checks, the seven-table data contract, adapters, feature dictionary (English and Bangla), API contract, sample API responses, `GET /health` | `python tasks.py test` |
 | 1. Synthetic data | Generator for 20,000 Bangladesh-calibrated synthetic merchants at delivery signal strengths 0, 0.5 and 1; the `synthetic_bd` adapter; column dictionary (`src/synth/schemas.md`) | `python tasks.py data --all-strengths`, then `python tasks.py test` |
 | 2. Database | Tables for the data contract plus users, decisions, audit log and model versions (`src/db/models.py`); loader; backup; Mifos X-style export. Decisions and the audit log are append-only, enforced in the application and by database triggers. Tested on SQLite. **Not yet run against Supabase/PostgreSQL** | `python tasks.py data` (generates, then loads `data/app.db`, about 55 seconds, about 350 MB), `python tasks.py backup`, `python -m src.db.mifos_adapter` |
+| 3. Features and labels | 18 model inputs per loan in three groups, coverage checklist, labels from the 30-day rule, and a leakage guard that catches planted leaks (`src/features/`, `src/model/labels.py`) | `python tasks.py test` (about 75 seconds) |
 
-Not built yet: features (3), model (4 to 6), public-data adapters (7), real-label runs (8), API endpoints (9), dashboard (10), ablation and model cards (11), deployment (12).
+Not built yet: model (4 to 6), public-data adapters (7), real-label runs (8), API endpoints (9), dashboard (10), ablation and model cards (11), deployment (12).
 
 Data on the lead's laptop only (never in git): Taiwan, India L&T, Home Credit, Findex, World Bank informal-sector indicators. The Kiva archive is still downloading. Details: `docs/DATA_SOURCES.md`.
 
@@ -31,10 +32,9 @@ Rules that apply to everyone: read `CLAUDE.md`; two people never work in the sam
 | Order | Work | Folders |
 |---|---|---|
 | 1 | Phase 2 follow-up: create the Supabase project, load it, and check the PostgreSQL triggers and backup there | `src/db/` |
-| 2 | Phase 3: feature builder and the leakage test | `src/features/` |
-| 3 | Phases 4 to 6: labels, time split, logistic regression, calibration, score and coverage, LightGBM, reasons | `src/model/` |
-| 4 | Phase 7: adapters for Taiwan, India L&T, Home Credit, and Kiva if it qualifies | `src/adapters/` |
-| 5 | Phases 8 and 11: real-label runs, ablation, group audit, model cards | `src/model/`, `reports/` |
+| 2 | Phases 4 to 6: time split, logistic regression, calibration, score and coverage, LightGBM, reasons | `src/model/` |
+| 3 | Phase 7: adapters for Taiwan, India L&T, Home Credit, and Kiva if it qualifies | `src/adapters/` |
+| 4 | Phases 8 and 11: real-label runs, ablation, group audit, model cards | `src/model/`, `reports/` |
 
 ### Humayra (heavy work): the dashboard and the API behind it
 She can start now. Nothing below waits for the model: the API contract and sample responses already exist.

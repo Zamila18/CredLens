@@ -11,14 +11,15 @@ Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2
 
 ## Status
 
-**Phases 0 (scaffold), 1 (synthetic data) and 2 (database) are done. No model is trained yet.**
+**Phases 0 (scaffold), 1 (synthetic data), 2 (database) and 3 (features and labels) are done. No model is trained yet.**
 
 | Works now | Not built yet |
 |---|---|
-| Project structure, config loading and checks | Features (Phase 3) |
+| Project structure, config loading and checks | |
 | Data contract and adapter interface | |
 | Synthetic data generator: 20,000 merchants, three delivery signal strengths | |
 | Database (SQLite locally): tables, loader, backup, Mifos X-style export; append-only decisions and audit log | |
+| Features built only from data before each loan, labels from the 30-day rule, and a leakage guard | |
 | Feature dictionary with English and Bangla sentences | Model, calibration, reasons (Phases 4 to 6) |
 | API contract, sample responses, `GET /health` | Public-data adapters (Phase 7), real-label runs (Phase 8) |
 | Lint, tests and CI | API endpoints (Phase 9), React dashboard (Phase 10) |
