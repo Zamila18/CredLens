@@ -98,7 +98,7 @@ def test_the_summary_accounts_for_every_loan(dataset):
 def test_model_inputs_context_and_coverage_do_not_overlap(dataset):
     frame, _ = dataset
     inputs = set(model_feature_names("ABC"))
-    assert len(inputs) == 11
+    assert len(inputs) == 10
     assert not inputs & set(CONTEXT_COLUMNS)
     assert not inputs & set(COVERAGE_COLUMNS)
     assert inputs | set(CONTEXT_COLUMNS) | set(COVERAGE_COLUMNS) <= set(frame.columns)

@@ -46,7 +46,6 @@ PAYMENT_FEATURES = [
     "credit_utilisation",
 ]
 DELIVERY_FEATURES = [
-    "delivered_rate",
     "return_rate_90d",
     "failed_rate_90d",
     "cod_remit_ontime_rate",
@@ -67,7 +66,7 @@ PURCHASE_CONTEXT = [
     "purchase_regularity",
     "category_diversity",
 ]
-DELIVERY_CONTEXT = ["parcel_volume_90d", "delivery_data_thin"]
+DELIVERY_CONTEXT = ["parcel_volume_90d", "delivered_rate", "delivery_data_thin"]
 CONTEXT_COLUMNS = PURCHASE_CONTEXT + DELIVERY_CONTEXT
 
 # Coverage columns describe how much history a score rests on. They are never model
@@ -289,8 +288,10 @@ def delivery_features(
       last few days (`delivery_settle_days`), or delivered on or after the cutoff, is
       still "in transit" as far as the cutoff day is concerned: it counts towards the
       volume but not towards any rate.
-    - Returns caused by address or rider problems are not counted against the merchant
-      in `return_rate_90d`.
+    - Returns and failures caused by address or rider problems are not counted against
+      the merchant in `return_rate_90d` and `failed_rate_90d`. The plain share of parcels
+      delivered (`delivered_rate`) does fall with such problems, so it is a context
+      column for the officer, not a model input.
 
     A merchant with no parcels in the window has no delivery features at all (empty,
     not zero). Missing delivery data lowers coverage; it must never lower the score.
@@ -310,13 +311,12 @@ def delivery_features(
     outcome_known = (parcels["age_days"] > settings["delivery_settle_days"]) & (
         ~delivered | (arrived < parcels["cutoff_date"])
     )
-    merchant_return = (parcels["status"] == "returned") & ~parcels["return_reason"].isin(
-        LOGISTICS_RETURN_REASONS
-    )
+    not_logistics = ~parcels["return_reason"].isin(LOGISTICS_RETURN_REASONS)
+    merchant_return = (parcels["status"] == "returned") & not_logistics
     parcels = parcels.assign(
         delivered=delivered,
         merchant_return=merchant_return,
-        failed=parcels["status"] == "failed",
+        failed=(parcels["status"] == "failed") & not_logistics,
         hours=(arrived - dispatched).dt.total_seconds() / 3600.0,
         cod_on_time=parcels["cod_remitted_on_time"].astype("float"),
     )

@@ -365,7 +365,24 @@ def test_delivery_rates_use_only_parcels_whose_outcome_was_known(delivery_exampl
     # Settled parcels: 1, 2, 3, 4, 5, 6. Three delivered, two returned, one failed.
     row = delivery_example.loc["L1"]
     assert row["delivered_rate"] == pytest.approx(3 / 6)
-    assert row["failed_rate_90d"] == pytest.approx(1 / 6)
+
+
+def test_failed_rate_leaves_out_address_and_rider_problems(delivery_example, config):
+    # The one failed parcel was a rider problem, so it is not counted against the merchant.
+    assert delivery_example.loc["L1", "failed_rate_90d"] == 0
+
+    tables = make_tables(
+        merchants=[merchant("M1", "2025-01-01")],
+        loans=[loan("L1", "M1")],
+        deliveries=[
+            parcel(1, "2025-06-01T10:00:00", "failed", None, "other"),
+            parcel(2, "2025-06-02T10:00:00", "failed", None, "rider_issue"),
+            parcel(3, "2025-06-03T10:00:00", "failed", None, None),
+            parcel(4, "2025-06-04T10:00:00", "delivered", "2025-06-05T10:00:00"),
+        ],
+    )
+    row = build_features(tables, config).iloc[0]
+    assert row["failed_rate_90d"] == pytest.approx(2 / 4)  # "other" and no stated reason
 
 
 def test_return_rate_leaves_out_address_and_rider_problems(delivery_example):
@@ -536,6 +553,7 @@ def test_delivery_features_stay_in_sensible_ranges(synthetic_features):
     features, tables = synthetic_features
     for name in ("delivered_rate", "return_rate_90d", "failed_rate_90d", "cod_remit_ontime_rate"):
         assert features[name].dropna().between(0, 1).all(), name
+    assert "delivered_rate" not in model_feature_names("ABC"), "it falls with rider problems"
     assert (features["dispatch_to_delivery_hours"].dropna() > 0).all()
     assert set(features["delivery_data_thin"].dropna().unique()) <= {0.0, 1.0}
 
