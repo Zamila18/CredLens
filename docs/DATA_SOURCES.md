@@ -44,14 +44,15 @@ Rules for every source:
 | Leakage note | The dictionary describes every bureau column as "at the time of disbursement". Branch and employee identifiers must not be headline reasons |
 | Limits | Vehicle loans to individuals, not merchants. A short three-month window |
 
-### 1.3 Kiva loans, filtered to Asia (`kiva_asia`): pending
+### 1.3 Kiva loans, filtered to Asia (`kiva_asia`): file checked Oct 13, adapter not built yet
 
 | Item | Entry |
 |---|---|
 | What did not work | The official link (`s3.kiva.org`) no longer exists. The Kaggle "additional kiva snapshot" (2018, 1,419,607 loans) has only funding statuses and **no repayment outcome**. Duke's 5,000-loan sample has 100 defaults, **none in Asia**, and contains borrower names. All checked Oct 12 |
 | What may work | Kiva's official JSON snapshot dated 2 May 2016, saved by the Internet Archive on 1 July 2016: http://web.archive.org/web/20160701132740/http://s3.kiva.org/snapshots/kiva_ds_json.zip (1.16 GB, 1,061,401 loans). A 3 MB probe on Oct 12 showed statuses `paid`, `defaulted`, `in_repayment`, with posting dates, sector, country, partner and loan terms |
-| Download status | In progress. Save the zip, unopened, in `data/raw/kiva/` |
-| Open question | The number of Asian defaults. In 1,500 sampled loans there were 27 defaults, 1 of them Asian. The mode is kept only if the full file has enough |
+| Download status | Done. `data/raw/kiva/kiva_ds_json.zip`, 1,161,901,690 bytes, kept zipped and read in place. 2,123 loan files; 17 of them are empty in the archived copy (about 8,500 loans missing), leaving 1,052,900 loans. Checked Oct 13 |
+| What the full file holds | Statuses: 805,589 paid, 22,471 defaulted, 162,751 still in repayment, the rest expired, refunded or deleted. **Asia-Pacific, finished loans: 300,418 paid and 4,080 defaulted. Retail + Food + Services only: 157,162 paid and 2,743 defaulted (1.7%).** By country (paid / defaulted): Philippines 162,566 / 2,369; Cambodia 46,281 / 27; Tajikistan 24,441 / 46; Pakistan 20,124 / 828; Vietnam 10,992 / 1; Samoa 9,997 / 35; Mongolia 8,368 / 22; Kyrgyzstan 6,472 / 7; Indonesia 5,008 / 139; Afghanistan 1,607 / 574; India 327 / 4. **No Bangladesh loans.** So the mode qualifies (well above the 100 not-repaid loans needed for stable numbers) |
+| Limits to state | (1) Defaults are rare and bunched: 2,545 of the 4,080 Asian defaults were posted in 2012, and three countries hold most of them, so a default here often reflects a field partner failing, not one borrower. (2) Loans posted in 2014 to 2016 are mostly still in repayment; keeping only finished loans from those years would keep the quick payers and hide late defaults, so the adapter must cut off at a posting date by which outcomes are known. (3) Every sector in Asia has defaults; the sector filter is a choice for closeness to merchants, not a need |
 | Licence / terms | Kiva's snapshot page states no data licence, only general terms of use. Recorded as: terms not stated |
 | Personal data | The file contains borrower names, photos and stories. The adapter must drop them on load and keep only loan terms and outcomes |
 | Limits | No purchase, delivery or payment history. Defaults are rare (about 2%) and partly driven by the field partner |
