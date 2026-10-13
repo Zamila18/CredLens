@@ -9,6 +9,7 @@ Every id starts with `FIX-` so a fixture can never be mistaken for anything else
 | `contract/` | One CSV per table of the data contract (`src/adapters/base.py`, `CONTRACT`) | ML teammate: labels, split and metrics before the generator exists |
 | `api/` | Sample JSON for each API response (`src/api/schemas.py`) | Full-stack teammate: the React dashboard and the API before the model exists |
 | `taiwan_cc/` | `sample.csv`: eight hand-made clients with the columns of the UCI Taiwan credit-card file (numeric ids 1 to 8, as in the source). Not rows from the real file | Tests of the `taiwan_cc` adapter and features |
+| `india_ltfs/` | `train.csv`: eight hand-made loans with the 41 columns of the L&T vehicle loan file (numeric ids 1001 to 1008). Not rows from the real file | Tests of the `india_ltfs` adapter and features |
 
 The six fixture merchants cover the cases the product must handle:
 
