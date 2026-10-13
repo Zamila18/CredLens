@@ -1,7 +1,7 @@
 # HANDOVER.md: where the project stands and what each person does next
 
 Kept up to date at the end of every phase, so a handover can happen at any time.
-Last updated: end of Phase 5 (Oct 13, 2026).
+Last updated: end of Phase 6 (Oct 13, 2026).
 
 ## 1. What is finished and tested
 
@@ -14,8 +14,9 @@ Last updated: end of Phase 5 (Oct 13, 2026).
 | 4. First model | Logistic regression on 10 behaviour inputs, fitted on the first 12 months, measured on the next 3 (validation). An input whose weight points against its meaning is removed and listed. Validation AUC 0.710 (0.688 to 0.729); first loans 0.665, repeat loans 0.770. Saved with a version id in `src/model/artifacts/<mode>/`; report in `reports/<mode>/metrics.json` | `python tasks.py train` (about 20 seconds) |
 | 5. Calibration, score, bands | Calibration compared out of fold on validation (`none` kept: the model is already calibrated). `src/model/score.py`: score, coverage, band and low-score warning per loan. Lines: Strong 90, coverage 0.45, warning below 70 (settings in `config/default.yaml`, `score` section). On validation: Strong 56% of loans (95.2% repaid), Review 29% (82.1%), Needs more info 15% (88.3%). The sample API responses in `tests/fixtures/api/` use the new lines | `python tasks.py train`, `python tasks.py test` |
 | 6 (part 1). Second model | LightGBM with the same rules (missing data neutral, each input only pushes the way its meaning says), tuned inside the training period (`src/model/boosted.py`). Choice rule in `train.py`: the logistic regression stays unless the whole range of LightGBM's AUC gain reaches 0.01. On synthetic data: 0.710 against 0.722, gain +0.013 (+0.003 to +0.021), so the **logistic regression is in use** | `python tasks.py train` (about 40 seconds) |
+| 6 (part 2). Reasons | `src/model/explain.py`: baseline (the average merchant) plus exact contributions per input that add up to the score; top 3 up and top 3 down as dictionary sentences in English and Bangla, each with a number ("Returns 11.1% vs average 6.8%"); a sentence is shown only when it is true for the merchant. `score_card(saved, feature_row, config, mode)` returns everything `GET /merchants/{id}/score` needs | `python tasks.py test` |
 
-Not built yet: reasons (6, part 2), public-data adapters (7), real-label runs (8), API endpoints (9), dashboard (10), ablation and model cards (11), deployment (12).
+Not built yet: public-data adapters (7), real-label runs (8), API endpoints (9), dashboard (10), ablation and model cards (11), deployment (12).
 
 Data on the lead's laptop only (never in git): Taiwan, India L&T, Home Credit, Findex, World Bank informal-sector indicators. The Kiva archive is still downloading. Details: `docs/DATA_SOURCES.md`.
 
@@ -35,12 +36,12 @@ Rules that apply to everyone: read `CLAUDE.md`; two people never work in the sam
 | Order | Work | Folders |
 |---|---|---|
 | 1 | Phase 2 follow-up: create the Supabase project, load it, and check the PostgreSQL triggers and backup there | `src/db/` |
-| 2 | Phases 5 and 6: calibration, score and coverage, bands, LightGBM, reasons | `src/model/` |
+| 2 | Done (Oct 13): Phases 4, 5 and 6: model, calibration, score, coverage, bands, LightGBM, reasons | `src/model/` |
 | 3 | Phase 7: adapters for Taiwan, India L&T, Home Credit, and Kiva if it qualifies | `src/adapters/` |
 | 4 | Phases 8 and 11: real-label runs, ablation, group audit, model cards | `src/model/`, `reports/` |
 
 ### Humayra (heavy work): the dashboard and the API behind it
-She can start now. Nothing below waits for the model: the API contract and sample responses already exist.
+She can start now. The API contract and sample responses exist, and since Oct 13 so do the real model, scores, bands and reasons (see "What the API can call" below).
 
 | Order | Work | Folders |
 |---|---|---|
@@ -48,11 +49,29 @@ She can start now. Nothing below waits for the model: the API contract and sampl
 | 2 | App shell: sidebar, role switch (officer / admin / viewer), data-source selector, and the banner taken from `GET /health` | `web/` |
 | 3 | API endpoints that return the sample files in `tests/fixtures/api/`: review queue, profile, score, decisions, model card, audit; roles from a header token | `src/api/` |
 | 4 | Pages against those endpoints: review queue; merchant detail (timeline, score gauge, coverage meter, helps/hurts reasons, questionnaire panel, "Why might this be wrong?", decision form); decision log; model card; consent; audit; portfolio. English/Bangla toggle for reasons | `web/` |
-| 5 | The database exists now (`src/db/models.py`, demo users `officer-1`, `officer-2`, `admin-1`, `viewer-1`). After the lead's Phase 6: connect the API to the real database and real scores; consent check; audit entry on every profile read; decisions append-only | `src/api/`, `web/` |
+| 5 | The database exists now (`src/db/models.py`, demo users `officer-1`, `officer-2`, `admin-1`, `viewer-1`). Phase 6 is done, so connect the API to the real database and real scores (see "What the API can call" below); consent check; audit entry on every profile read; decisions append-only | `src/api/`, `web/` |
 | 6 | Questionnaire form on the merchant detail page: ten answers from 1 to 5, saved through `POST /merchants/{id}/questionnaire`; the panel updates, the score does not | `src/api/`, `web/` |
 | 7 | Data import page (admin only): upload a CSV for one table, the API checks it against the data contract and reports rows accepted and rejected, then loads the accepted rows (`POST /admin/import/{table}`). Build the check-and-report step first. See PROJECT_BRIEF section 18, item 20 | `src/api/`, `web/` |
 
 Must hold on every page: the banner names the data source and says "Decision support only."; a score is never shown without coverage and band; officers see sentences, never feature names; there is no approve or decline button; an override needs a written reason; the browser calls only the API, never the database.
+
+#### What the API can call for a real score (ready since Oct 13)
+
+```python
+from src.config import load_config
+from src.model.explain import score_card
+from src.model.train import load_model
+
+config = load_config()
+saved = load_model(config["data"]["mode"])        # needs `python tasks.py train` once
+card = score_card(saved, feature_row, config)      # feature_row: one row of the feature table
+```
+
+`score_card` raises `ConsentRequired` (from `src.model.explain`) and computes nothing when the merchant has no valid consent: it reads the `consent_valid` column of the row, or takes `consent_valid=True/False` as an argument. Turn that into the API's "consent needed" response.
+
+`card` has every field of `ScoreResponse` in `src/api/schemas.py` except `merchant_id`, plus `banner`. `feature_row` is one row from `src.model.dataset.build_dataset(tables, config)` (or `src.features.build_features.build_features`), which holds the model inputs and the `cov_...` coverage columns. Rules for the endpoint: check consent first and refuse to score without it; write an audit entry; never turn a band into an approve or decline.
+
+Sample numbers changed on Oct 13: scores in `tests/fixtures/api/` now follow the new band lines (Strong from 90, coverage from 45%). A real baseline score is about 92 and most reasons move the score by 0.2 to 6 points, so design the reason bars for small numbers.
 
 ### Dipto (light work): checks, documents and the things only a person can do
 | Order | Work | Where |
@@ -70,10 +89,10 @@ Sceptical review of every claim against code and tests (Phase 13), help with dep
 ## 4. First message to paste into your own Claude Code
 
 Humayra:
-> Read CLAUDE.md, PROJECT_BRIEF.md (especially section 18), docs/HANDOVER.md and web/README.md. I am role D (full-stack). The last committed phase is 1. Check the repository matches that, then wait. My first task is to create the React app in web/ and build pages against the sample responses in tests/fixtures/api/.
+> Read CLAUDE.md, PROJECT_BRIEF.md (especially section 18), docs/HANDOVER.md and web/README.md. I am role D (full-stack). The last committed phase is 6. Check the repository matches that, then wait. My first task is to create the React app in web/ and build pages against the sample responses in tests/fixtures/api/.
 
 Dipto:
-> Read CLAUDE.md, docs/HANDOVER.md, docs/DATA_SOURCES.md and docs/WORDING_AND_QA.md. I am role A support (documents and checks). The last committed phase is 1. Check the repository matches that, then wait. My first task is in docs/HANDOVER.md section 3, under my name.
+> Read CLAUDE.md, docs/HANDOVER.md, docs/DATA_SOURCES.md and docs/WORDING_AND_QA.md. I am role A support (documents and checks). The last committed phase is 6. Check the repository matches that, then wait. My first task is in docs/HANDOVER.md section 3, under my name.
 
 ## 5. What not to touch
 
