@@ -1,7 +1,7 @@
 # HANDOVER.md: where the project stands and what each person does next
 
 Kept up to date at the end of every phase, so a handover can happen at any time.
-Last updated: Phase 7 part 1 (Oct 13, 2026).
+Last updated: Phase 7 part 2 (Oct 13, 2026).
 
 ## 1. What is finished and tested
 
@@ -16,6 +16,7 @@ Last updated: Phase 7 part 1 (Oct 13, 2026).
 | 6 (part 1). Second model | LightGBM with the same rules (missing data neutral, each input only pushes the way its meaning says), tuned inside the training period (`src/model/boosted.py`). Choice rule in `train.py`: the logistic regression stays unless the whole range of LightGBM's AUC gain reaches 0.01. On synthetic data: 0.710 against 0.722, gain +0.013 (+0.003 to +0.021), so the **logistic regression is in use** | `python tasks.py train` (about 40 seconds) |
 | 6 (part 2). Reasons | `src/model/explain.py`: baseline (the average merchant) plus exact contributions per input that add up to the score; top 3 up and top 3 down as dictionary sentences in English and Bangla, each with a number ("Returns 11.1% vs average 6.8%"); a sentence is shown only when it is true for the merchant. `score_card(saved, feature_row, config, mode)` returns everything `GET /merchants/{id}/score` needs | `python tasks.py test` |
 | 7 (part 1). Taiwan | Shared plumbing for public data (`source_records`, one feature builder per mode, stated outcomes as labels) and the `taiwan_cc` mode: adapter, eight behaviour inputs, coverage, audit columns kept apart, a planted-leak test. India, Home Credit and Kiva adapters follow | `python tasks.py test` |
+| 7 (part 2). India | The `india_ltfs` mode: adapter, six behaviour inputs (one from the loan, five from the bureau summary), coverage, time split by month, audit columns and organisation identifiers kept away from the model. Half the borrowers have no bureau record and get "Needs more info" | `python tasks.py test` |
 
 Not built yet: public-data adapters (7), real-label runs (8), API endpoints (9), dashboard (10), ablation and model cards (11), deployment (12).
 

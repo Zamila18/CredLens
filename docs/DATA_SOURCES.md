@@ -46,9 +46,16 @@ Rules for every source:
 | Label | `loan_default`: "Payment default in the first EMI on due date" (data dictionary). 50,611 defaulted (21.7%). This is missing the first instalment, an early-warning outcome, not eventual default. Our label = 1 minus this |
 | Dates | `DisbursalDate` from 2018-08-01 to 2018-10-31, so a time split over three months is possible |
 | Notable | 50.2% of borrowers have a bureau score of zero (no credit record): real thin files. 127,635 are self-employed. 22 states, 82 branches |
-| Audit-only columns | Age band from `Date.of.Birth`, `State_ID`, `Employment.Type` (provisional until Phase 7) |
+| Audit-only columns | Age band from `Date.of.Birth`, `State_ID`, `Employment.Type` |
 | Leakage note | The dictionary describes every bureau column as "at the time of disbursement". Branch and employee identifiers must not be headline reasons |
 | Limits | Vehicle loans to individuals, not merchants. A short three-month window |
+| Adapter (built Oct 13) | `src/adapters/india_ltfs.py`. One merchant, one loan and one "public_dataset" consent row per loan; purchases, deliveries, payments and questionnaire stay empty. Amounts are Indian rupees, not converted. Dates in the file are day-month-two-digit-year; a birth year read as later than the loan (for example 2064) is moved back a century. `label_observed_at` is one month after disbursal, a nominal date |
+| What a feature may read | The disbursal date, the three loan columns (`disbursed_amount`, `asset_cost`, `ltv`) and eleven bureau columns, all "at the time of disbursement". Never: the outcome, the id, date of birth, employment type, state, or the branch, dealer, manufacturer, pin code and employee identifiers (they describe the lender's organisation, not the borrower). A test plants each of the ten and checks it is refused |
+| Model inputs (6) | Share of the price paid up front (one minus loan-to-value), bureau score (only where the bureau gave one), share of earlier loans overdue, loans that fell behind in six months, new loans in six months, loan enquiries. Loan amount, number of earlier loans and length of credit history are context, not inputs |
+| Thin files | 116,950 borrowers (50.2%) have no bureau record. For them the five bureau inputs are empty and only the up-front share is known |
+| Coverage | Loan terms recorded (20%), bureau record exists (40%), credit history of at least 12 months (25%), bureau score available (15%). Half the borrowers sit at 20% and get "Needs more info"; 79,894 have full coverage |
+| Split | By month of disbursal: August 2018 trains (68,002 loans), September validates (66,788), October is held back (98,364) |
+| First look (not the reported result) | A quick fit on August, read on September: AUC about 0.59 for the logistic regression and 0.61 for LightGBM; 0.58 for borrowers without a bureau record and 0.62 to 0.63 for those with one. This is weak, and it is reported as it is: a bureau summary says little about who misses a first instalment, and for half the borrowers there is no bureau summary at all. The proper run is Phase 8 |
 
 ### 1.3 Kiva loans, filtered to Asia (`kiva_asia`): file checked Oct 13, adapter not built yet
 

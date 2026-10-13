@@ -55,6 +55,19 @@ Each public mode has its own inputs, built only from fields that source really h
 
 Context only (never model inputs): `credit_limit`, `months_card_used`, `months_with_bill`. A month with status -2 (card not used) is left out of every lateness feature, so a client who never used the card has empty features and low coverage, not a perfect record. A negative bill (credit balance) counts as zero.
 
+### `india_ltfs` (built Oct 13; code `src/features/india_ltfs.py`)
+
+| Feature | Meaning | Higher is |
+|---|---|---|
+| down_payment_share | One minus the loan-to-value: the part of the vehicle's price paid up front | better |
+| bureau_score | Credit-bureau score at disbursement, only where the bureau gave one | better |
+| overdue_account_share | Overdue earlier loans divided by all earlier loans | worse |
+| delinquent_accounts_6m | Loans that fell behind in the six months before disbursement | worse |
+| new_accounts_6m | New loans taken in the six months before disbursement | worse |
+| loan_enquiries | Loan enquiries on the bureau record | worse |
+
+Context only (never model inputs): `loan_amount`, `asset_cost`, `earlier_loans`, `credit_history_months`, `average_account_age_months`. A borrower with no bureau record has the five bureau features empty, not zero. The small codes the file carries for "not scored" (for example 15) are not read as scores. Sentences say "borrower".
+
 ## How the features are computed (as built in Phase 3)
 
 Code: `src/features/build_features.py`. Thresholds: the `features` section of `config/default.yaml`.
