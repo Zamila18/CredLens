@@ -124,6 +124,8 @@ def _format_value(value: float, style: str) -> str:
         return f"{value:+.1f} months"
     if style == "share_change":
         return f"{100 * value:+.1f}%"
+    if style == "ratio":
+        return f"{value:.2f}"
     if style == "count":
         return f"{value:.0f}" if float(value).is_integer() else f"{value:.1f}"
     raise ValueError(f"Unknown detail format: {style!r}")

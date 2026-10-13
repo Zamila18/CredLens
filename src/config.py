@@ -122,7 +122,11 @@ def validate_config(config: dict[str, Any]) -> None:
         problems.append(
             "data.india_ltfs.coverage_min_history_months must be a positive whole number"
         )
-    for source, settings in (("taiwan_cc", taiwan), ("india_ltfs", india)):
+    home = data.get("homecredit") or {}
+    for name in ("chunk_rows", "late_days", "recent_days", "coverage_min_instalments"):
+        if not _is_positive_int(home.get(name)):
+            problems.append(f"data.homecredit.{name} must be a positive whole number")
+    for source, settings in (("taiwan_cc", taiwan), ("india_ltfs", india), ("homecredit", home)):
         edges = settings.get("age_band_edges")
         if not isinstance(edges, list) or not edges or edges != sorted(set(edges)):
             problems.append(f"data.{source}.age_band_edges must be a rising list of ages")

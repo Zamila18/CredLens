@@ -29,6 +29,7 @@ groups:
   C: deliveries
   D: questionnaire
   L: loan terms    # public data modes only
+  X: outside score # homecredit only: a score from external sources, not the applicant's own records
 
 features:
   purchases_90d:
@@ -615,3 +616,153 @@ source_features:
       negative:
         en: "Loan enquiries are on record."
         bn: "ঋণের অনুসন্ধান রেকর্ডে আছে।"
+
+  homecredit:
+    inst_ontime_rate:
+      group: B
+      higher_is: better
+      shown_when:
+        positive: {above: 0.5}
+        negative: {below: 0.5}
+      otherwise:
+        positive:
+          en: "More earlier instalments were paid on time than for similar applicants."
+          bn: "সমান ধরনের আবেদনকারীর তুলনায় আগের বেশি কিস্তি সময়মতো পরিশোধ হয়েছে।"
+        negative:
+          en: "Fewer earlier instalments were paid on time than for similar applicants."
+          bn: "সমান ধরনের আবেদনকারীর তুলনায় আগের কম কিস্তি সময়মতো পরিশোধ হয়েছে।"
+      detail: {label: "Earlier instalments on time", format: share}
+      definition: Share of the instalments on earlier loans paid on or before the due day
+      positive:
+        en: "Most earlier instalments were paid on time."
+        bn: "আগের বেশিরভাগ কিস্তি সময়মতো পরিশোধ হয়েছে।"
+      negative:
+        en: "Few earlier instalments were paid on time."
+        bn: "আগের কম কিস্তি সময়মতো পরিশোধ হয়েছে।"
+
+    inst_mean_days_late:
+      group: B
+      higher_is: worse
+      detail: {label: "Average days late", format: days}
+      definition: Average days late over the instalments on earlier loans (0 for one paid on time)
+      positive:
+        en: "Earlier instalments were late by fewer days than for similar applicants."
+        bn: "সমান ধরনের আবেদনকারীর তুলনায় আগের কিস্তিতে কম দিন দেরি হয়েছে।"
+      negative:
+        en: "Earlier instalments were late by more days than for similar applicants."
+        bn: "সমান ধরনের আবেদনকারীর তুলনায় আগের কিস্তিতে বেশি দিন দেরি হয়েছে।"
+
+    inst_late_30d_share:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {above: 0}
+      otherwise:
+        positive:
+          en: "Fewer earlier instalments were over 30 days late than for similar applicants."
+          bn: "সমান ধরনের আবেদনকারীর তুলনায় ৩০ দিনের বেশি দেরির কিস্তি কম।"
+      detail: {label: "Instalments over 30 days late", format: share}
+      definition: Share of the instalments on earlier loans paid more than 30 days late, or still unpaid after 30 days
+      positive:
+        en: "No earlier instalment was more than 30 days late."
+        bn: "আগের কোনো কিস্তি ৩০ দিনের বেশি দেরিতে হয়নি।"
+      negative:
+        en: "Some earlier instalments were more than 30 days late."
+        bn: "আগের কিছু কিস্তি ৩০ দিনের বেশি দেরিতে হয়েছে।"
+
+    inst_paid_short_share:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {above: 0}
+      otherwise:
+        positive:
+          en: "Fewer earlier instalments were paid short than for similar applicants."
+          bn: "সমান ধরনের আবেদনকারীর তুলনায় কম কিস্তি আংশিক পরিশোধ হয়েছে।"
+      detail: {label: "Instalments paid short", format: share}
+      definition: Share of the instalments on earlier loans where less than 99% of the amount due was paid
+      positive:
+        en: "Every earlier instalment was paid in full."
+        bn: "আগের প্রতিটি কিস্তি পুরো পরিশোধ হয়েছে।"
+      negative:
+        en: "Some earlier instalments were not paid in full."
+        bn: "আগের কিছু কিস্তি পুরো পরিশোধ হয়নি।"
+
+    inst_recent_ontime_rate:
+      group: B
+      higher_is: better
+      shown_when:
+        positive: {above: 0.5}
+        negative: {below: 0.5}
+      otherwise:
+        positive:
+          en: "More instalments in the last year were paid on time than for similar applicants."
+          bn: "সমান ধরনের আবেদনকারীর তুলনায় গত এক বছরে বেশি কিস্তি সময়মতো পরিশোধ হয়েছে।"
+        negative:
+          en: "Fewer instalments in the last year were paid on time than for similar applicants."
+          bn: "সমান ধরনের আবেদনকারীর তুলনায় গত এক বছরে কম কিস্তি সময়মতো পরিশোধ হয়েছে।"
+      detail: {label: "Last year's instalments on time", format: share}
+      definition: The on-time share over instalments due in the 365 days before the application
+      positive:
+        en: "Most instalments in the last year were paid on time."
+        bn: "গত এক বছরের বেশিরভাগ কিস্তি সময়মতো পরিশোধ হয়েছে।"
+      negative:
+        en: "Few instalments in the last year were paid on time."
+        bn: "গত এক বছরে কম কিস্তি সময়মতো পরিশোধ হয়েছে।"
+
+    pos_months_overdue_share:
+      group: B
+      higher_is: worse
+      shown_when:
+        positive: {at_most: 0}
+        negative: {above: 0}
+      otherwise:
+        positive:
+          en: "Fewer months showed an overdue amount than for similar applicants."
+          bn: "সমান ধরনের আবেদনকারীর তুলনায় বকেয়া থাকা মাস কম।"
+      detail: {label: "Months with an overdue amount", format: share}
+      definition: Share of the monthly records of earlier store and cash loans with an amount overdue
+      positive:
+        en: "No month of the earlier store or cash loans showed an overdue amount."
+        bn: "আগের দোকান বা নগদ ঋণের কোনো মাসে বকেয়া ছিল না।"
+      negative:
+        en: "Some months of the earlier store or cash loans showed an overdue amount."
+        bn: "আগের দোকান বা নগদ ঋণের কিছু মাসে বকেয়া ছিল।"
+
+    annuity_to_income:
+      group: L
+      higher_is: worse
+      detail: {label: "Repayment compared with stated income", format: share}
+      definition: The loan's repayment amount divided by the income stated in the application
+      positive:
+        en: "The repayment is a smaller share of stated income than for similar applicants."
+        bn: "সমান ধরনের আবেদনকারীর তুলনায় কিস্তি উল্লিখিত আয়ের কম অংশ।"
+      negative:
+        en: "The repayment is a larger share of stated income than for similar applicants."
+        bn: "সমান ধরনের আবেদনকারীর তুলনায় কিস্তি উল্লিখিত আয়ের বেশি অংশ।"
+
+    credit_to_goods_ratio:
+      group: L
+      higher_is: worse
+      detail: {label: "Loan compared with the price of the goods", format: ratio}
+      definition: The loan amount divided by the price of the goods it pays for
+      positive:
+        en: "The loan is smaller, compared with the price of the goods, than for similar applicants."
+        bn: "সমান ধরনের আবেদনকারীর তুলনায় পণ্যের দামের অনুপাতে ঋণ কম।"
+      negative:
+        en: "The loan is larger, compared with the price of the goods, than for similar applicants."
+        bn: "সমান ধরনের আবেদনকারীর তুলনায় পণ্যের দামের অনুপাতে ঋণ বেশি।"
+
+    external_score:
+      group: X
+      higher_is: better
+      detail: {label: "Outside score", format: ratio}
+      definition: Average of the scores "from external data sources" that the application has (up to three)
+      positive:
+        en: "The score from outside data sources is higher than for similar applicants."
+        bn: "সমান ধরনের আবেদনকারীর তুলনায় বাইরের তথ্যসূত্রের স্কোর বেশি।"
+      negative:
+        en: "The score from outside data sources is lower than for similar applicants."
+        bn: "সমান ধরনের আবেদনকারীর তুলনায় বাইরের তথ্যসূত্রের স্কোর কম।"
