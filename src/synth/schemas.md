@@ -23,7 +23,7 @@ Only `deliveries.csv` differs between the three folders. The folder is gitignore
 | Period | Dates with the default config | What happens |
 |---|---|---|
 | Main window (`data.months`, 18 months) | 2025-01-01 to 2026-06-30 | Merchants are onboarded. Every loan issued here has an outcome |
-| Tail (`generator.observation_tail_days`, 60 days) | 2026-07-01 to 2026-08-29 | Activity continues. Loans issued here are too young to judge: the pending cases for the review queue |
+| Tail (`generator.observation_tail_days`, 61 days) | 2026-07-01 to 2026-08-30 | Activity continues. Loans issued here are too young to judge: the pending cases for the review queue |
 
 "Today" for the data is the last day of the tail.
 
@@ -78,7 +78,7 @@ and parcel volume depend on hidden reliability multiplied by the strength. At st
 depend on it at all. A share of returns and failures (`data.logistics_noise_share`, 40%) is always
 logistics noise.
 
-## loans (about 30,800 rows)
+## loans (about 30,900 rows)
 
 Baki-style credit. One to three loans per merchant; the first no earlier than 45 days after onboarding.
 A merchant who never repaid gets no further loan.
@@ -89,7 +89,7 @@ A merchant who never repaid gets no further loan.
 | merchant_id | Borrower |
 | issued_at | The cutoff date for features: only earlier data may be used |
 | limit_bdt | Credit limit; grows with town tier and with each loan |
-| outcome_label | 1 = repaid within 30 days of the due date; 0 = later or never. **Empty** for loans younger than 60 days |
+| outcome_label | 1 = repaid within 30 days of the due date; 0 = later or never. **Empty** when the outcome cannot be known yet: the loan is younger than 60 days, or it is unpaid but not yet more than 30 days past due |
 | label_observed_at | Day the outcome became known (due date + 30 days); empty when the label is empty |
 
 About 90% of judged loans are labelled 1. That share is a team assumption, explained in

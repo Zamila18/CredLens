@@ -228,8 +228,17 @@ def test_young_loans_have_no_label(tables, facts):
     loans = tables["loans"]
     age = (pd.Timestamp(facts["window_end"]) - pd.to_datetime(loans["issued_at"])).dt.days
     assert loans.loc[age < minimum_age, "outcome_label"].isna().all()
-    assert loans.loc[age >= minimum_age, "outcome_label"].notna().all()
     assert (age < minimum_age).any(), "some pending loans must exist for the review queue"
+
+
+def test_an_unpaid_loan_is_called_bad_only_once_it_is_overdue_enough(tables, facts):
+    """A loan exactly 30 days past due could still be repaid in time today: no label yet."""
+    limit = load_config()["labels"]["good_if_days_late_at_most"]
+    joined = tables["loans"].merge(tables["payments"], on=["loan_id", "merchant_id"])
+    overdue = (pd.Timestamp(facts["window_end"]) - pd.to_datetime(joined["due_date"])).dt.days
+    unpaid = joined["paid_date"].isna()
+    assert joined.loc[unpaid & (overdue <= limit), "outcome_label"].isna().all()
+    assert (joined.loc[unpaid & (overdue > limit), "outcome_label"].dropna() == 0).all()
 
 
 def test_every_loan_in_the_main_window_has_an_outcome(tables, facts):

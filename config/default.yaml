@@ -26,8 +26,10 @@ data:
 generator:                       # synthetic_bd only; see docs/GENERATOR_SPEC.md
   start_date: "2025-01-01"       # first day of the 18-month window
   out_dir: data/raw/synthetic_bd # gitignored; one sub-folder per delivery signal strength
-  observation_tail_days: 60     # activity continues this long after the 18 months, so every loan issued in the
-                                 # 18 months has an outcome; loans issued in the tail are the pending cases
+  observation_tail_days: 61     # activity continues this long after the 18 months, so every loan issued in the
+                                 # 18 months has an outcome; loans issued in the tail are the pending cases.
+                                 # Must exceed loan term (30) + allowed days late (30): a loan can only be
+                                 # called bad once it is MORE than 30 days past its due date
   repayment_share_target: 0.90   # share of loans repaid within the 30-day rule. A team assumption, set between
                                  # published Bangladesh recovery rates (98% MRA FY2023; 99.5% City Bank-bKash nano
                                  # loans) and early-default rates in other Asian datasets (8-22%). No public figure

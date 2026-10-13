@@ -83,10 +83,16 @@ def _window(config: dict[str, Any]) -> tuple[np.datetime64, int, int]:
     main_end = start + pd.DateOffset(months=config["data"]["months"])
     main_days = int((main_end - start).days)
     tail_days = config["generator"]["observation_tail_days"]
-    if tail_days < config["labels"]["min_loan_age_days"]:
+    labels = config["labels"]
+    judgeable_after = (
+        config["generator"]["loans"]["term_days"] + labels["good_if_days_late_at_most"] + 1
+    )
+    needed = max(labels["min_loan_age_days"], judgeable_after)
+    if tail_days < needed:
         raise ValueError(
-            "generator.observation_tail_days must be at least labels.min_loan_age_days, "
-            "so that every loan issued in the main window has an outcome."
+            f"generator.observation_tail_days must be at least {needed}: the loan term plus "
+            "the allowed days late plus one, and no less than labels.min_loan_age_days. "
+            "Otherwise a loan issued on the last day of the main window could not be judged."
         )
     return np.datetime64(start.date(), "D"), main_days + tail_days, main_days
 
@@ -512,8 +518,11 @@ def _make_loans_and_payments(
     paid_day = all_loans["paid_day"].to_numpy()
     good = all_loans["good"].to_numpy()
 
-    # A loan too young to judge has no label yet (docs/MODEL_SPEC.md section 2).
-    observed = (last_day - issue_day) >= labels["min_loan_age_days"]
+    # A loan has a label only when its outcome can be known today (docs/MODEL_SPEC.md
+    # section 2): it is old enough, and it was either repaid in time or is by now more
+    # than the allowed days past due. This is the same rule as src/model/labels.py.
+    old_enough = (last_day - issue_day) >= labels["min_loan_age_days"]
+    observed = old_enough & (good | ((last_day - due_day) > good_limit))
     label = np.full(n_loans, None, dtype=object)
     label[observed] = good[observed].astype(int)
     observed_at = np.full(n_loans, None, dtype=object)
