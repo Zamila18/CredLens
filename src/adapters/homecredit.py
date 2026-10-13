@@ -75,7 +75,7 @@ INSTALMENT_COLUMNS = [
     "AMT_INSTALMENT",
     "AMT_PAYMENT",
 ]
-POS_COLUMNS = [ID, "SK_DPD"]
+POS_COLUMNS = [ID, "MONTHS_BALANCE", "SK_DPD"]
 
 
 class HomeCreditAdapter(DataAdapter):
@@ -134,7 +134,19 @@ class HomeCreditAdapter(DataAdapter):
             yield chunk[chunk[ID].isin(ids)]
 
     def _history(self, ids: set[int]) -> pd.DataFrame:
-        """Per applicant: counts over earlier instalments and monthly loan records."""
+        """Per applicant: counts over earlier instalments and monthly loan records.
+
+        The applicants are worked through `applicants_per_pass` at a time, each pass
+        reading the two files once. So memory stays bounded even when every applicant is
+        used (`sample_size: null`), at the price of a few more passes.
+        """
+        ordered = sorted(ids)
+        size = self.config["data"][self.mode]["applicants_per_pass"]
+        passes = [set(ordered[start : start + size]) for start in range(0, len(ordered), size)]
+        return pd.concat([self._history_pass(batch) for batch in passes], ignore_index=True)
+
+    def _history_pass(self, ids: set[int]) -> pd.DataFrame:
+        """The history counts of one batch of applicants."""
         settings = self.config["data"][self.mode]
         tolerance = self.config["labels"]["paid_in_full_tolerance"]
 
@@ -170,6 +182,11 @@ class HomeCreditAdapter(DataAdapter):
         )
 
         months = pd.concat(self._chunks(POS_FILE, POS_COLUMNS, ids), ignore_index=True)
+        if (months["MONTHS_BALANCE"] >= 0).any():
+            raise ValueError(
+                f"{POS_FILE} holds months on or after the application. They would leak the "
+                "future into the features, so nothing was built."
+            )
         months["overdue"] = months["SK_DPD"] > 0
         pos = months.groupby(ID).agg(
             pos_months=("overdue", "size"), pos_months_overdue=("overdue", "sum")
@@ -186,9 +203,10 @@ class HomeCreditAdapter(DataAdapter):
         settings = self.config["data"][self.mode]
         files = (INSTALMENT_FILE, POS_FILE)
         sizes = "-".join(str(self._path(name).stat().st_size) for name in files)
+        tolerance = self.config["labels"]["paid_in_full_tolerance"]
         key = (
             f"history_n{len(ids)}_seed{self.config['seed']}_late{settings['late_days']}"
-            f"_recent{settings['recent_days']}_{sizes}.csv"
+            f"_recent{settings['recent_days']}_tol{tolerance}_{sizes}.csv"
         )
         path = self.folder / DERIVED_FOLDER / key
         if path.exists():

@@ -215,7 +215,10 @@ class KivaAsiaAdapter(DataAdapter):
                 f"No {ARCHIVE_NAME} in {self.folder}. Download Kiva's archived JSON snapshot "
                 "(docs/DATA_SOURCES.md, section 1.3) and save the zip there, unopened."
             )
-        name = f"region_loans_{archive.stat().st_size}.csv"
+        # The regions are part of the name, so a changed region list is never answered
+        # from a file extracted for another one.
+        regions = "-".join(sorted(self.config["data"]["kiva"]["regions"]))
+        name = f"region_loans_{regions}_{archive.stat().st_size}.csv"
         target = self.folder / DERIVED_FOLDER / name
         if not (self.use_cache and target.exists()):
             extract_loans(archive, self._countries(), target)

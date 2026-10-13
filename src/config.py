@@ -134,7 +134,14 @@ def validate_config(config: dict[str, Any]) -> None:
     elif kiva["posted_from"] >= kiva["posted_until"]:
         problems.append("data.kiva.posted_from must be earlier than posted_until")
     home = data.get("homecredit") or {}
-    for name in ("chunk_rows", "late_days", "recent_days", "coverage_min_instalments"):
+    home_numbers = (
+        "chunk_rows",
+        "applicants_per_pass",
+        "late_days",
+        "recent_days",
+        "coverage_min_instalments",
+    )
+    for name in home_numbers:
         if not _is_positive_int(home.get(name)):
             problems.append(f"data.homecredit.{name} must be a positive whole number")
     for source, settings in (("taiwan_cc", taiwan), ("india_ltfs", india), ("homecredit", home)):
