@@ -384,10 +384,15 @@ def test_mifos_style_export_has_clients_loans_schedule_and_transactions(
     transactions = pd.read_csv(paths["transactions_csv"])
 
     assert len(clients) == N_MERCHANTS
-    assert {"officeId", "firstname", "lastname", "active", "activationDate"} <= set(clients[0])
-    assert clients[0]["firstname"] == "Merchant"
+    assert {"officeId", "legalFormId", "fullname", "active", "activationDate"} <= set(clients[0])
+    assert clients[0]["legalFormId"] == 2, "a merchant is a business"
+    assert clients[0]["fullname"].startswith("Merchant ")
     assert len(loans) == len(schedule) == len(tables["loans"])
     assert set(loans["clientExternalId"]) <= {client["externalId"] for client in clients}
     assert {"principal", "numberOfRepayments", "expectedDisbursementDate"} <= set(loans.columns)
+    # The five fields a running Fineract refused to do without (Oct 14, 2026).
+    for field in ("interestRatePerPeriod", "interestType", "interestCalculationPeriodType",
+                  "amortizationType", "transactionProcessingStrategyCode"):
+        assert field in loans.columns, field
     assert len(transactions) == int(tables["payments"]["paid_date"].notna().sum())
     assert "SYNTHETIC" in paths["readme"].read_text(encoding="utf-8")
