@@ -46,9 +46,9 @@ Rules that apply to everyone: read `CLAUDE.md`; two people never work in the sam
 
 | Person | Phases | Folders |
 |---|---|---|
-| Lead (Zamila, with Claude Code) | 11 (parts 2 to 4), documents and checks | `src/model/`, `reports/`, `src/synth/`, `src/adapters/`, `src/db/`, `config/`, `docs/` |
+| Lead (Zamila, with Claude Code) | 11 (parts 2 to 4), documents and checks; the Hostinger deployment at the end, by following `docs/DEPLOY.md` | `src/model/`, `reports/`, `src/synth/`, `src/adapters/`, `src/db/`, `config/`, `docs/` |
 | Dipto | 10: the dashboard | `web/` |
-| Humayra | 12 and 13: backend, database, deployment, backend review | `src/api/`, `deploy/` (new), `docs/DEPLOY.md`, `docs/adapting.md` |
+| Humayra | 12 and 13: backend, database, deployment files and guide, backend review | `src/api/`, `deploy/` (new), `docs/DEPLOY.md`, `docs/adapting.md` |
 
 Dipto and Humayra meet at the API. If a page needs a field or endpoint that is missing, Dipto asks Humayra and she adds it in `src/api/`; Dipto does not edit `src/api/`.
 
@@ -60,6 +60,7 @@ Dipto and Humayra meet at the API. If a page needs a field or endpoint that is m
 | 3 | Phase 11 part 4: the test months, once, with the ledger in `reports/<mode>/test_set_use.json` | `reports/` |
 | 4 | Documents and checks (moved from Dipto): Findex codebook check, CGAP Kaleidofin case, first pass of the Bangla review (a native speaker confirms), `docs/starter_kit.md`, `docs/data_inventory.md`, slides text | `docs/`, `config/calibration/` |
 | 5 | Remove the two stale Phase 7 skip placeholders in `tests/test_adapters.py` | `tests/` |
+| 6 | When everything else is done: buy the Hostinger VPS and deploy by following Humayra's `docs/DEPLOY.md` | the server |
 
 Phase 11 stays with the lead: the public data modes need the raw files, which exist only on the lead's laptop and may not be shared.
 
@@ -84,8 +85,8 @@ A real baseline score is about 92 and most reasons move the score by 0.2 to 6 po
 |---|---|---|
 | 1 | Supabase: create the project (HUMAN STEP; the lead can invite her), put `DATABASE_URL` in `.env`, load the synthetic data, check that decisions and the audit log refuse UPDATE, DELETE and TRUNCATE, and that `python tasks.py backup` works there. Never run `tests/test_postgres.py` against Supabase (it is for a throwaway local database only) | `.env` (never committed) |
 | 2 | Find out what the API needs on a server for each data mode. Raw public files never go to the server; public modes show reports and totals only; Home Credit rows never | `src/api/`, `docs/DEPLOY.md` |
-| 3 | Hostinger VPS (HUMAN STEP to buy and log in): Python, the API as a systemd service, Nginx serving the built dashboard and passing `/api` to the API, HTTPS, the whole site behind a password, environment variables only on the server | `deploy/`, `docs/DEPLOY.md` |
-| 4 | Model files on the server; a health check that waits for the scorer (about 30 seconds to build) | `deploy/` |
+| 3 | Deployment files and guide (Zamila runs them on the Hostinger VPS at the end): the API as a systemd service, an Nginx config that serves the built dashboard and passes `/api` to the API, HTTPS, the whole site behind a password, a production `.env` template (no real values), and `docs/DEPLOY.md` with every command in order for a fresh Ubuntu server. Test what can be tested on a laptop (production settings, the built dashboard served by the API or a local Nginx) | `deploy/`, `docs/DEPLOY.md` |
+| 4 | Which model files and reports the server needs, and how they get there; a health check that waits for the scorer (about 30 seconds to build) | `deploy/`, `docs/DEPLOY.md` |
 | 5 | Offline fallback: one documented way to run API and dashboard on a laptop with no internet | `docs/DEPLOY.md`, `README.md` |
 | 6 | `docs/adapting.md` (how another lender adds a data adapter in `src/adapters/`); a small script that picks the demo merchants (one Strong, one Needs more info, one without consent) | `docs/`, `deploy/` |
 | 7 | Add any field or endpoint Dipto's pages need | `src/api/` |
