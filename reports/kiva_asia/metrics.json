@@ -1,0 +1,470 @@
+{
+  "data_mode": "kiva_asia",
+  "measured_on": "validation period (the test period is not touched in training)",
+  "split": {
+    "method": "time",
+    "note": "Split by loan issue date. Each period ends the day before the next begins.",
+    "boundaries": {
+      "train_from": "2009-07-01",
+      "validation_from": "2012-01-01",
+      "test_from": "2012-10-01",
+      "test_until": "2013-07-01"
+    },
+    "sizes": {
+      "train": 32581,
+      "validation": 15113,
+      "test": 17610
+    },
+    "left_out": {
+      "before_train_period": 0,
+      "after_test_period": 0,
+      "no_date": 0
+    }
+  },
+  "dataset": {
+    "loans": 65304,
+    "used_for_modelling": 65304,
+    "left_out_no_outcome_yet": 0,
+    "left_out_no_valid_consent": 0
+  },
+  "model": "logistic_regression",
+  "model_choice": {
+    "chosen": "logistic_regression",
+    "reason": "LightGBM adds -0.2377 AUC over the logistic regression (range -0.2550 to -0.2187; the whole range must reach +0.0100). Not met: whole gain range reaches the threshold, brier is not worse.",
+    "auc_gain_of_lightgbm": {
+      "auc_gain": -0.23769223724347815,
+      "range": [
+        -0.25498816676732355,
+        -0.21867221531050354
+      ],
+      "clearly_better": false,
+      "resamples_used": 500
+    },
+    "brier": {
+      "logistic_regression": 0.04969608389315049,
+      "lightgbm": 0.049724067052775274
+    },
+    "checks": {
+      "whole_gain_range_reaches_the_threshold": false,
+      "brier_is_not_worse": false
+    }
+  },
+  "candidates": {
+    "logistic_regression": {
+      "inputs_used": [
+        "repayment_term_months",
+        "partner_covers_default"
+      ],
+      "inputs_removed_for_pointing_the_wrong_way": [
+        "partner_past_default_rate"
+      ],
+      "calibration_method": "platt",
+      "train_roc_auc": 0.73158885612552,
+      "validation_metrics": {
+        "roc_auc": 0.6441375125927282,
+        "pr_auc_not_repaid": 0.06979694128572068,
+        "brier": 0.04969608389315049,
+        "calibration_error": 0.06526643740739212,
+        "not_repaid_rate_in_lowest_k": 0.0,
+        "not_repaid_caught_in_lowest": 0.0403530895334174,
+        "precision_at_top_k": 1.0,
+        "share_at_or_above_strong_line": 1.0
+      },
+      "validation_ranges": {
+        "roc_auc": [
+          0.6339152205619482,
+          0.6549902382814624
+        ],
+        "pr_auc_not_repaid": [
+          0.06536347339564075,
+          0.07492467840882013
+        ],
+        "brier": [
+          0.04674935859671773,
+          0.052600460208467315
+        ],
+        "calibration_error": [
+          0.06156327941383616,
+          0.06870437460340718
+        ],
+        "resamples_used": 500
+      },
+      "validation_by_history": {}
+    },
+    "lightgbm": {
+      "inputs_used": [
+        "repayment_term_months",
+        "partner_past_default_rate",
+        "partner_covers_default"
+      ],
+      "inputs_removed_for_pointing_the_wrong_way": [],
+      "calibration_method": "platt",
+      "train_roc_auc": 0.5993453721495623,
+      "validation_metrics": {
+        "roc_auc": 0.40644527534925007,
+        "pr_auc_not_repaid": 0.04372145049513944,
+        "brier": 0.049724067052775274,
+        "calibration_error": 0.02831444365926143,
+        "not_repaid_rate_in_lowest_k": 0.0,
+        "not_repaid_caught_in_lowest": 0.027742749054224466,
+        "precision_at_top_k": 0.95,
+        "share_at_or_above_strong_line": 1.0
+      },
+      "validation_ranges": {
+        "roc_auc": [
+          0.3902603917563159,
+          0.42249871386876764
+        ],
+        "pr_auc_not_repaid": [
+          0.04068850524429134,
+          0.047154798699454534
+        ],
+        "brier": [
+          0.04675953411618973,
+          0.05262630575382673
+        ],
+        "calibration_error": [
+          0.015110796761736317,
+          0.021779984699557185
+        ],
+        "resamples_used": 500
+      },
+      "validation_by_history": {},
+      "tuning": {
+        "tuned_on": "the last 3 months of the training period",
+        "fit_part_loans": 28416,
+        "tuning_part_loans": 4165,
+        "chosen": {
+          "num_leaves": 8,
+          "learning_rate": 0.03,
+          "min_child_samples": 200,
+          "trees": 1,
+          "tuning_log_loss": 0.03237435679479917,
+          "tuning_roc_auc": 0.5
+        },
+        "tried": [
+          {
+            "num_leaves": 4,
+            "learning_rate": 0.05,
+            "min_child_samples": 100,
+            "trees": 1,
+            "tuning_log_loss": 0.032411463835133575,
+            "tuning_roc_auc": 0.5
+          },
+          {
+            "num_leaves": 8,
+            "learning_rate": 0.05,
+            "min_child_samples": 100,
+            "trees": 1,
+            "tuning_log_loss": 0.032411463835133575,
+            "tuning_roc_auc": 0.5
+          },
+          {
+            "num_leaves": 8,
+            "learning_rate": 0.03,
+            "min_child_samples": 200,
+            "trees": 1,
+            "tuning_log_loss": 0.03237435679479917,
+            "tuning_roc_auc": 0.5
+          },
+          {
+            "num_leaves": 16,
+            "learning_rate": 0.03,
+            "min_child_samples": 200,
+            "trees": 1,
+            "tuning_log_loss": 0.03237435679479917,
+            "tuning_roc_auc": 0.5
+          },
+          {
+            "num_leaves": 4,
+            "learning_rate": 0.03,
+            "min_child_samples": 300,
+            "trees": 1,
+            "tuning_log_loss": 0.03237435679479917,
+            "tuning_roc_auc": 0.5
+          }
+        ],
+        "note": "Tuned inside the training period only; the validation period was not used. The final model is fitted on the whole training period."
+      }
+    }
+  },
+  "feature_groups": {
+    "L": [
+      "repayment_term_months"
+    ],
+    "P": [
+      "partner_past_default_rate",
+      "partner_covers_default"
+    ]
+  },
+  "inputs_used": [
+    "repayment_term_months",
+    "partner_covers_default"
+  ],
+  "inputs_removed_for_pointing_the_wrong_way": [
+    "partner_past_default_rate"
+  ],
+  "calibration": {
+    "method": "platt",
+    "chosen_by": "auto: the simplest method is kept unless a more flexible one lowers the out-of-fold Brier score by at least 0.0002 without improving the ranking (AUC at most 0.005 above the uncalibrated model). Not eligible because it changed the ranking: isotonic",
+    "fitted_on": "validation period only; re-checked once on the test period",
+    "compared_on": "out-of-fold probabilities, 5 folds of the validation period",
+    "candidates": {
+      "none": {
+        "brier": 0.05138525119071722,
+        "calibration_error": 0.049327414347652795,
+        "roc_auc": 0.6437346773795853,
+        "keeps_ranking": true
+      },
+      "platt": {
+        "brier": 0.04969608389315049,
+        "calibration_error": 0.06526643740739212,
+        "roc_auc": 0.6441375125927282,
+        "keeps_ranking": true
+      },
+      "isotonic": {
+        "brier": 0.04714376472100119,
+        "calibration_error": 0.0035082270884162227,
+        "roc_auc": 0.755660343297146,
+        "keeps_ranking": false
+      }
+    }
+  },
+  "validation": {
+    "loans": 15113,
+    "not_repaid_loans": 793,
+    "share_repaid": 0.9475286177463111,
+    "metrics": {
+      "roc_auc": 0.6441375125927282,
+      "pr_auc_not_repaid": 0.06979694128572068,
+      "brier": 0.04969608389315049,
+      "calibration_error": 0.06526643740739212,
+      "not_repaid_rate_in_lowest_k": 0.0,
+      "not_repaid_caught_in_lowest": 0.0403530895334174,
+      "precision_at_top_k": 1.0,
+      "share_at_or_above_strong_line": 1.0
+    },
+    "ranges": {
+      "roc_auc": [
+        0.6339152205619482,
+        0.6549902382814624
+      ],
+      "pr_auc_not_repaid": [
+        0.06536347339564075,
+        0.07492467840882013
+      ],
+      "brier": [
+        0.04674935859671773,
+        0.052600460208467315
+      ],
+      "calibration_error": [
+        0.06156327941383616,
+        0.06870437460340718
+      ],
+      "resamples_used": 500
+    },
+    "range_level": 0.95,
+    "calibration": [
+      {
+        "lowest": 0.9021,
+        "highest": 0.9407,
+        "loans": 1512,
+        "mean_predicted": 0.9186,
+        "share_repaid": 0.9848
+      },
+      {
+        "lowest": 0.9407,
+        "highest": 0.9409,
+        "loans": 1511,
+        "mean_predicted": 0.9408,
+        "share_repaid": 0.994
+      },
+      {
+        "lowest": 0.9409,
+        "highest": 0.9457,
+        "loans": 1511,
+        "mean_predicted": 0.9428,
+        "share_repaid": 0.9027
+      },
+      {
+        "lowest": 0.9457,
+        "highest": 0.948,
+        "loans": 1511,
+        "mean_predicted": 0.9473,
+        "share_repaid": 0.812
+      },
+      {
+        "lowest": 0.948,
+        "highest": 0.9523,
+        "loans": 1512,
+        "mean_predicted": 0.9486,
+        "share_repaid": 0.7976
+      },
+      {
+        "lowest": 0.9523,
+        "highest": 0.9543,
+        "loans": 1511,
+        "mean_predicted": 0.9542,
+        "share_repaid": 0.9967
+      },
+      {
+        "lowest": 0.9543,
+        "highest": 0.9543,
+        "loans": 1511,
+        "mean_predicted": 0.9543,
+        "share_repaid": 0.9954
+      },
+      {
+        "lowest": 0.9543,
+        "highest": 0.9561,
+        "loans": 1511,
+        "mean_predicted": 0.9545,
+        "share_repaid": 0.9967
+      },
+      {
+        "lowest": 0.9561,
+        "highest": 0.9562,
+        "loans": 1511,
+        "mean_predicted": 0.9562,
+        "share_repaid": 0.996
+      },
+      {
+        "lowest": 0.9562,
+        "highest": 0.9599,
+        "loans": 1512,
+        "mean_predicted": 0.958,
+        "share_repaid": 0.9993
+      }
+    ],
+    "benchmark": {
+      "useful_auc": 0.7,
+      "point_estimate_reaches_it": false,
+      "whole_range_reaches_it": false
+    },
+    "warnings": []
+  },
+  "validation_by_history": {},
+  "validation_predicted_against_actual": {
+    "coverage_below_the_line": {
+      "loans": 648,
+      "mean_predicted": 0.9368822239424678,
+      "share_repaid": 0.9567901234567902,
+      "predicted_minus_actual": -0.01990789951432237
+    },
+    "coverage_at_or_above_the_line": {
+      "loans": 14465,
+      "mean_predicted": 0.9479923163071552,
+      "share_repaid": 0.947113722779122,
+      "predicted_minus_actual": 0.0008785935280332113
+    }
+  },
+  "validation_bands": {
+    "lines": {
+      "band_strong_min_score": 90,
+      "band_min_coverage": 0.45,
+      "low_score_warning_below": 70
+    },
+    "bands": {
+      "Strong": {
+        "loans": 14465,
+        "share": 0.9571230066829881,
+        "share_repaid": 0.947113722779122
+      },
+      "Review": {
+        "loans": 0,
+        "share": 0.0,
+        "share_repaid": null
+      },
+      "Needs more info": {
+        "loans": 648,
+        "share": 0.04287699331701184,
+        "share_repaid": 0.9567901234567902
+      }
+    },
+    "needs_more_info_share_first_loans": null,
+    "needs_more_info_share_repeat_loans": null,
+    "low_score_warning_share": 0.0
+  },
+  "baselines": {
+    "always_average_rate": {
+      "predicted_rate": 0.9903317884656702,
+      "roc_auc": 0.5,
+      "pr_auc_not_repaid": 0.05247138225368888,
+      "brier": 0.05155024772170674,
+      "calibration_error": 0.04280317071935902
+    },
+    "simpler_model": {
+      "name": "without_field_partner",
+      "description": "the loan's terms only, without the two inputs about the field partner",
+      "features": [
+        "repayment_term_months"
+      ],
+      "metrics": {
+        "roc_auc": 0.6437346773795853,
+        "pr_auc_not_repaid": 0.08221949439505422,
+        "brier": 0.051554698878793055,
+        "calibration_error": 0.04864745848383972,
+        "not_repaid_rate_in_lowest_k": 0.0,
+        "not_repaid_caught_in_lowest": 0.04665825977301387,
+        "precision_at_top_k": 1.0,
+        "share_at_or_above_strong_line": 1.0
+      },
+      "ranges": {
+        "roc_auc": [
+          0.6337514587443395,
+          0.6538229164465028
+        ],
+        "pr_auc_not_repaid": [
+          0.0771221450801475,
+          0.08768154819997262
+        ],
+        "brier": [
+          0.04831604468909161,
+          0.05473960408975395
+        ],
+        "calibration_error": [
+          0.04447348099748665,
+          0.05207146180511369
+        ],
+        "resamples_used": 500
+      }
+    }
+  },
+  "gain_over_simpler_model": {
+    "auc_gain": 0.0,
+    "range": [
+      0.0,
+      0.0
+    ],
+    "clearly_better": false,
+    "resamples_used": 500
+  },
+  "reasons_check": {
+    "loans_checked": 300,
+    "largest_gap": 1.4210854715202004e-14,
+    "loans_with_no_reason": 0,
+    "size_of_all_other_inputs": {
+      "median": 0.29000000000000004,
+      "nine_in_ten_below": 0.42,
+      "largest": 0.44
+    },
+    "times_each_input_was_a_top_reason": {
+      "partner_covers_default": {
+        "positive": 0,
+        "negative": 300
+      },
+      "repayment_term_months": {
+        "positive": 139,
+        "negative": 113
+      }
+    }
+  },
+  "notes": [
+    "100% of validation loans score at or above the Strong line (90), so this line separates almost nobody. Set `score.band_strong_min_score` from the score distribution."
+  ],
+  "coefficients": {
+    "repayment_term_months": -0.3423,
+    "partner_covers_default": 1.618
+  },
+  "model_version": "kiva_asia-20261014-001212-3a1d56f"
+}

@@ -30,7 +30,7 @@
   "model": "logistic_regression",
   "model_choice": {
     "chosen": "logistic_regression",
-    "reason": "LightGBM adds +0.013 AUC over the logistic regression (range +0.003 to +0.021; the whole range must reach +0.010). Not met: whole gain range reaches the threshold.",
+    "reason": "LightGBM adds +0.0128 AUC over the logistic regression (range +0.0032 to +0.0212; the whole range must reach +0.0100). Not met: whole gain range reaches the threshold.",
     "auc_gain_of_lightgbm": {
       "auc_gain": 0.01281932660989149,
       "range": [
@@ -276,24 +276,27 @@
   "inputs_removed_for_pointing_the_wrong_way": [],
   "calibration": {
     "method": "none",
-    "chosen_by": "auto: the simplest method is kept unless a more flexible one lowers the out-of-fold Brier score by at least 0.0002",
+    "chosen_by": "auto: the simplest method is kept unless a more flexible one lowers the out-of-fold Brier score by at least 0.0002 without improving the ranking (AUC at most 0.005 above the uncalibrated model)",
     "fitted_on": "validation period only; re-checked once on the test period",
     "compared_on": "out-of-fold probabilities, 5 folds of the validation period",
     "candidates": {
       "none": {
         "brier": 0.08191852475007164,
         "calibration_error": 0.011723266973884145,
-        "roc_auc": 0.7095343071194196
+        "roc_auc": 0.7095343071194196,
+        "keeps_ranking": true
       },
       "platt": {
         "brier": 0.0817556355952457,
         "calibration_error": 0.01074101588748598,
-        "roc_auc": 0.7090229085121134
+        "roc_auc": 0.7090229085121134,
+        "keeps_ranking": true
       },
       "isotonic": {
         "brier": 0.08181058668908578,
         "calibration_error": 0.010575197508145631,
-        "roc_auc": 0.7025029534065751
+        "roc_auc": 0.7025029534065751,
+        "keeps_ranking": true
       }
     }
   },
@@ -433,6 +436,18 @@
     }
   },
   "validation_predicted_against_actual": {
+    "coverage_below_the_line": {
+      "loans": 899,
+      "mean_predicted": 0.9065217981650424,
+      "share_repaid": 0.8832035595105673,
+      "predicted_minus_actual": 0.023318238654475132
+    },
+    "coverage_at_or_above_the_line": {
+      "loans": 4954,
+      "mean_predicted": 0.8973545944298313,
+      "share_repaid": 0.9073475979006863,
+      "predicted_minus_actual": -0.009993003470854966
+    },
     "first_loans": {
       "loans": 3148,
       "mean_predicted": 0.9056621574304485,
@@ -493,7 +508,9 @@
       "brier": 0.08709047901600578,
       "calibration_error": 0.0038794357231985988
     },
-    "purchases_only": {
+    "simpler_model": {
+      "name": "purchases_only",
+      "description": "purchases only: what a platform knows before any credit or delivery history",
       "features": [
         "basket_growth",
         "supplier_repeat_share"
@@ -529,7 +546,7 @@
       }
     }
   },
-  "gain_over_purchases_only": {
+  "gain_over_simpler_model": {
     "auc_gain": 0.04269080481502496,
     "range": [
       0.02807320537029424,
@@ -603,5 +620,5 @@
     "cod_remit_ontime_rate": 0.2064,
     "dispatch_to_delivery_hours": -0.2317
   },
-  "model_version": "synthetic_bd-20261013-205545-219ee98"
+  "model_version": "synthetic_bd-20261014-000913-3a1d56f"
 }

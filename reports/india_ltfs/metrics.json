@@ -1,0 +1,496 @@
+{
+  "data_mode": "india_ltfs",
+  "measured_on": "validation period (the test period is not touched in training)",
+  "split": {
+    "method": "time",
+    "note": "Split by loan issue date. Each period ends the day before the next begins.",
+    "boundaries": {
+      "train_from": "2018-08-01",
+      "validation_from": "2018-09-01",
+      "test_from": "2018-10-01",
+      "test_until": "2018-11-01"
+    },
+    "sizes": {
+      "train": 68002,
+      "validation": 66788,
+      "test": 98364
+    },
+    "left_out": {
+      "before_train_period": 0,
+      "after_test_period": 0,
+      "no_date": 0
+    }
+  },
+  "dataset": {
+    "loans": 233154,
+    "used_for_modelling": 233154,
+    "left_out_no_outcome_yet": 0,
+    "left_out_no_valid_consent": 0
+  },
+  "model": "lightgbm",
+  "model_choice": {
+    "chosen": "lightgbm",
+    "reason": "LightGBM adds +0.0158 AUC over the logistic regression (range +0.0135 to +0.0181; the whole range must reach +0.0100). Both checks pass.",
+    "auc_gain_of_lightgbm": {
+      "auc_gain": 0.015805151170258602,
+      "range": [
+        0.013483825286881381,
+        0.018135406020934164
+      ],
+      "clearly_better": true,
+      "resamples_used": 500
+    },
+    "brier": {
+      "logistic_regression": 0.15238170428824915,
+      "lightgbm": 0.15138745549010785
+    },
+    "checks": {
+      "whole_gain_range_reaches_the_threshold": true,
+      "brier_is_not_worse": true
+    }
+  },
+  "candidates": {
+    "logistic_regression": {
+      "inputs_used": [
+        "down_payment_share",
+        "bureau_score",
+        "overdue_account_share",
+        "delinquent_accounts_6m",
+        "loan_enquiries"
+      ],
+      "inputs_removed_for_pointing_the_wrong_way": [
+        "new_accounts_6m"
+      ],
+      "calibration_method": "platt",
+      "train_roc_auc": 0.6050171031438882,
+      "validation_metrics": {
+        "roc_auc": 0.5949537376164853,
+        "pr_auc_not_repaid": 0.25027838781397216,
+        "brier": 0.15238170428824915,
+        "calibration_error": 0.012187206078012913,
+        "not_repaid_rate_in_lowest_k": 0.45,
+        "not_repaid_caught_in_lowest": 0.27514631291455327,
+        "precision_at_top_k": 0.9,
+        "share_at_or_above_strong_line": 0.03542552554351081
+      },
+      "validation_ranges": {
+        "roc_auc": [
+          0.5899069761652518,
+          0.6008745244766686
+        ],
+        "pr_auc_not_repaid": [
+          0.243359384912124,
+          0.2560721415226814
+        ],
+        "brier": [
+          0.1506316371529075,
+          0.15424107054035388
+        ],
+        "calibration_error": [
+          0.00974988610274313,
+          0.014972522567725433
+        ],
+        "resamples_used": 500
+      },
+      "validation_by_history": {}
+    },
+    "lightgbm": {
+      "inputs_used": [
+        "down_payment_share",
+        "bureau_score",
+        "overdue_account_share",
+        "delinquent_accounts_6m",
+        "new_accounts_6m",
+        "loan_enquiries"
+      ],
+      "inputs_removed_for_pointing_the_wrong_way": [],
+      "calibration_method": "platt",
+      "train_roc_auc": 0.62165274198277,
+      "validation_metrics": {
+        "roc_auc": 0.6107588887867439,
+        "pr_auc_not_repaid": 0.25986432771499407,
+        "brier": 0.15138745549010785,
+        "calibration_error": 0.0051545575272039755,
+        "not_repaid_rate_in_lowest_k": 0.5,
+        "not_repaid_caught_in_lowest": 0.28989465470152165,
+        "precision_at_top_k": 0.95,
+        "share_at_or_above_strong_line": 0.05462059052524405
+      },
+      "validation_ranges": {
+        "roc_auc": [
+          0.605783764281744,
+          0.6165901060749879
+        ],
+        "pr_auc_not_repaid": [
+          0.25322567358853,
+          0.26630972332435215
+        ],
+        "brier": [
+          0.1495877608669489,
+          0.15319058865475552
+        ],
+        "calibration_error": [
+          0.004310181556963824,
+          0.008872150552086127
+        ],
+        "resamples_used": 500
+      },
+      "validation_by_history": {},
+      "tuning": {
+        "tuned_on": "a random 25% of the training loans (the training period is too short to hold back its last months)",
+        "fit_part_loans": 51001,
+        "tuning_part_loans": 17001,
+        "chosen": {
+          "num_leaves": 16,
+          "learning_rate": 0.03,
+          "min_child_samples": 200,
+          "trees": 162,
+          "tuning_log_loss": 0.5064817527457662,
+          "tuning_roc_auc": 0.6184597880823166
+        },
+        "tried": [
+          {
+            "num_leaves": 4,
+            "learning_rate": 0.05,
+            "min_child_samples": 100,
+            "trees": 196,
+            "tuning_log_loss": 0.5066113806559392,
+            "tuning_roc_auc": 0.6180365000021065
+          },
+          {
+            "num_leaves": 8,
+            "learning_rate": 0.05,
+            "min_child_samples": 100,
+            "trees": 129,
+            "tuning_log_loss": 0.5064877215517275,
+            "tuning_roc_auc": 0.6182976677454647
+          },
+          {
+            "num_leaves": 8,
+            "learning_rate": 0.03,
+            "min_child_samples": 200,
+            "trees": 162,
+            "tuning_log_loss": 0.5065049911423375,
+            "tuning_roc_auc": 0.6181354349244632
+          },
+          {
+            "num_leaves": 16,
+            "learning_rate": 0.03,
+            "min_child_samples": 200,
+            "trees": 162,
+            "tuning_log_loss": 0.5064817527457662,
+            "tuning_roc_auc": 0.6184597880823166
+          },
+          {
+            "num_leaves": 4,
+            "learning_rate": 0.03,
+            "min_child_samples": 300,
+            "trees": 265,
+            "tuning_log_loss": 0.5065763287783432,
+            "tuning_roc_auc": 0.6181074161454185
+          }
+        ],
+        "note": "Tuned inside the training period only; the validation period was not used. The final model is fitted on the whole training period."
+      }
+    }
+  },
+  "feature_groups": {
+    "L": [
+      "down_payment_share"
+    ],
+    "B": [
+      "bureau_score",
+      "overdue_account_share",
+      "delinquent_accounts_6m",
+      "new_accounts_6m",
+      "loan_enquiries"
+    ]
+  },
+  "inputs_used": [
+    "down_payment_share",
+    "bureau_score",
+    "overdue_account_share",
+    "delinquent_accounts_6m",
+    "new_accounts_6m",
+    "loan_enquiries"
+  ],
+  "inputs_removed_for_pointing_the_wrong_way": [],
+  "calibration": {
+    "method": "platt",
+    "chosen_by": "auto: the simplest method is kept unless a more flexible one lowers the out-of-fold Brier score by at least 0.0002 without improving the ranking (AUC at most 0.005 above the uncalibrated model)",
+    "fitted_on": "validation period only; re-checked once on the test period",
+    "compared_on": "out-of-fold probabilities, 5 folds of the validation period",
+    "candidates": {
+      "none": {
+        "brier": 0.15195619360025286,
+        "calibration_error": 0.022055150798584448,
+        "roc_auc": 0.6107944682012831,
+        "keeps_ranking": true
+      },
+      "platt": {
+        "brier": 0.15138745549010785,
+        "calibration_error": 0.0051545575272039755,
+        "roc_auc": 0.6107588887867439,
+        "keeps_ranking": true
+      },
+      "isotonic": {
+        "brier": 0.1514421173318126,
+        "calibration_error": 0.003620049303212909,
+        "roc_auc": 0.6094213549456193,
+        "keeps_ranking": true
+      }
+    }
+  },
+  "validation": {
+    "loans": 66788,
+    "not_repaid_loans": 12815,
+    "share_repaid": 0.8081242139306463,
+    "metrics": {
+      "roc_auc": 0.6107588887867439,
+      "pr_auc_not_repaid": 0.25986432771499407,
+      "brier": 0.15138745549010785,
+      "calibration_error": 0.0051545575272039755,
+      "not_repaid_rate_in_lowest_k": 0.5,
+      "not_repaid_caught_in_lowest": 0.28989465470152165,
+      "precision_at_top_k": 0.95,
+      "share_at_or_above_strong_line": 0.05462059052524405
+    },
+    "ranges": {
+      "roc_auc": [
+        0.605783764281744,
+        0.6165901060749879
+      ],
+      "pr_auc_not_repaid": [
+        0.25322567358853,
+        0.26630972332435215
+      ],
+      "brier": [
+        0.1495877608669489,
+        0.15319058865475552
+      ],
+      "calibration_error": [
+        0.004310181556963824,
+        0.008872150552086127
+      ],
+      "resamples_used": 500
+    },
+    "range_level": 0.95,
+    "calibration": [
+      {
+        "lowest": 0.4806,
+        "highest": 0.7244,
+        "loans": 6679,
+        "mean_predicted": 0.7009,
+        "share_repaid": 0.705
+      },
+      {
+        "lowest": 0.7244,
+        "highest": 0.7538,
+        "loans": 6679,
+        "mean_predicted": 0.7348,
+        "share_repaid": 0.7389
+      },
+      {
+        "lowest": 0.7538,
+        "highest": 0.7826,
+        "loans": 6679,
+        "mean_predicted": 0.7634,
+        "share_repaid": 0.7661
+      },
+      {
+        "lowest": 0.7826,
+        "highest": 0.795,
+        "loans": 6678,
+        "mean_predicted": 0.791,
+        "share_repaid": 0.7884
+      },
+      {
+        "lowest": 0.795,
+        "highest": 0.81,
+        "loans": 6679,
+        "mean_predicted": 0.8016,
+        "share_repaid": 0.7863
+      },
+      {
+        "lowest": 0.81,
+        "highest": 0.8308,
+        "loans": 6679,
+        "mean_predicted": 0.8184,
+        "share_repaid": 0.8139
+      },
+      {
+        "lowest": 0.8308,
+        "highest": 0.8481,
+        "loans": 6678,
+        "mean_predicted": 0.8402,
+        "share_repaid": 0.8497
+      },
+      {
+        "lowest": 0.8481,
+        "highest": 0.8639,
+        "loans": 6679,
+        "mean_predicted": 0.858,
+        "share_repaid": 0.859
+      },
+      {
+        "lowest": 0.8639,
+        "highest": 0.8816,
+        "loans": 6679,
+        "mean_predicted": 0.8735,
+        "share_repaid": 0.87
+      },
+      {
+        "lowest": 0.8816,
+        "highest": 0.9412,
+        "loans": 6679,
+        "mean_predicted": 0.8996,
+        "share_repaid": 0.9039
+      }
+    ],
+    "benchmark": {
+      "useful_auc": 0.7,
+      "point_estimate_reaches_it": false,
+      "whole_range_reaches_it": false
+    },
+    "warnings": []
+  },
+  "validation_by_history": {},
+  "validation_predicted_against_actual": {
+    "coverage_below_the_line": {
+      "loans": 33705,
+      "mean_predicted": 0.790750351729678,
+      "share_repaid": 0.789942145082332,
+      "predicted_minus_actual": 0.0008082066473460436
+    },
+    "coverage_at_or_above_the_line": {
+      "loans": 33083,
+      "mean_predicted": 0.825861449822695,
+      "share_repaid": 0.8266481274370523,
+      "predicted_minus_actual": -0.0007866776143572451
+    }
+  },
+  "validation_bands": {
+    "lines": {
+      "band_strong_min_score": 90,
+      "band_min_coverage": 0.45,
+      "low_score_warning_below": 70
+    },
+    "bands": {
+      "Strong": {
+        "loans": 3648,
+        "share": 0.05462059052524405,
+        "share_repaid": 0.9114583333333334
+      },
+      "Review": {
+        "loans": 29435,
+        "share": 0.4407228843504821,
+        "share_repaid": 0.8161372515712587
+      },
+      "Needs more info": {
+        "loans": 33705,
+        "share": 0.5046565251242738,
+        "share_repaid": 0.789942145082332
+      }
+    },
+    "needs_more_info_share_first_loans": null,
+    "needs_more_info_share_repeat_loans": null,
+    "low_score_warning_share": 0.02835838773432353
+  },
+  "baselines": {
+    "always_average_rate": {
+      "predicted_rate": 0.7843298726508043,
+      "roc_auc": 0.5,
+      "pr_auc_not_repaid": 0.19187578606935377,
+      "brier": 0.1556256394665629,
+      "calibration_error": 0.023794341279841924
+    },
+    "simpler_model": {
+      "name": "loan_terms_only",
+      "description": "only the loan's terms: all that exists for a borrower with no bureau record",
+      "features": [
+        "down_payment_share"
+      ],
+      "metrics": {
+        "roc_auc": 0.5649162083389927,
+        "pr_auc_not_repaid": 0.22073242309798208,
+        "brier": 0.15434262433854085,
+        "calibration_error": 0.02133365247751311,
+        "not_repaid_rate_in_lowest_k": 0.3,
+        "not_repaid_caught_in_lowest": 0.24401092469761998,
+        "precision_at_top_k": 0.85,
+        "share_at_or_above_strong_line": 0.0185063185003294
+      },
+      "ranges": {
+        "roc_auc": [
+          0.5594714249525253,
+          0.5703543803982513
+        ],
+        "pr_auc_not_repaid": [
+          0.21586740482204303,
+          0.22586992656039553
+        ],
+        "brier": [
+          0.15256929122878288,
+          0.15600386095248933
+        ],
+        "calibration_error": [
+          0.01861457616320472,
+          0.024609906500045985
+        ],
+        "resamples_used": 500
+      }
+    }
+  },
+  "gain_over_simpler_model": {
+    "auc_gain": 0.04587825986229044,
+    "range": [
+      0.041740231397795355,
+      0.04991353724308714
+    ],
+    "clearly_better": true,
+    "resamples_used": 500
+  },
+  "reasons_check": {
+    "loans_checked": 300,
+    "largest_gap": 1.4210854715202004e-14,
+    "loans_with_no_reason": 23,
+    "size_of_all_other_inputs": {
+      "median": 0.46,
+      "nine_in_ten_below": 1.5110000000000003,
+      "largest": 2.83
+    },
+    "times_each_input_was_a_top_reason": {
+      "down_payment_share": {
+        "positive": 120,
+        "negative": 134
+      },
+      "overdue_account_share": {
+        "positive": 87,
+        "negative": 34
+      },
+      "delinquent_accounts_6m": {
+        "positive": 102,
+        "negative": 24
+      },
+      "bureau_score": {
+        "positive": 92,
+        "negative": 43
+      },
+      "loan_enquiries": {
+        "positive": 66,
+        "negative": 26
+      }
+    }
+  },
+  "notes": [
+    "50% of validation loans fall in 'Needs more info'. Check `score.band_min_coverage` against the coverage this data source can reach."
+  ],
+  "coefficients": {
+    "down_payment_share": 0.2884,
+    "bureau_score": 0.1031,
+    "overdue_account_share": -0.0945,
+    "delinquent_accounts_6m": -0.0483,
+    "loan_enquiries": -0.0941
+  },
+  "model_version": "india_ltfs-20261014-001118-3a1d56f"
+}
