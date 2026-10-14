@@ -20,7 +20,7 @@ import pytest
 from src.config import VALID_MODES, load_config
 from src.features.dictionary import features_for_mode, load_dictionary
 from src.features.taiwan_cc import BILL_COLUMNS, PAID_COLUMNS, STATUS_COLUMNS, taiwan_features
-from src.model.explain import explain_score, score_card
+from src.model.explain import RowsNotShown, explain_score, score_card
 from src.model.inputs import input_groups, model_inputs, simpler_model
 from src.model.split import RANDOM_SPLIT
 from src.model.train import _fit_simpler_model, load_model, save_artifacts, train_models
@@ -191,3 +191,39 @@ def test_a_band_line_nobody_reaches_is_pointed_out(dataset, config):
     harsh["score"]["by_mode"] = {MODE: {"band_strong_min_score": 100}}
     notes = train_models(dataset, harsh, MODE)["report"]["notes"]
     assert any("Almost no validation loan" in note for note in notes)
+
+
+def test_thin_files_get_their_own_auc(result):
+    groups = result["report"]["validation_by_coverage"]
+    assert set(groups) == {"coverage_below_the_line", "coverage_at_or_above_the_line"}
+    total = sum(part["loans"] for part in groups.values())
+    assert total == result["report"]["validation"]["loans"]
+    for part in groups.values():
+        assert part["roc_auc_range"][0] <= part["roc_auc"] <= part["roc_auc_range"][1]
+
+
+def test_rows_of_a_source_that_forbids_showing_them_are_refused(result, config):
+    """Home Credit's rules allow totals only: no single score card, whoever asks."""
+    saved = {
+        "model": result["model"],
+        "calibrator": result["calibrator"],
+        "features": result["features"],
+        "data_mode": MODE,
+        "version_id": "test",
+    }
+    hidden = copy.deepcopy(config)
+    hidden["data"]["rows_never_shown"] = [MODE]
+    with pytest.raises(RowsNotShown, match="never shown"):
+        score_card(saved, result["split"].validation.iloc[0], hidden, MODE)
+    assert load_config()["data"]["rows_never_shown"] == ["homecredit"]
+
+
+def test_training_a_mode_whose_files_are_missing_says_so(monkeypatch, tmp_path, capsys):
+    """A teammate without the public downloads gets a message and a known exit code."""
+    from src.adapters import taiwan_cc as adapter_module
+    from src.model import train
+
+    monkeypatch.setattr(adapter_module, "RAW_FOLDER", tmp_path)
+    assert train.main(["--mode", MODE]) == train.DATA_MISSING
+    assert "Not trained 'taiwan_cc'" in capsys.readouterr().out
+

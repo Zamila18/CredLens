@@ -74,6 +74,7 @@ CALIBRATION_PLOT = "calibration_validation.png"
 PAYMENT_HISTORY_COLUMN = "avg_pay_delay_days"  # empty exactly when a loan is a first loan
 HISTORY_COLUMN = "cov_history_6_months"  # yes when the merchant has six months of history
 LOGISTIC_REGRESSION = "logistic_regression"
+DATA_MISSING = 3  # exit code when the data mode's raw files are not on this machine
 LIGHTGBM = "lightgbm"
 
 
@@ -425,6 +426,9 @@ def train_models(
         "validation_predicted_against_actual": _predicted_against_actual(
             split.validation, probabilities, waiting
         ),
+        "validation_by_coverage": _by_coverage(
+            validation_labels, probabilities, waiting, config, mode
+        ),
         "validation_bands": {
             "lines": band_lines(config, mode),
             "bands": bands,
@@ -461,6 +465,36 @@ def train_models(
         "report": report,
         "candidates": fitted,
     }
+
+
+def _by_coverage(
+    labels: np.ndarray,
+    probabilities: np.ndarray,
+    needs_more_info: np.ndarray,
+    config: dict[str, Any],
+    mode: str,
+) -> dict[str, Any]:
+    """Validation AUC inside each coverage group: thin files and the rest.
+
+    Tells whether the model can rank the loans it has little data on, which a single AUC
+    over everyone hides. A group with only one outcome is left out.
+    """
+    result = {}
+    groups = (
+        ("coverage_below_the_line", needs_more_info),
+        ("coverage_at_or_above_the_line", ~needs_more_info),
+    )
+    for name, inside in groups:
+        part = labels[inside]
+        if len(part) == 0 or part.min() == part.max():
+            continue
+        report = evaluate(part, probabilities[inside], config, mode)
+        result[name] = {
+            "loans": report["loans"],
+            "roc_auc": report["metrics"]["roc_auc"],
+            "roc_auc_range": report["ranges"]["roc_auc"],
+        }
+    return result
 
 
 def _fit_simpler_model(
@@ -637,7 +671,12 @@ def main(argv: list[str] | None = None) -> int:
     config = load_config()
     if arguments.mode:
         config["data"]["mode"] = arguments.mode
-    run = run_training(config)
+    try:
+        run = run_training(config)
+    except FileNotFoundError as missing:
+        # A teammate without the public downloads: say so, and let `--all-modes` go on.
+        print(f"Not trained '{config['data']['mode']}': {missing}")
+        return DATA_MISSING
     report, metadata = run["report"], run["metadata"]
     validation = report["validation"]
     metrics, ranges = validation["metrics"], validation["ranges"]
@@ -677,7 +716,8 @@ def main(argv: list[str] | None = None) -> int:
         f"{name} {numbers['brier']:.4f}" for name, numbers in calibration["candidates"].items()
     )
     print(f"    calibration: '{calibration['method']}' chosen (out-of-fold Brier: {compared})")
-    for name, part in report["validation_by_history"].items():
+    groups = {**report["validation_by_history"], **report["validation_by_coverage"]}
+    for name, part in groups.items():
         print(
             f"    {name.replace('_', ' ')}: AUC {part['roc_auc']:.3f} "
             f"(range {part['roc_auc_range'][0]:.3f} to {part['roc_auc_range'][1]:.3f}, "

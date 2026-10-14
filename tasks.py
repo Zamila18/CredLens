@@ -67,9 +67,18 @@ def task_setup(_: argparse.Namespace) -> int:
 
 
 def task_data(args: argparse.Namespace) -> int:
-    """Generate the synthetic tables, or say what a public data mode still needs."""
+    """Generate the synthetic tables and load them into the database.
+
+    A public data mode needs no generating: `train` reads its files from data/raw/ through
+    its adapter. Loading public tables into the database is not built.
+    """
     if args.mode not in (None, "synthetic_bd"):
-        return not_implemented(f"data (mode: {args.mode})", "Phase 7 public-data adapters")
+        print(
+            f"data (mode: {args.mode}): nothing to generate. Its files are read from data/raw/ "
+            f"when you run: python tasks.py train --mode {args.mode}. Loading public tables "
+            "into the database is not built."
+        )
+        return 0
     command = ["-m", "src.synth.generate"]
     if args.all_strengths:
         command.append("--all-strengths")
@@ -84,15 +93,21 @@ def task_data(args: argparse.Namespace) -> int:
 
 
 PUBLIC_MODES = ("taiwan_cc", "india_ltfs", "homecredit", "kiva_asia")
+DATA_MISSING = 3  # exit code of `src.model.train` when a mode's raw files are not here
 
 
 def task_train(args: argparse.Namespace) -> int:
     """Build features, train, evaluate on the validation period, save the model and report."""
     if args.all_modes:
+        skipped = []
         for mode in ("synthetic_bd", *PUBLIC_MODES):
             code = run_in_venv(["-m", "src.model.train", "--mode", mode])
-            if code != 0:
+            if code == DATA_MISSING:
+                skipped.append(mode)
+            elif code != 0:
                 return code
+        if skipped:
+            print(f"Skipped, because their files are not on this machine: {', '.join(skipped)}")
         return 0
     command = ["-m", "src.model.train"]
     if args.mode:
