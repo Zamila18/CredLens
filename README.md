@@ -18,7 +18,8 @@ Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2
 | Project structure, config loading and checks | |
 | Data contract and adapter interface; adapters and features for all four public sources (Taiwan, India, Home Credit, Kiva) | |
 | Synthetic data generator: 20,000 merchants, three delivery signal strengths | API endpoints for the queue, profile, score, decisions and audit (Phase 9) |
-| Database (SQLite locally): tables, loader, backup, Mifos X-style export; append-only decisions and audit log | React dashboard (Phase 10) |
+| Database (SQLite locally): tables, loader, backup; append-only decisions and audit log | React dashboard (Phase 10) |
+| Mifos X: the export was loaded into a running Mifos X (Apache Fineract in Docker): 50 merchants, 85 loans, 73 repayments, nothing refused, loan statuses matched for all 85 ([tools/mifos/](tools/mifos/README.md)) | |
 | Features built only from data before each loan, labels from the 30-day rule, and a leakage guard | Ablation, group audit, model cards, final check on the held-back test months (Phase 11) |
 | Logistic regression and LightGBM, trained on 12 months and measured on the next 3; the simple model stays unless the other is clearly better | Supabase database and hosting (Phase 12) |
 | Calibration check; score, coverage, band and low-score warning | |
@@ -26,7 +27,7 @@ Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2
 | Scoring service for the API: review queue and score card, nothing scored without consent | |
 | Training runs on all five data modes, with an honest reading of each: [reports/REAL_LABEL_RESULTS.md](reports/REAL_LABEL_RESULTS.md) | |
 | API contract, sample responses, `GET /health` | |
-| Lint, 613 tests and CI | |
+| Lint, 620 tests and CI | |
 
 ### Where the model stands (synthetic data, validation months, seed 42)
 
@@ -93,7 +94,7 @@ config/default.yaml   every tunable number
 src/config.py         loads and checks the config
 src/adapters/         one adapter per data source, all returning the same seven tables
 src/synth/            synthetic data generator
-src/db/               database tables, loading, Mifos X-style export
+src/db/               database tables, loading, Mifos X export and loader
 src/features/         feature builder and the reason-sentence dictionary
 src/model/            labels, split, training, calibration, score, reasons, evaluation;
                       scoring.py is what the API calls for the queue and a score card
