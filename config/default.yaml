@@ -251,6 +251,10 @@ fairness:
     india_ltfs: [age_band, State_ID, Employment.Type]
     homecredit: [CODE_GENDER, age_band, REGION_RATING_CLIENT]
 
+ablation:                        # python -m src.model.ablation (synthetic data, validation months)
+  strengths: [0.0, 0.5, 1.0]     # delivery signal strengths; 0 is the negative control
+  seeds: [42, 7, 123]            # data seeds; every result is shown across all of them
+
 sanity:
   useful_auc_benchmark: 0.70     # CGAP: transactional MSE models around 0.70+ are useful
   suspicious_auc: 0.95           # synthetic AUC above this => look for leakage

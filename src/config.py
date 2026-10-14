@@ -136,6 +136,17 @@ def validate_config(config: dict[str, Any]) -> None:
         problems.append("data.kiva.posted_from and posted_until must be dates written in quotes")
     elif kiva["posted_from"] >= kiva["posted_until"]:
         problems.append("data.kiva.posted_from must be earlier than posted_until")
+    ablation = config.get("ablation") or {}
+    strengths = ablation.get("strengths")
+    if not isinstance(strengths, list) or not strengths or not all(
+        _is_number(s) and 0 <= s <= 1 for s in strengths
+    ):
+        problems.append("ablation.strengths must be a list of numbers between 0 and 1")
+    elif 0 not in strengths:
+        problems.append("ablation.strengths must include 0 (the negative control)")
+    seeds = ablation.get("seeds")
+    if not isinstance(seeds, list) or not seeds or not all(isinstance(s, int) for s in seeds):
+        problems.append("ablation.seeds must be a list of whole numbers")
     home = data.get("homecredit") or {}
     home_numbers = (
         "chunk_rows",

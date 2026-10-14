@@ -50,7 +50,15 @@ from src.features.dictionary import (
     load_dictionary,
     reason_sentences,
 )
-from src.model.score import band_for, coverage_for_rows, low_score_warning, score_from_probability
+from src.model.score import (
+    NEEDS_MORE_INFO,
+    STRONG,
+    band_for,
+    band_lines,
+    coverage_for_rows,
+    low_score_warning,
+    score_from_probability,
+)
 
 
 def calibrated_probability(saved: dict[str, Any], rows: pd.DataFrame) -> np.ndarray:
@@ -221,6 +229,72 @@ def refuse_hidden_rows(config: dict[str, Any], mode: str) -> None:
         )
 
 
+# Band names in Bangla, for the Bangla summary only (to be checked by the native speaker).
+BAND_BN = {"Strong": "শক্তিশালী", "Review": "পর্যালোচনা", "Needs more info": "আরও তথ্য প্রয়োজন"}
+
+
+def _out_of_ten(score_line: float) -> str:
+    """A score line said in plain words: 90 -> "9 in 10"."""
+    return f"{score_line / 10:g} in 10"
+
+
+def plain_summary(card: dict[str, Any], config: dict[str, Any], mode: str) -> dict[str, str]:
+    """A short paragraph, in English and Bangla, that says what the card shows.
+
+    Built only from the card itself: the score, band, coverage, the strongest reason each
+    way and the low-score warning. No language model writes it, so it can never say
+    anything the data does not show, it works without the internet, and the same card
+    always gets the same words. It describes; it never recommends lending or not.
+    """
+    lines = band_lines(config, mode)
+    score, band, coverage = card["score"], card["band"], card["coverage"]
+    up = card["reasons_positive"][0] if card["reasons_positive"] else None
+    down = card["reasons_negative"][0] if card["reasons_negative"] else None
+
+    english = [
+        f"Score {score} ({band}), based on {coverage:.0%} of the information this source "
+        "can give."
+    ]
+    bangla = [
+        f"স্কোর {score} ({BAND_BN[band]}), এই উৎসের সম্ভাব্য তথ্যের {coverage:.0%}-এর ভিত্তিতে।"
+    ]
+    if band == NEEDS_MORE_INFO:
+        english.append(
+            "There is too little information to rely on this score; more data is needed first."
+        )
+        bangla.append("এই স্কোরের ওপর ভরসা করার মতো যথেষ্ট তথ্য নেই; আগে আরও তথ্য দরকার।")
+    elif band == STRONG:
+        out_of = _out_of_ten(lines["band_strong_min_score"])
+        english.append(f"The model expects at least {out_of} loans like this to be repaid on time.")
+        many = lines["band_strong_min_score"] / 10
+        bangla.append(f"মডেলের হিসাবে এমন ১০টি ঋণের মধ্যে অন্তত {many:g}টি সময়মতো পরিশোধ হয়।")
+    else:
+        english.append("A closer look is needed before deciding.")
+        bangla.append("সিদ্ধান্তের আগে আরও খুঁটিয়ে দেখা দরকার।")
+    if up:
+        english.append(f"Helped most: {up['sentence_en']}")
+        bangla.append(f"সবচেয়ে বেশি সাহায্য করেছে: {up['sentence_bn']}")
+    if down:
+        english.append(f"Held it back most: {down['sentence_en']}")
+        bangla.append(f"সবচেয়ে বেশি পিছিয়ে দিয়েছে: {down['sentence_bn']}")
+    if not up and not down:
+        english.append("No single piece of information stood out.")
+        bangla.append("আলাদা করে কোনো তথ্য চোখে পড়ার মতো নয়।")
+    if card["low_score_warning"]:
+        out_of = _out_of_ten(lines["low_score_warning_below"])
+        many = lines["low_score_warning_below"] / 10
+        english.append(
+            f"The score is low: fewer than {out_of} loans like this are expected to be "
+            "repaid on time."
+        )
+        bangla.append(
+            f"স্কোর কম: এমন ১০টি ঋণের মধ্যে {many:g}টিরও কম সময়মতো পরিশোধ হবে বলে আশা করা হয়।"
+        )
+    english.append("This supports a decision; the decision is yours.")
+    bangla.append("এটি সিদ্ধান্তে সহায়তা মাত্র; সিদ্ধান্ত আপনার।")
+    return {"summary_en": " ".join(english), "summary_bn": " ".join(bangla)}
+
+
 def score_card(
     saved: dict[str, Any],
     feature_row: pd.Series,
@@ -240,8 +314,9 @@ def score_card(
     `ConsentRequired` and computes nothing.
 
     The result has the fields of `ScoreResponse` in src/api/schemas.py except
-    `merchant_id`, plus the banner sentence of the data mode. Nothing here approves or
-    declines anything.
+    `merchant_id`, plus the banner sentence of the data mode and a plain-language
+    summary in English and Bangla (`summary_en`, `summary_bn`; see `plain_summary`).
+    Nothing here approves or declines anything.
     """
     if consent_valid is None and "consent_valid" in feature_row.index:
         consent_valid = feature_row["consent_valid"]
@@ -254,7 +329,7 @@ def score_card(
     explanation = explain_score(saved, feature_row, config, dictionary)
     coverage = float(coverage_for_rows(feature_row.to_frame().T, config, mode).iloc[0])
     score = explanation["score"]
-    return {
+    card = {
         "data_mode": mode,
         "model_version": saved["version_id"],
         "probability": explanation["probability"],
@@ -268,6 +343,8 @@ def score_card(
         "other_contribution": explanation["other_contribution"],
         "banner": banner_text(mode),
     }
+    card.update(plain_summary(card, config, mode))
+    return card
 
 
 def reasons_summary(

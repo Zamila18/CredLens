@@ -392,3 +392,51 @@ def test_reasons_summary_counts_both_sides(saved, loans, config):
     for counts in summary["times_each_input_was_a_top_reason"].values():
         assert set(counts) == {"positive", "negative"}
     assert summary["loans_with_no_reason"] < summary["loans_checked"]
+
+
+# --- the plain-language summary --------------------------------------------------------------
+
+
+def test_every_card_carries_a_summary_in_both_languages(saved, loans, config):
+    from src.model.explain import BAND_BN
+
+    for _, row in loans.head(30).iterrows():
+        card = score_card(saved, row, config, "synthetic_bd")
+        english, bangla = card["summary_en"], card["summary_bn"]
+        assert english.startswith(f"Score {card['score']} ({card['band']})")
+        assert BAND_BN[card["band"]] in bangla
+        assert english.endswith("the decision is yours.")
+        assert bangla.endswith("সিদ্ধান্ত আপনার।")
+        if card["reasons_positive"]:
+            assert card["reasons_positive"][0]["sentence_en"] in english
+            assert card["reasons_positive"][0]["sentence_bn"] in bangla
+        if card["reasons_negative"]:
+            assert card["reasons_negative"][0]["sentence_en"] in english
+        assert ("The score is low" in english) == card["low_score_warning"]
+
+
+def test_the_summary_follows_the_band(config):
+    from src.model.explain import plain_summary
+
+    def card(band, score, low=False):
+        return {
+            "score": score, "band": band, "coverage": 0.7, "low_score_warning": low,
+            "reasons_positive": [], "reasons_negative": [],
+        }  # fmt: skip
+
+    strong = plain_summary(card("Strong", 93), config, "synthetic_bd")
+    assert "at least 9 in 10" in strong["summary_en"]
+    assert "১০টি ঋণের মধ্যে অন্তত 9টি" in strong["summary_bn"]
+    waiting = plain_summary(card("Needs more info", 95), config, "synthetic_bd")
+    assert "too little information" in waiting["summary_en"]
+    low = plain_summary(card("Review", 60, low=True), config, "synthetic_bd")
+    assert "fewer than 7 in 10" in low["summary_en"]
+    assert "No single piece of information stood out" in low["summary_en"]
+
+
+def test_the_summary_never_recommends_lending_or_not(saved, loans, config):
+    words = ("approve", "decline", "reject", "eligible", "grant", "should lend", "recommend")
+    for _, row in loans.head(30).iterrows():
+        text = score_card(saved, row, config, "synthetic_bd")["summary_en"].lower()
+        assert not any(word in text for word in words)
+

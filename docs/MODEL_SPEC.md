@@ -91,6 +91,8 @@ See `docs/FEATURE_DICTIONARY.md`. Feature groups: A purchases, B payments, C del
 | C | B + deliveries (REDX) | AUC(C) - AUC(B) |
 | D | C + questionnaire | AUC(D) - AUC(C), reported as a separate finding; the headline model is C (or the best of A to C) |
 
+As built (Oct 14, `src/model/ablation.py`, report in `reports/ablation/`): the headline logistic regression for each run, on data generated afresh for strengths 0, 0.5 and 1 and seeds 42, 7 and 123, measured on validation months with paired gains. Deliveries add +0.0000 at strength 0 (-0.0003 to +0.0004 over seeds), +0.025 at 0.5 and +0.055 at 1; the negative control passes and `tests/test_zero_signal.py` keeps checking it, with a positive control at strength 1.
+
 Repeat for `delivery_signal_strength` = 0, 0.5, 1 (regenerate data each time).
 - Strength 0: C must not beat B by more than `zero_signal_max_auc_gain`. If it does, stop: bug or leakage. This is the negative control.
 - Strength 0.5 and 1: expect small then clear gain, growing with strength.
