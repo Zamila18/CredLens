@@ -1,7 +1,7 @@
 # HANDOVER.md: where the project stands and what each person does next
 
 Kept up to date at the end of every phase, so a handover can happen at any time.
-Last updated: end of Phase 8 (Oct 14, 2026).
+Last updated: Phase 9 reviewed and fixed, Phase 10 ready to start (Oct 15, 2026).
 
 ## 1. What is finished and tested
 
@@ -22,8 +22,13 @@ Last updated: end of Phase 8 (Oct 14, 2026).
 | 8. Real-label runs | Training runs for every data mode (`python tasks.py train --all-modes`, about 4 minutes). Validation AUC: Taiwan 0.743, India 0.611, Home Credit 0.746 (0.601 without its outside score), Kiva 0.644 (not usable: see the results page). What each result does and does not show: `reports/REAL_LABEL_RESULTS.md`. Home Credit rows can never be shown: a score card or queue in that mode is refused (`RowsNotShown`); the dashboard shows that mode's totals only. A public mode has no review queue (every outcome is known) | `python tasks.py train --mode taiwan_cc` (needs the raw file on the machine) |
 | Mifos X check | A real Mifos X (Apache Fineract) in Docker accepted 50 merchants, 85 loans and 73 repayments from the export, and its loan statuses matched CredLens for all 85 (`tools/mifos/`, `src/db/mifos_load.py`). Local test only | `tools/mifos/README.md` (needs Docker Desktop) |
 | 11 (part 1). Ablation | Purchases, payments, deliveries and questionnaire added one at a time, at three delivery signal strengths and three seeds. Deliveries add nothing when they carry no signal (+0.0000) and +0.055 at full signal; the negative control is a test. Report and chart in `reports/ablation/`. Also: the PostgreSQL path is checked (a fault with `TRUNCATE` fixed) | `python -m src.model.ablation` (about 8 minutes) |
+| 9. API (Humayra) | Queue, profile, score, consent, decisions, model card, audit, questionnaire and import endpoints; demo roles from the `X-Demo-Token` header; consent check; an audit entry on every read of a merchant; decisions append-only, with the score and model version taken from the server. Contract and role table: `docs/API_NOTES.md` | `python tasks.py api`, then http://localhost:8000/docs |
+| Plain summary | Every score card carries `summary_en` and `summary_bn`: a short paragraph built from the card itself (no language model, no internet), which never recommends lending or not | `python -m src.model.scoring` |
+| Phase 9 review (Oct 15) | Every consent now covers the questionnaire (before, 11,624 consenting merchants could not be asked it); the queue carries `low_score_warning`; `GET /merchants/{id}/consent`; officers can read the model card; the score response carries the summary; `docs/API_NOTES.md` now says plainly that imported rows never reach a score | `python tasks.py test` |
 
-Not built yet: API endpoints (9), dashboard (10), ablation and model cards (11), deployment (12).
+Not built yet: dashboard (10), group audit and model cards (11, parts 2 to 4), deployment (12).
+
+**After pulling the Oct 15 changes, everyone runs once:** `python tasks.py data --reset-db`, then `python tasks.py train` (the consents changed, and the reset also clears test decisions).
 
 Data on the lead's laptop only (never in git): Taiwan, India L&T, Home Credit, the Kiva archive, Findex, World Bank informal-sector indicators. Details: `docs/DATA_SOURCES.md`.
 
@@ -47,18 +52,17 @@ Rules that apply to everyone: read `CLAUDE.md`; two people never work in the sam
 | 3 | Phase 7: adapters for Taiwan, India L&T, Home Credit, and Kiva if it qualifies | `src/adapters/` |
 | 4 | Phases 8 and 11: real-label runs, ablation, group audit, model cards | `src/model/`, `reports/` |
 
-### Humayra (heavy work): the dashboard and the API behind it
-She can start now. The API contract and sample responses exist, and since Oct 13 so do the real model, scores, bands and reasons (see "What the API can call" below).
+### Humayra (heavy work): Phase 10, the dashboard
+Phase 9 (the API) is done, reviewed and fixed. Phase 10 builds the React dashboard in `web/` against it. Everything a page needs is in `GET /openapi.json` and `docs/API_NOTES.md`; sample responses are in `tests/fixtures/api/`.
 
 | Order | Work | Folders |
 |---|---|---|
-| 1 | Install Node.js LTS. Create the React app (Vite + TypeScript + Tailwind + shadcn/ui). Agree colours and layout with the lead | `web/` |
-| 2 | App shell: sidebar, role switch (officer / admin / viewer), data-source selector, and the banner taken from `GET /health` | `web/` |
-| 3 | API endpoints that return the sample files in `tests/fixtures/api/`: review queue, profile, score, decisions, model card, audit; roles from a header token | `src/api/` |
-| 4 | Pages against those endpoints: review queue; merchant detail (timeline, score gauge, coverage meter, helps/hurts reasons, questionnaire panel, "Why might this be wrong?", decision form); decision log; model card; consent; audit; portfolio. English/Bangla toggle for reasons | `web/` |
-| 5 | The database exists now (`src/db/models.py`, demo users `officer-1`, `officer-2`, `admin-1`, `viewer-1`). Phase 6 is done, so connect the API to the real database and real scores (see "What the API can call" below); consent check; audit entry on every profile read; decisions append-only | `src/api/`, `web/` |
-| 6 | Questionnaire form on the merchant detail page: ten answers from 1 to 5, saved through `POST /merchants/{id}/questionnaire`; the panel updates, the score does not | `src/api/`, `web/` |
-| 7 | Data import page (admin only): upload a CSV for one table, the API checks it against the data contract and reports rows accepted and rejected, then loads the accepted rows (`POST /admin/import/{table}`). Build the check-and-report step first. See PROJECT_BRIEF section 18, item 20 | `src/api/`, `web/` |
+| 1 | Node.js LTS; create the React app (Vite + TypeScript + Tailwind + shadcn/ui); types from `/openapi.json` | `web/` |
+| 2 | App shell: sidebar, role switch (`officer-1`, `officer-2`, `admin-1`, `viewer-1`, sent as `X-Demo-Token`), banner from `GET /health` on every page, English/Bangla toggle | `web/` |
+| 3 | Review queue (`GET /merchants`): score, coverage, band, low-score warning, consent; "no consent" rows show no score | `web/` |
+| 4 | Merchant detail: timeline, purchases/deliveries/payments panels, score gauge with coverage meter and band, the plain summary (`summary_en`/`summary_bn`) at the top, helps/hurts reasons, questionnaire panel and form (beside the score, never inside it), consent panel (`GET /merchants/{id}/consent`), "Why might this be wrong?", decision form (officers only; override needs a reason) | `web/` |
+| 5 | Decision log, model card (every role), audit log (admin), import page (admin; says imported rows do not change scores yet), portfolio | `web/` |
+| 6 | Public data modes: no review queue; show the model card and totals only. Home Credit rows are never shown (the API refuses them) | `web/` |
 
 Must hold on every page: the banner names the data source and says "Decision support only."; a score is never shown without coverage and band; officers see sentences, never feature names; there is no approve or decline button; an override needs a written reason; the browser calls only the API, never the database.
 
@@ -99,10 +103,10 @@ Sceptical review of every claim against code and tests (Phase 13), help with dep
 ## 4. First message to paste into your own Claude Code
 
 Humayra:
-> Read CLAUDE.md, PROJECT_BRIEF.md (especially section 18), docs/HANDOVER.md and web/README.md. I am role D (full-stack). The last committed phase is 6. Check the repository matches that, then wait. My first task is to create the React app in web/ and build pages against the sample responses in tests/fixtures/api/.
+> Read CLAUDE.md, PROJECT_BRIEF.md (especially section 18), docs/HANDOVER.md, docs/API_NOTES.md and web/README.md. I am role D (full-stack). Phase 9 is merged and was reviewed and fixed on Oct 15; I now build Phase 10, the React dashboard in web/. Check the repository matches that, run the tests, then wait.
 
 Dipto:
-> Read CLAUDE.md, docs/HANDOVER.md, docs/DATA_SOURCES.md and docs/WORDING_AND_QA.md. I am role A support (documents and checks). The last committed phase is 6. Check the repository matches that, then wait. My first task is in docs/HANDOVER.md section 3, under my name.
+> Read CLAUDE.md, docs/HANDOVER.md, docs/DATA_SOURCES.md and docs/WORDING_AND_QA.md. I am role A support (documents and checks). Phase 9 is merged. Check the repository matches that, then wait. My first task is in docs/HANDOVER.md section 3, under my name.
 
 ## 5. What not to touch
 

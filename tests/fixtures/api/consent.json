@@ -1,0 +1,21 @@
+{
+  "merchant_id": "FIX-M001",
+  "valid": true,
+  "as_of": "2026-08-30",
+  "data_categories": [
+    "deliveries",
+    "payments",
+    "purchases",
+    "questionnaire"
+  ],
+  "records": [
+    {
+      "consent_id": "FIX-C001",
+      "purpose": "credit_readiness_assessment",
+      "data_categories": "purchases|deliveries|payments|questionnaire",
+      "granted_at": "2025-01-10",
+      "expires_at": "2027-01-10",
+      "revoked_at": null
+    }
+  ]
+}

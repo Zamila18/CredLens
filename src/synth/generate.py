@@ -595,6 +595,9 @@ def _make_questionnaire(
     return frame[CONTRACT["questionnaire"]]
 
 
+CONSENT_CATEGORIES = "purchases|deliveries|payments|questionnaire"
+
+
 def _make_consents(
     rng: np.random.Generator,
     config: dict[str, Any],
@@ -619,10 +622,12 @@ def _make_consents(
     revoked_at = np.full(count, None, dtype=object)
     revoked_at[withdrew] = _dates(start, revoked_day[withdrew])
 
-    answered = merchants["questionnaire_done"].to_numpy()[has_record]
-    categories = np.where(
-        answered, "purchases|deliveries|payments|questionnaire", "purchases|deliveries|payments"
-    )
+    # A consent covers the questionnaire whether or not it has been answered yet: an
+    # officer may collect the answers later (a merchant in "Needs more info" is asked for
+    # them). Before Oct 15 only merchants who had already answered had this category, so
+    # the questionnaire form refused 6 in 10 merchants. No random number is drawn here,
+    # so every other table is unchanged.
+    categories = CONSENT_CATEGORIES
     return pd.DataFrame(
         {
             "consent_id": _ids("C", int(has_record.sum()), 6),

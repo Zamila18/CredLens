@@ -63,6 +63,12 @@ class ScoreResponse(BaseModel):
     other_contribution: float = Field(
         description="All other features together, so the parts sum to the score."
     )
+    summary_en: str | None = Field(
+        default=None,
+        description="Plain-language paragraph built from this card (no language model). "
+        "Show it above the reasons; it never recommends lending or not.",
+    )
+    summary_bn: str | None = Field(default=None, description="The same paragraph in Bangla.")
 
 
 class MerchantQueueItem(BaseModel):
@@ -78,7 +84,25 @@ class MerchantQueueItem(BaseModel):
     score: int | None = Field(default=None, ge=0, le=100)
     coverage: float | None = Field(default=None, ge=0, le=1)
     band: Band | None = None
+    low_score_warning: bool | None = Field(
+        default=None, description="Score under the warning line; null when there is no score."
+    )
     consent_valid: bool
+
+
+class ConsentView(BaseModel):
+    """GET /merchants/{id}/consent: the merchant's consent as the data stands today."""
+
+    merchant_id: str
+    valid: bool = Field(description="A consent that is granted, not expired and not revoked.")
+    as_of: str = Field(description="The day the check is made for: the last day in the data.")
+    data_categories: list[str] = Field(
+        description="What the valid consents cover, e.g. purchases, deliveries, questionnaire."
+    )
+    records: list[dict[str, str | None]] = Field(
+        description="Every consent record of the merchant: purpose, categories, granted, "
+        "expires and revoked dates."
+    )
 
 
 class PurchasesSummary(BaseModel):

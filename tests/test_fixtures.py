@@ -13,6 +13,7 @@ from pydantic import TypeAdapter, ValidationError
 from src.adapters import CONTRACT, check_frame
 from src.api.schemas import (
     AuditEntry,
+    ConsentView,
     Decision,
     DecisionCreate,
     HealthResponse,
@@ -83,6 +84,7 @@ def test_health_fixture_matches_the_schema_and_the_banner():
         ("decisions", list[Decision]),
         ("audit", list[AuditEntry]),
         ("model_card", ModelCard),
+        ("consent", ConsentView),
     ],
 )
 def test_api_fixtures_match_their_schema(name, model):

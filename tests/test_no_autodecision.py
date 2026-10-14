@@ -41,6 +41,7 @@ def every_endpoint(merchant_id: str) -> list[tuple[str, str, dict]]:
         ("GET", "/merchants", {}),
         ("GET", f"/merchants/{merchant_id}", {}),
         ("GET", f"/merchants/{merchant_id}/score", {}),
+        ("GET", f"/merchants/{merchant_id}/consent", {}),
         ("POST", f"/merchants/{merchant_id}/decision", {"json": {"officer_action": "accept"}}),
         ("POST", f"/merchants/{merchant_id}/questionnaire", {"json": ANSWERS}),
         ("GET", "/decisions", {}),
