@@ -1,0 +1,1131 @@
+{
+ "data_mode": "synthetic_bd",
+ "measured_on": "validation months (the test months are not used)",
+ "model": "logistic_regression, as the headline model",
+ "runs": {
+  "A": "purchases",
+  "B": "+ payments",
+  "C": "+ deliveries (headline inputs)",
+  "D": "+ questionnaire (never in the headline model)"
+ },
+ "strengths": [
+  0.0,
+  0.5,
+  1.0
+ ],
+ "seeds": [
+  42,
+  7,
+  123
+ ],
+ "zero_signal_control": {
+  "rule": "At delivery signal strength 0, deliveries may add at most 0.01 AUC (the point gain, in every seed).",
+  "gains_at_strength_0": {
+   "42": 0.0003685891633782301,
+   "7": -8.536082361587649e-05,
+   "123": -0.00027522535493929023
+  },
+  "passed": true
+ },
+ "summary": {
+  "0.0": {
+   "auc": {
+    "A": 0.6781547390313345,
+    "B": 0.7006766991451263,
+    "C": 0.700679366806734,
+    "D": 0.7266890521210166
+   },
+   "gain": {
+    "B": {
+     "mean": 0.022521960113791855,
+     "lowest": 0.01978329840200921,
+     "highest": 0.024224548133944035,
+     "clearly_above_zero_in": 3
+    },
+    "C": {
+     "mean": 2.6676616076877955e-06,
+     "lowest": -0.00027522535493929023,
+     "highest": 0.0003685891633782301,
+     "clearly_above_zero_in": 0
+    },
+    "D": {
+     "mean": 0.026009685314282566,
+     "lowest": 0.021324499512418993,
+     "highest": 0.03169447763255451,
+     "clearly_above_zero_in": 3
+    }
+   },
+   "seeds": 3
+  },
+  "0.5": {
+   "auc": {
+    "A": 0.6781547390313345,
+    "B": 0.7006766991451263,
+    "C": 0.7256571439042179,
+    "D": 0.743303673336225
+   },
+   "gain": {
+    "B": {
+     "mean": 0.022521960113791855,
+     "lowest": 0.01978329840200921,
+     "highest": 0.024224548133944035,
+     "clearly_above_zero_in": 3
+    },
+    "C": {
+     "mean": 0.02498044475909152,
+     "lowest": 0.022907506413015755,
+     "highest": 0.02753859675000614,
+     "clearly_above_zero_in": 3
+    },
+    "D": {
+     "mean": 0.017646529432007136,
+     "lowest": 0.013565883532326461,
+     "highest": 0.022798052696014315,
+     "clearly_above_zero_in": 3
+    }
+   },
+   "seeds": 3
+  },
+  "1.0": {
+   "auc": {
+    "A": 0.6781547390313345,
+    "B": 0.7006766991451263,
+    "C": 0.755801727933548,
+    "D": 0.7647355253875231
+   },
+   "gain": {
+    "B": {
+     "mean": 0.022521960113791855,
+     "lowest": 0.01978329840200921,
+     "highest": 0.024224548133944035,
+     "clearly_above_zero_in": 3
+    },
+    "C": {
+     "mean": 0.05512502878842174,
+     "lowest": 0.05275007199141346,
+     "highest": 0.05679357263636975,
+     "clearly_above_zero_in": 3
+    },
+    "D": {
+     "mean": 0.008933797453975082,
+     "lowest": 0.006481788780446585,
+     "highest": 0.011546948101841203,
+     "clearly_above_zero_in": 2
+    }
+   },
+   "seeds": 3
+  }
+ },
+ "results": [
+  {
+   "validation_loans": 5853,
+   "validation_not_repaid": 564,
+   "runs": {
+    "A": {
+     "inputs": [
+      "basket_growth",
+      "supplier_repeat_share"
+     ],
+     "removed_for_pointing_the_wrong_way": [],
+     "roc_auc": 0.6668435023043946,
+     "roc_auc_range": [
+      0.6449169444551006,
+      0.6885955570451284
+     ]
+    },
+    "B": {
+     "inputs": [
+      "basket_growth",
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation"
+     ],
+     "removed_for_pointing_the_wrong_way": [],
+     "roc_auc": 0.6866268007064038,
+     "roc_auc_range": [
+      0.6625223637127918,
+      0.7089077522874182
+     ]
+    },
+    "C": {
+     "inputs": [
+      "basket_growth",
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation",
+      "return_rate_90d",
+      "cod_remit_ontime_rate"
+     ],
+     "removed_for_pointing_the_wrong_way": [
+      "failed_rate_90d",
+      "dispatch_to_delivery_hours"
+     ],
+     "roc_auc": 0.686995389869782,
+     "roc_auc_range": [
+      0.6631007469668685,
+      0.7089405080633816
+     ]
+    },
+    "D": {
+     "inputs": [
+      "basket_growth",
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation",
+      "return_rate_90d",
+      "cod_remit_ontime_rate",
+      "q_spend",
+      "q_save",
+      "q_borrow",
+      "q_plan"
+     ],
+     "removed_for_pointing_the_wrong_way": [
+      "failed_rate_90d",
+      "dispatch_to_delivery_hours"
+     ],
+     "roc_auc": 0.7186898675023365,
+     "roc_auc_range": [
+      0.695698321189553,
+      0.7390133139980264
+     ]
+    }
+   },
+   "gains": {
+    "B": {
+     "auc_gain": 0.01978329840200921,
+     "range": [
+      0.009697677509837287,
+      0.03131781387645727
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    },
+    "C": {
+     "auc_gain": 0.0003685891633782301,
+     "range": [
+      -0.001729016926265911,
+      0.002412165777788932
+     ],
+     "clearly_better": false,
+     "resamples_used": 500
+    },
+    "D": {
+     "auc_gain": 0.03169447763255451,
+     "range": [
+      0.02003531008466554,
+      0.04439888528308891
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    }
+   },
+   "strength": 0.0,
+   "seed": 42,
+   "seconds": 49.6
+  },
+  {
+   "validation_loans": 5910,
+   "validation_not_repaid": 546,
+   "runs": {
+    "A": {
+     "inputs": [
+      "basket_growth",
+      "supplier_repeat_share"
+     ],
+     "removed_for_pointing_the_wrong_way": [],
+     "roc_auc": 0.6898685921336929,
+     "roc_auc_range": [
+      0.6661924075888841,
+      0.7112683469820879
+     ]
+    },
+    "B": {
+     "inputs": [
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation"
+     ],
+     "removed_for_pointing_the_wrong_way": [
+      "basket_growth"
+     ],
+     "roc_auc": 0.7140931402676369,
+     "roc_auc_range": [
+      0.6928240918706555,
+      0.7360377145882748
+     ]
+    },
+    "C": {
+     "inputs": [
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation",
+      "return_rate_90d",
+      "failed_rate_90d"
+     ],
+     "removed_for_pointing_the_wrong_way": [
+      "basket_growth",
+      "cod_remit_ontime_rate",
+      "dispatch_to_delivery_hours"
+     ],
+     "roc_auc": 0.714007779444021,
+     "roc_auc_range": [
+      0.6927273732350908,
+      0.7360787378706838
+     ]
+    },
+    "D": {
+     "inputs": [
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation",
+      "return_rate_90d",
+      "failed_rate_90d",
+      "q_spend",
+      "q_save",
+      "q_borrow",
+      "q_plan"
+     ],
+     "removed_for_pointing_the_wrong_way": [
+      "basket_growth",
+      "cod_remit_ontime_rate",
+      "dispatch_to_delivery_hours"
+     ],
+     "roc_auc": 0.73533227895644,
+     "roc_auc_range": [
+      0.7153673895118743,
+      0.7574911935249105
+     ]
+    }
+   },
+   "gains": {
+    "B": {
+     "auc_gain": 0.024224548133944035,
+     "range": [
+      0.012202669361747723,
+      0.03659265987259608
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    },
+    "C": {
+     "auc_gain": -8.536082361587649e-05,
+     "range": [
+      -0.001032488657196692,
+      0.0008597051243100891
+     ],
+     "clearly_better": false,
+     "resamples_used": 500
+    },
+    "D": {
+     "auc_gain": 0.021324499512418993,
+     "range": [
+      0.00858768196867403,
+      0.03383570822608124
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    }
+   },
+   "strength": 0.0,
+   "seed": 7,
+   "seconds": 52.9
+  },
+  {
+   "validation_loans": 5890,
+   "validation_not_repaid": 535,
+   "runs": {
+    "A": {
+     "inputs": [
+      "basket_growth",
+      "supplier_repeat_share"
+     ],
+     "removed_for_pointing_the_wrong_way": [],
+     "roc_auc": 0.677752122655916,
+     "roc_auc_range": [
+      0.6569836333265082,
+      0.6996356835095346
+     ]
+    },
+    "B": {
+     "inputs": [
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation"
+     ],
+     "removed_for_pointing_the_wrong_way": [
+      "basket_growth"
+     ],
+     "roc_auc": 0.7013101564613383,
+     "roc_auc_range": [
+      0.6793108273495282,
+      0.7263003365888422
+     ]
+    },
+    "C": {
+     "inputs": [
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation",
+      "return_rate_90d",
+      "failed_rate_90d",
+      "cod_remit_ontime_rate"
+     ],
+     "removed_for_pointing_the_wrong_way": [
+      "basket_growth",
+      "dispatch_to_delivery_hours"
+     ],
+     "roc_auc": 0.701034931106399,
+     "roc_auc_range": [
+      0.679061633151854,
+      0.7262028766044678
+     ]
+    },
+    "D": {
+     "inputs": [
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation",
+      "return_rate_90d",
+      "cod_remit_ontime_rate",
+      "q_spend",
+      "q_save",
+      "q_borrow",
+      "q_plan"
+     ],
+     "removed_for_pointing_the_wrong_way": [
+      "basket_growth",
+      "failed_rate_90d",
+      "dispatch_to_delivery_hours"
+     ],
+     "roc_auc": 0.7260450099042732,
+     "roc_auc_range": [
+      0.7045546286358434,
+      0.749565778766641
+     ]
+    }
+   },
+   "gains": {
+    "B": {
+     "auc_gain": 0.023558033805422318,
+     "range": [
+      0.011227384840427405,
+      0.037035000000590824
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    },
+    "C": {
+     "auc_gain": -0.00027522535493929023,
+     "range": [
+      -0.0017860954459682499,
+      0.0012632568600101125
+     ],
+     "clearly_better": false,
+     "resamples_used": 500
+    },
+    "D": {
+     "auc_gain": 0.025010078797874202,
+     "range": [
+      0.01327868081158187,
+      0.037379001196821596
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    }
+   },
+   "strength": 0.0,
+   "seed": 123,
+   "seconds": 59.8
+  },
+  {
+   "validation_loans": 5853,
+   "validation_not_repaid": 564,
+   "runs": {
+    "A": {
+     "inputs": [
+      "basket_growth",
+      "supplier_repeat_share"
+     ],
+     "removed_for_pointing_the_wrong_way": [],
+     "roc_auc": 0.6668435023043946,
+     "roc_auc_range": [
+      0.6449169444551006,
+      0.6885955570451284
+     ]
+    },
+    "B": {
+     "inputs": [
+      "basket_growth",
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation"
+     ],
+     "removed_for_pointing_the_wrong_way": [],
+     "roc_auc": 0.6866268007064038,
+     "roc_auc_range": [
+      0.6625223637127918,
+      0.7089077522874182
+     ]
+    },
+    "C": {
+     "inputs": [
+      "basket_growth",
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation",
+      "return_rate_90d",
+      "failed_rate_90d",
+      "cod_remit_ontime_rate",
+      "dispatch_to_delivery_hours"
+     ],
+     "removed_for_pointing_the_wrong_way": [],
+     "roc_auc": 0.7095343071194196,
+     "roc_auc_range": [
+      0.6879206245533557,
+      0.7287520030974041
+     ]
+    },
+    "D": {
+     "inputs": [
+      "basket_growth",
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation",
+      "return_rate_90d",
+      "failed_rate_90d",
+      "cod_remit_ontime_rate",
+      "dispatch_to_delivery_hours",
+      "q_spend",
+      "q_save",
+      "q_borrow",
+      "q_plan"
+     ],
+     "removed_for_pointing_the_wrong_way": [],
+     "roc_auc": 0.7323323598154339,
+     "roc_auc_range": [
+      0.7128899380872041,
+      0.7518992194701527
+     ]
+    }
+   },
+   "gains": {
+    "B": {
+     "auc_gain": 0.01978329840200921,
+     "range": [
+      0.009697677509837287,
+      0.03131781387645727
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    },
+    "C": {
+     "auc_gain": 0.022907506413015755,
+     "range": [
+      0.01103829201482424,
+      0.03510613451483809
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    },
+    "D": {
+     "auc_gain": 0.022798052696014315,
+     "range": [
+      0.013641722591726491,
+      0.03210433641321814
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    }
+   },
+   "strength": 0.5,
+   "seed": 42,
+   "seconds": 72.5
+  },
+  {
+   "validation_loans": 5910,
+   "validation_not_repaid": 546,
+   "runs": {
+    "A": {
+     "inputs": [
+      "basket_growth",
+      "supplier_repeat_share"
+     ],
+     "removed_for_pointing_the_wrong_way": [],
+     "roc_auc": 0.6898685921336929,
+     "roc_auc_range": [
+      0.6661924075888841,
+      0.7112683469820879
+     ]
+    },
+    "B": {
+     "inputs": [
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation"
+     ],
+     "removed_for_pointing_the_wrong_way": [
+      "basket_growth"
+     ],
+     "roc_auc": 0.7140931402676369,
+     "roc_auc_range": [
+      0.6928240918706555,
+      0.7360377145882748
+     ]
+    },
+    "C": {
+     "inputs": [
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "credit_utilisation",
+      "return_rate_90d",
+      "failed_rate_90d",
+      "cod_remit_ontime_rate",
+      "dispatch_to_delivery_hours"
+     ],
+     "removed_for_pointing_the_wrong_way": [
+      "basket_growth",
+      "ontime_payment_rate"
+     ],
+     "roc_auc": 0.7416317370176431,
+     "roc_auc_range": [
+      0.720686197519578,
+      0.7637439421078248
+     ]
+    },
+    "D": {
+     "inputs": [
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "credit_utilisation",
+      "return_rate_90d",
+      "failed_rate_90d",
+      "cod_remit_ontime_rate",
+      "dispatch_to_delivery_hours",
+      "q_spend",
+      "q_save",
+      "q_borrow",
+      "q_plan"
+     ],
+     "removed_for_pointing_the_wrong_way": [
+      "basket_growth",
+      "ontime_payment_rate"
+     ],
+     "roc_auc": 0.7551976205499695,
+     "roc_auc_range": [
+      0.7349133425294089,
+      0.776439122730563
+     ]
+    }
+   },
+   "gains": {
+    "B": {
+     "auc_gain": 0.024224548133944035,
+     "range": [
+      0.012202669361747723,
+      0.03659265987259608
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    },
+    "C": {
+     "auc_gain": 0.02753859675000614,
+     "range": [
+      0.013658338601102063,
+      0.04069731054737616
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    },
+    "D": {
+     "auc_gain": 0.013565883532326461,
+     "range": [
+      0.004571010299710373,
+      0.0217765733974332
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    }
+   },
+   "strength": 0.5,
+   "seed": 7,
+   "seconds": 51.4
+  },
+  {
+   "validation_loans": 5890,
+   "validation_not_repaid": 535,
+   "runs": {
+    "A": {
+     "inputs": [
+      "basket_growth",
+      "supplier_repeat_share"
+     ],
+     "removed_for_pointing_the_wrong_way": [],
+     "roc_auc": 0.677752122655916,
+     "roc_auc_range": [
+      0.6569836333265082,
+      0.6996356835095346
+     ]
+    },
+    "B": {
+     "inputs": [
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation"
+     ],
+     "removed_for_pointing_the_wrong_way": [
+      "basket_growth"
+     ],
+     "roc_auc": 0.7013101564613383,
+     "roc_auc_range": [
+      0.6793108273495282,
+      0.7263003365888422
+     ]
+    },
+    "C": {
+     "inputs": [
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation",
+      "return_rate_90d",
+      "failed_rate_90d",
+      "cod_remit_ontime_rate",
+      "dispatch_to_delivery_hours"
+     ],
+     "removed_for_pointing_the_wrong_way": [
+      "basket_growth"
+     ],
+     "roc_auc": 0.725805387575591,
+     "roc_auc_range": [
+      0.7044385572098123,
+      0.7463732019718835
+     ]
+    },
+    "D": {
+     "inputs": [
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation",
+      "return_rate_90d",
+      "failed_rate_90d",
+      "cod_remit_ontime_rate",
+      "dispatch_to_delivery_hours",
+      "q_spend",
+      "q_save",
+      "q_borrow",
+      "q_plan"
+     ],
+     "removed_for_pointing_the_wrong_way": [
+      "basket_growth"
+     ],
+     "roc_auc": 0.7423810396432716,
+     "roc_auc_range": [
+      0.7197883801060303,
+      0.7622646258445338
+     ]
+    }
+   },
+   "gains": {
+    "B": {
+     "auc_gain": 0.023558033805422318,
+     "range": [
+      0.011227384840427405,
+      0.037035000000590824
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    },
+    "C": {
+     "auc_gain": 0.02449523111425267,
+     "range": [
+      0.010592437505734026,
+      0.037512479014237064
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    },
+    "D": {
+     "auc_gain": 0.016575652067680635,
+     "range": [
+      0.00857383004960192,
+      0.024892545033479756
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    }
+   },
+   "strength": 0.5,
+   "seed": 123,
+   "seconds": 44.3
+  },
+  {
+   "validation_loans": 5853,
+   "validation_not_repaid": 564,
+   "runs": {
+    "A": {
+     "inputs": [
+      "basket_growth",
+      "supplier_repeat_share"
+     ],
+     "removed_for_pointing_the_wrong_way": [],
+     "roc_auc": 0.6668435023043946,
+     "roc_auc_range": [
+      0.6449169444551006,
+      0.6885955570451284
+     ]
+    },
+    "B": {
+     "inputs": [
+      "basket_growth",
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation"
+     ],
+     "removed_for_pointing_the_wrong_way": [],
+     "roc_auc": 0.6866268007064038,
+     "roc_auc_range": [
+      0.6625223637127918,
+      0.7089077522874182
+     ]
+    },
+    "C": {
+     "inputs": [
+      "basket_growth",
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation",
+      "return_rate_90d",
+      "failed_rate_90d",
+      "cod_remit_ontime_rate",
+      "dispatch_to_delivery_hours"
+     ],
+     "removed_for_pointing_the_wrong_way": [],
+     "roc_auc": 0.7434203733427736,
+     "roc_auc_range": [
+      0.7244400020122364,
+      0.7643874038497183
+     ]
+    },
+    "D": {
+     "inputs": [
+      "basket_growth",
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation",
+      "return_rate_90d",
+      "failed_rate_90d",
+      "cod_remit_ontime_rate",
+      "dispatch_to_delivery_hours",
+      "q_spend",
+      "q_save",
+      "q_borrow",
+      "q_plan"
+     ],
+     "removed_for_pointing_the_wrong_way": [],
+     "roc_auc": 0.7549673214446148,
+     "roc_auc_range": [
+      0.7354063400472165,
+      0.7753708590900233
+     ]
+    }
+   },
+   "gains": {
+    "B": {
+     "auc_gain": 0.01978329840200921,
+     "range": [
+      0.009697677509837287,
+      0.03131781387645727
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    },
+    "C": {
+     "auc_gain": 0.05679357263636975,
+     "range": [
+      0.042043093312108364,
+      0.07255363936133102
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    },
+    "D": {
+     "auc_gain": 0.011546948101841203,
+     "range": [
+      0.004582228563395716,
+      0.018824281875530955
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    }
+   },
+   "strength": 1.0,
+   "seed": 42,
+   "seconds": 46.5
+  },
+  {
+   "validation_loans": 5910,
+   "validation_not_repaid": 546,
+   "runs": {
+    "A": {
+     "inputs": [
+      "basket_growth",
+      "supplier_repeat_share"
+     ],
+     "removed_for_pointing_the_wrong_way": [],
+     "roc_auc": 0.6898685921336929,
+     "roc_auc_range": [
+      0.6661924075888841,
+      0.7112683469820879
+     ]
+    },
+    "B": {
+     "inputs": [
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation"
+     ],
+     "removed_for_pointing_the_wrong_way": [
+      "basket_growth"
+     ],
+     "roc_auc": 0.7140931402676369,
+     "roc_auc_range": [
+      0.6928240918706555,
+      0.7360377145882748
+     ]
+    },
+    "C": {
+     "inputs": [
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "credit_utilisation",
+      "return_rate_90d",
+      "failed_rate_90d",
+      "cod_remit_ontime_rate",
+      "dispatch_to_delivery_hours"
+     ],
+     "removed_for_pointing_the_wrong_way": [
+      "basket_growth",
+      "ontime_payment_rate"
+     ],
+     "roc_auc": 0.7699245820051189,
+     "roc_auc_range": [
+      0.7516583540642757,
+      0.7903383612258289
+     ]
+    },
+    "D": {
+     "inputs": [
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "credit_utilisation",
+      "return_rate_90d",
+      "failed_rate_90d",
+      "cod_remit_ontime_rate",
+      "dispatch_to_delivery_hours",
+      "q_spend",
+      "q_save",
+      "q_borrow",
+      "q_plan"
+     ],
+     "removed_for_pointing_the_wrong_way": [
+      "basket_growth",
+      "ontime_payment_rate"
+     ],
+     "roc_auc": 0.7764063707855655,
+     "roc_auc_range": [
+      0.7580614070088487,
+      0.7962728056201347
+     ]
+    }
+   },
+   "gains": {
+    "B": {
+     "auc_gain": 0.024224548133944035,
+     "range": [
+      0.012202669361747723,
+      0.03659265987259608
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    },
+    "C": {
+     "auc_gain": 0.055831441737482,
+     "range": [
+      0.042189919918292705,
+      0.07089963010058893
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    },
+    "D": {
+     "auc_gain": 0.006481788780446585,
+     "range": [
+      -0.0012208797439807123,
+      0.013654380803855566
+     ],
+     "clearly_better": false,
+     "resamples_used": 500
+    }
+   },
+   "strength": 1.0,
+   "seed": 7,
+   "seconds": 48.8
+  },
+  {
+   "validation_loans": 5890,
+   "validation_not_repaid": 535,
+   "runs": {
+    "A": {
+     "inputs": [
+      "basket_growth",
+      "supplier_repeat_share"
+     ],
+     "removed_for_pointing_the_wrong_way": [],
+     "roc_auc": 0.677752122655916,
+     "roc_auc_range": [
+      0.6569836333265082,
+      0.6996356835095346
+     ]
+    },
+    "B": {
+     "inputs": [
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation"
+     ],
+     "removed_for_pointing_the_wrong_way": [
+      "basket_growth"
+     ],
+     "roc_auc": 0.7013101564613383,
+     "roc_auc_range": [
+      0.6793108273495282,
+      0.7263003365888422
+     ]
+    },
+    "C": {
+     "inputs": [
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation",
+      "return_rate_90d",
+      "failed_rate_90d",
+      "cod_remit_ontime_rate",
+      "dispatch_to_delivery_hours"
+     ],
+     "removed_for_pointing_the_wrong_way": [
+      "basket_growth"
+     ],
+     "roc_auc": 0.7540602284527518,
+     "roc_auc_range": [
+      0.7336746579829012,
+      0.7739297675731626
+     ]
+    },
+    "D": {
+     "inputs": [
+      "supplier_repeat_share",
+      "avg_pay_delay_days",
+      "late_pay_count_90d",
+      "ontime_payment_rate",
+      "credit_utilisation",
+      "return_rate_90d",
+      "failed_rate_90d",
+      "cod_remit_ontime_rate",
+      "dispatch_to_delivery_hours",
+      "q_spend",
+      "q_save",
+      "q_borrow",
+      "q_plan"
+     ],
+     "removed_for_pointing_the_wrong_way": [
+      "basket_growth"
+     ],
+     "roc_auc": 0.7628328839323892,
+     "roc_auc_range": [
+      0.7435600323287329,
+      0.7821015224247055
+     ]
+    }
+   },
+   "gains": {
+    "B": {
+     "auc_gain": 0.023558033805422318,
+     "range": [
+      0.011227384840427405,
+      0.037035000000590824
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    },
+    "C": {
+     "auc_gain": 0.05275007199141346,
+     "range": [
+      0.03746199993385745,
+      0.06819219216030004
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    },
+    "D": {
+     "auc_gain": 0.008772655479637459,
+     "range": [
+      0.0023277157903464586,
+      0.015312300131975256
+     ],
+     "clearly_better": true,
+     "resamples_used": 500
+    }
+   },
+   "strength": 1.0,
+   "seed": 123,
+   "seconds": 44.2
+  }
+ ]
+}

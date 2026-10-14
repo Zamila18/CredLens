@@ -11,6 +11,8 @@ src/model/artifacts/*
 !src/model/artifacts/.gitkeep
 reports/*.png
 reports/**/*.png
+# Kept: the ablation chart is part of the evidence (built from synthetic data only)
+!reports/ablation/delivery_gain.png
 
 # Secrets
 .env
