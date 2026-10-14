@@ -160,6 +160,7 @@ def test_home_credit_is_never_presented_as_asian_data():
         ("score", "by_mode", {"taiwan_cc": {"band_min_coverage": 5}}),
         ("model", "calibration_folds", 1),
         ("model", "calibration_min_brier_gain", -0.1),
+        ("model", "calibration_max_auc_gain", 2),
     ],
 )
 def test_a_wrong_setting_is_named_when_the_config_loads(config, section, key, bad_value):

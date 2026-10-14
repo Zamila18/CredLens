@@ -307,6 +307,7 @@ SHARES = (
     "labels.paid_in_full_tolerance",
     "model.prefer_simple_if_auc_gain_below",
     "model.calibration_min_brier_gain",
+    "model.calibration_max_auc_gain",
     "model.lightgbm.tuning_share",
     "model.lightgbm.row_share_per_tree",
     "model.lightgbm.input_share_per_tree",

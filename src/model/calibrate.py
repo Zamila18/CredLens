@@ -23,7 +23,15 @@ Brier score by at least `calibration_min_brier_gain`; otherwise the simpler one 
 The calibrator that is saved is then fitted on all validation loans and frozen. The test
 period re-checks it once, in the final report.
 
-Calibration fixes the meaning of the number. It does not make the ranking better.
+Calibration fixes the meaning of the number. It must not change the ranking.
+
+That last rule is enforced, because isotonic can break it. Where the model ranks a
+stretch of loans the wrong way round, isotonic flattens that stretch into one value, and
+the AUC goes up. The gain would come from the validation period's own outcomes, not from
+anything the model learned in training: on the Kiva data it lifted the AUC from 0.64 to
+0.76. So a method whose out-of-fold AUC is HIGHER than the uncalibrated AUC by more than
+`model.calibration_max_auc_gain` is not eligible in "auto". (A small loss of AUC is
+normal for isotonic, which gives several loans the same value, and is not a problem.)
 """
 
 from __future__ import annotations
@@ -127,7 +135,8 @@ def choose_calibrator(probabilities: Any, labels: Any, config: dict[str, Any]) -
         calibrator: that method fitted on ALL the given loans (the one to save).
         out_of_fold: the chosen method's out-of-fold probabilities (the honest ones to
             measure on).
-        candidates: Brier, calibration error and AUC of every method, out of fold.
+        candidates: Brier, calibration error and AUC of every method, out of fold, and
+            whether the method keeps the ranking (`keeps_ranking`).
         chosen_by: one sentence saying why.
     """
     probabilities = np.asarray(probabilities, dtype=float)
@@ -145,17 +154,29 @@ def choose_calibrator(probabilities: Any, labels: Any, config: dict[str, Any]) -
         for m, p in corrected.items()
     }
 
+    # A calibrator is there to fix the number. If it makes the ranking better, it has
+    # learned the order from the validation outcomes, which is not its job.
+    max_gain = settings["calibration_max_auc_gain"]
+    untouched = candidates["none"]["roc_auc"]
+    for numbers in candidates.values():
+        numbers["keeps_ranking"] = bool(numbers["roc_auc"] - untouched <= max_gain)
+
     wanted = settings["calibration"]
     if wanted == "auto":
         min_gain = settings["calibration_min_brier_gain"]
         method = METHODS[0]
         for candidate in METHODS[1:]:
-            if candidates[method]["brier"] - candidates[candidate]["brier"] >= min_gain:
+            better = candidates[method]["brier"] - candidates[candidate]["brier"] >= min_gain
+            if better and candidates[candidate]["keeps_ranking"]:
                 method = candidate
         chosen_by = (
             f"auto: the simplest method is kept unless a more flexible one lowers the "
-            f"out-of-fold Brier score by at least {min_gain}"
+            f"out-of-fold Brier score by at least {min_gain} without improving the ranking "
+            f"(AUC at most {max_gain} above the uncalibrated model)"
         )
+        refused = [m for m, numbers in candidates.items() if not numbers["keeps_ranking"]]
+        if refused:
+            chosen_by += f". Not eligible because it changed the ranking: {', '.join(refused)}"
     else:
         method = wanted
         chosen_by = f"set in the config (model.calibration = {wanted})"
