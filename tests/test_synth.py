@@ -433,3 +433,10 @@ def test_inject_group_bias_plants_a_gap_against_small_towns():
     share = repaid_share_by_tier(biased)
     assert share["small_town"] < share["metro"] - 0.08
     assert share["small_town"] < share["city"] - 0.08
+
+
+def test_every_consent_covers_the_questionnaire(tables):
+    """So an officer can collect answers from a merchant who has not answered yet."""
+    categories = tables["consents"]["data_categories"]
+    assert categories.str.split("|").apply(lambda parts: "questionnaire" in parts).all()
+

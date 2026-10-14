@@ -7,7 +7,7 @@ Each merchant i has a hidden reliability r_i ~ Normal(0, 1). The system never se
 
 ## Merchant attributes
 - onboarded_at: spread over `months` (18) months.
-- town_tier: metro 25%, city 45%, small_town 30%. shop_type: grocery 35%, pharmacy 15%, apparel 20%, electronics 15%, other 15%. has_trade_license: higher in metro. consent_data_use ~ `consent_rate`. questionnaire_done ~ `questionnaire_rate`.
+- town_tier: metro 25%, city 45%, small_town 30%. shop_type: grocery 35%, pharmacy 15%, apparel 20%, electronics 15%, other 15%. has_trade_license: higher in metro. consent_data_use ~ `consent_rate`. questionnaire_done ~ `questionnaire_rate`. Every consent record covers `purchases|deliveries|payments|questionnaire`, whether or not the questionnaire has been answered yet (since Oct 15), so officers can ask any consenting merchant.
 - Group effects on outcomes: default none (0). Add an optional `inject_group_bias` switch (default off) used only to test that the fairness checks can catch a planted gap.
 
 ## Purchases (Mokam-style wholesale purchases; the merchant BUYS stock)
