@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 DataMode = Literal["synthetic_bd", "kiva_asia", "taiwan_cc", "india_ltfs", "homecredit"]
 Band = Literal["Strong", "Review", "Needs more info"]
@@ -196,3 +196,51 @@ class ModelCard(BaseModel):
     ablation: list[dict[str, float | str | None]] = []
     group_results: list[dict[str, float | str | None]] = []
     limitations: list[str]
+
+
+class QuestionnaireCreate(BaseModel):
+    """POST /merchants/{id}/questionnaire: the ten answers, each a whole number from 1 to 5.
+
+    Saving these never changes the score: the questionnaire is shown beside the score, not
+    inside the model.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    spend1: int = Field(strict=True, ge=1, le=5)
+    spend2: int = Field(strict=True, ge=1, le=5)
+    save1: int = Field(strict=True, ge=1, le=5)
+    save2: int = Field(strict=True, ge=1, le=5)
+    borrow1: int = Field(strict=True, ge=1, le=5)
+    borrow2: int = Field(strict=True, ge=1, le=5)
+    plan1: int = Field(strict=True, ge=1, le=5)
+    plan2: int = Field(strict=True, ge=1, le=5)
+    stress: int = Field(strict=True, ge=1, le=5)
+    confidence: int = Field(strict=True, ge=1, le=5)
+
+
+class ImportRejection(BaseModel):
+    """One row of an uploaded file that was refused, and why."""
+
+    line: int = Field(description="Line number in the file. The header is line 1.")
+    record_id: str | None = Field(default=None, description="The row's id, when it has one.")
+    reasons: list[str]
+
+
+class ImportReport(BaseModel):
+    """POST /admin/import/{table}: what the check found and what was loaded."""
+
+    table: str
+    dry_run: bool = Field(description="True: the file was only checked, nothing was loaded.")
+    rows_received: int
+    rows_accepted: int
+    rows_rejected: int
+    file_error: str | None = Field(
+        default=None, description="Set when the whole file is refused (for example wrong columns)."
+    )
+    rejections: list[ImportRejection] = []
+    rejections_truncated: bool = Field(
+        default=False, description="True when more rows were rejected than are listed."
+    )
+    loaded: bool = Field(description="True when the accepted rows were written to the database.")
+    note: str
