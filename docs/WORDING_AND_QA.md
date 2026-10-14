@@ -8,10 +8,11 @@
 - "We learned from Kaleidofin's approach." (the source is CGAP's Kaleidofin case in "Banking in Layers", cited in our Finverse result; read it before quoting any outcome, and never promise the same outcomes for CredLens)
 - "We do not add invented history to real public records; each real dataset is scored on what it actually contains."
 - "Finverse also recommends short financial diaries; that is our next pilot step, not part of this prototype."
-- "Mifos X-style data model with an export adapter." If the optional Docker spike was tried, add its result honestly; if it was not tried, say so.
+- "Our data model follows Mifos X: merchants, loans and repayments export in its format, and we loaded a sample into a running Mifos X (Apache Fineract in Docker, on a laptop): 50 merchants, 85 loans, 73 repayments, nothing refused, and Mifos X's own loan statuses matched ours for all 85." Say "a sample, on a local test server", and that the scoring and the dashboard run beside Mifos X, not inside it.
 - "73% of small retailers sell on credit; 27.5% have formal-finance access (ShopUp Series B press release)." The submission used 72% (Daily Star, 2021); if asked, say the source changed.
 
 ## Do not say
+- "CredLens runs on Mifos X" or "is integrated into Mifos X": the dashboard and the model are separate; Mifos X received exported data in a one-off load.
 - "Unexplored", "first of its kind", "nobody does this": platform lenders already score merchants from commerce data, and ShopUp already lends through Baki.
 - "Automated approval", "AI decides", "proven", "works for all of Asia", "fair" (say "we measured gaps and report them"), "REDX data predicts repayment" (as fact), any outcome for other organisations.
 

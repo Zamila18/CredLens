@@ -7,17 +7,26 @@ Owner role: B (data engineer).
 Implements: PROJECT_BRIEF sections 13 and 18 (the export is the Mifos X deliverable).
 
 What this is, stated plainly:
-- A file export. It does not talk to a Mifos X server, and no integration is claimed.
-- The field names for clients and loans (officeId, firstname, lastname, active,
-  activationDate, dateFormat, locale; clientId, productId, principal, loanTermFrequency,
+- A file export. Loading it into a running Mifos X is done by src/db/mifos_load.py.
+- Checked on Oct 14, 2026 against a running Mifos X back end: Apache Fineract, Docker
+  image `apache/fineract:724b0d742c`, started from tools/mifos/docker-compose.yml. The
+  client fields (externalId, officeId, legalFormId, fullname, active, activationDate,
+  dateFormat, locale) and the loan fields (productId, principal, loanTermFrequency,
   loanTermFrequencyType, numberOfRepayments, repaymentEvery, repaymentFrequencyType,
-  expectedDisbursementDate) follow the Apache Fineract API as described in public client
-  libraries. They have NOT been tested against a running Mifos X. `externalId` and the
-  `submittedOnDate` field are our assumptions. The schedule and transaction files are
-  our own plain layout.
-- Values a real Mifos X would need but we do not have (office ids, loan product ids,
-  interest settings) are filled from the constants below and marked as placeholders.
-- Only synthetic data is exported. Merchants have no names; the name fields carry the
+  interestRatePerPeriod, interestType, interestCalculationPeriodType, amortizationType,
+  transactionProcessingStrategyCode, loanType, submittedOnDate, expectedDisbursementDate)
+  were accepted as written here. That server rejected the first version of this export:
+  clients lacked `legalFormId`, and loans lacked the five interest and amortisation
+  fields. Both are added now. Other Mifos X versions may want more.
+- `clientExternalId` and `loanExternalId` are not Fineract fields: they link the files,
+  and the loader turns them into Fineract's own ids. The schedule file is our own plain
+  layout; Fineract builds its own schedule from the loan terms.
+- A merchant is a business, so it is sent as an entity (legal form 2) with one full
+  name, not as a person with a first and last name.
+- Values a real Mifos X would set itself (office, loan product) are the constants below.
+  The office (1, "Head Office") exists in a fresh Fineract; the loader creates the loan
+  product and uses its real id.
+- Only synthetic data is exported. Merchants have no names; the name field carries the
   word "Merchant" and the merchant id.
 
 Run it: python -m src.db.mifos_adapter
@@ -38,12 +47,22 @@ from src.db.models import Base, make_engine
 EXPORT_DIR = PROJECT_ROOT / "data" / "exports" / "mifos"
 DATE_FORMAT = "yyyy-MM-dd"
 LOCALE = "en"
-# Placeholders: a real Mifos X instance defines its own offices and loan products.
+# A real Mifos X defines its own offices and loan products. Office 1 ("Head Office")
+# exists in a fresh Fineract; src/db/mifos_load.py creates the product and uses its id.
 PLACEHOLDER_OFFICE_ID = 1
 PLACEHOLDER_PRODUCT_ID = 1
-# Our understanding of Fineract's code for "days" (0 = days, 1 = weeks, 2 = months). Not verified.
-FREQUENCY_TYPE_DAYS = 0
+# Fineract's codes, as accepted by the server on Oct 14, 2026.
+FREQUENCY_TYPE_DAYS = 0  # loanTermFrequencyType / repaymentFrequencyType: 0 = days
+LEGAL_FORM_ENTITY = 2  # 1 = person, 2 = entity (a business)
 LOAN_CURRENCY = "BDT"
+# Synthetic loans carry no interest: the generator models repayment, not pricing.
+INTEREST_FREE = {
+    "interestRatePerPeriod": 0,
+    "interestType": 1,  # flat
+    "interestCalculationPeriodType": 1,  # same as the repayment period
+    "amortizationType": 1,  # equal instalments
+    "transactionProcessingStrategyCode": "mifos-standard-strategy",
+}
 
 
 def _read(connection, name: str) -> pd.DataFrame:
@@ -72,8 +91,8 @@ def build_export(database_url: str) -> dict[str, pd.DataFrame]:
         {
             "externalId": merchants["merchant_id"],
             "officeId": PLACEHOLDER_OFFICE_ID,
-            "firstname": "Merchant",
-            "lastname": merchants["merchant_id"],
+            "legalFormId": LEGAL_FORM_ENTITY,
+            "fullname": "Merchant " + merchants["merchant_id"],
             "active": True,
             "activationDate": _iso(merchants["onboarded_at"]),
             "dateFormat": DATE_FORMAT,
@@ -97,6 +116,8 @@ def build_export(database_url: str) -> dict[str, pd.DataFrame]:
             "numberOfRepayments": 1,
             "repaymentEvery": term_days,
             "repaymentFrequencyType": FREQUENCY_TYPE_DAYS,
+            **INTEREST_FREE,
+            "loanType": "individual",
             "submittedOnDate": _iso(schedule["issued_at"]),
             "expectedDisbursementDate": _iso(schedule["issued_at"]),
             "dateFormat": DATE_FORMAT,
@@ -152,9 +173,9 @@ def export_mifos(database_url: str, out_dir: Path | None = None) -> dict[str, Pa
 
     readme = folder / "README.txt"
     readme.write_text(
-        "Mifos X-style export of SYNTHETIC data from CredLens.\n"
-        "Not real merchants. Not tested against a running Mifos X.\n"
-        "officeId and productId are placeholders. See src/db/mifos_adapter.py.\n",
+        "Mifos X export of SYNTHETIC data from CredLens. Not real merchants.\n"
+        "Accepted by Apache Fineract (Docker image apache/fineract:724b0d742c) on Oct 14, 2026.\n"
+        "Load it with: python -m src.db.mifos_load. See src/db/mifos_adapter.py.\n",
         encoding="utf-8",
     )
     paths["readme"] = readme

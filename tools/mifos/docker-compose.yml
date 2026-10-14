@@ -1,0 +1,74 @@
+# A local Mifos X back end (Apache Fineract) with its database, for checking that the
+# CredLens export can be loaded into a real Mifos X. FOR LOCAL TESTING ONLY: Apache's own
+# images are marked "not production-ready", and this file is never used on the server.
+#
+# Built from Apache Fineract's docker-compose-postgresql.yml and config/docker/ (develop
+# branch, read on Oct 14, 2026), using the pre-built image from Docker Hub instead of
+# building from source, and without the Loki log driver.
+#
+# Start:  docker compose -f tools/mifos/docker-compose.yml --env-file tools/mifos/.env up -d
+# Stop:   docker compose -f tools/mifos/docker-compose.yml down        (add -v to delete the data)
+# Ready:  https://localhost:8443/fineract-provider/actuator/health says {"status":"UP"}
+# Login:  user "mifos", password "password", tenant "default" (Fineract's demo defaults)
+
+services:
+  db:
+    image: postgres:18.3
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: ${MIFOS_DB_PASSWORD:?set MIFOS_DB_PASSWORD in tools/mifos/.env}
+      FINERACT_DB_USER: postgres
+      FINERACT_DB_PASS: ${MIFOS_DB_PASSWORD}
+      FINERACT_TENANTS_DB_NAME: fineract_tenants
+      FINERACT_TENANT_DEFAULT_DB_NAME: fineract_default
+    volumes:
+      - ./01-init.sh:/docker-entrypoint-initdb.d/01-init.sh:ro
+      - mifos-db:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-d", "postgres", "-U", "root"]
+      timeout: 10s
+      retries: 10
+
+  fineract:
+    # A fixed build (Docker Hub tag of Oct 14, 2026), so the same command gives the same server.
+    image: apache/fineract:724b0d742c
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8443:8443"   # reachable from this laptop only
+    environment:
+      FINERACT_NODE_ID: "1"
+      FINERACT_HIKARI_DRIVER_SOURCE_CLASS_NAME: org.postgresql.Driver
+      FINERACT_HIKARI_JDBC_URL: jdbc:postgresql://db:5432/fineract_tenants
+      FINERACT_HIKARI_USERNAME: postgres
+      FINERACT_HIKARI_PASSWORD: ${MIFOS_DB_PASSWORD}
+      FINERACT_HIKARI_MINIMUM_IDLE: "3"
+      FINERACT_HIKARI_MAXIMUM_POOL_SIZE: "10"
+      FINERACT_DEFAULT_TENANTDB_HOSTNAME: db
+      FINERACT_DEFAULT_TENANTDB_PORT: "5432"
+      FINERACT_DEFAULT_TENANTDB_UID: postgres
+      FINERACT_DEFAULT_TENANTDB_PWD: ${MIFOS_DB_PASSWORD}
+      FINERACT_DEFAULT_TENANTDB_CONN_PARAMS: ""
+      FINERACT_DEFAULT_TENANTDB_TIMEZONE: Asia/Dhaka
+      FINERACT_DEFAULT_TENANTDB_IDENTIFIER: default
+      FINERACT_DEFAULT_TENANTDB_NAME: fineract_default
+      FINERACT_DEFAULT_TENANTDB_DESCRIPTION: CredLens local test tenant
+      FINERACT_DEFAULT_MASTER_PASSWORD: ${MIFOS_MASTER_PASSWORD:?set MIFOS_MASTER_PASSWORD in tools/mifos/.env}
+      FINERACT_SERVER_SSL_ENABLED: "true"
+      FINERACT_MANAGEMENT_ENDPOINT_WEB_EXPOSURE_INCLUDE: health,info
+      FINERACT_CONTENT_FILESYSTEM_ROOT_FOLDER: /tmp
+      SPRING_PROFILES_ACTIVE: test
+      # Kept small for an 8 GB laptop.
+      JAVA_TOOL_OPTIONS: >-
+        -Xmx1G -XX:TieredStopAtLevel=1 -XX:ReservedCodeCacheSize=128m -XX:+UseContainerSupport
+        --add-exports=java.naming/com.sun.jndi.ldap=ALL-UNNAMED
+        --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+        --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.security=ALL-UNNAMED
+        --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.management/javax.management=ALL-UNNAMED
+        --add-opens=java.naming/javax.naming=ALL-UNNAMED
+    tmpfs:
+      - /tmp:rw,nosuid,size=256m
+
+volumes:
+  mifos-db:
