@@ -176,3 +176,31 @@ def test_a_missing_probability_is_not_calibrated():
         calibrator = fit_calibrator(true_probability, labels, method)
         with pytest.raises(ValueError, match="missing probability"):
             calibrator.predict([0.5, float("nan")])
+
+
+def test_a_calibrator_that_changes_the_ranking_is_not_eligible(config):
+    """Scores that rank the middle of the range the wrong way round. Isotonic would
+    flatten that stretch and lift the AUC using the validation outcomes themselves."""
+    rng = np.random.default_rng(4)
+    raw = rng.uniform(0.5, 0.99, 8000)
+    truth = np.where((raw > 0.65) & (raw < 0.85), 1.55 - raw, raw)  # wrong way in the middle
+    labels = (rng.random(8000) < truth).astype(int)
+    chosen = choose_calibrator(raw, labels, config)
+    candidates = chosen["candidates"]
+    assert candidates["isotonic"]["roc_auc"] > candidates["none"]["roc_auc"] + 0.01
+    assert not candidates["isotonic"]["keeps_ranking"]
+    assert candidates["none"]["keeps_ranking"] and candidates["platt"]["keeps_ranking"]
+    assert chosen["method"] != "isotonic"
+    assert "changed the ranking: isotonic" in chosen["chosen_by"]
+    after = roc_auc_score(labels, chosen["out_of_fold"])
+    assert after <= candidates["none"]["roc_auc"] + 0.005
+
+
+def test_isotonic_stays_eligible_when_it_does_not_improve_the_ranking(config):
+    """Its steps tie some loans, so the AUC drops a little. That is allowed."""
+    true_probability, labels = make_loans()
+    wrong = overconfident(true_probability)
+    chosen = choose_calibrator(wrong, labels, config)
+    candidates = chosen["candidates"]
+    assert candidates["isotonic"]["roc_auc"] <= candidates["none"]["roc_auc"]
+    assert all(numbers["keeps_ranking"] for numbers in candidates.values())

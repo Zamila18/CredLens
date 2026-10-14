@@ -17,7 +17,7 @@ from src.api.schemas import MerchantQueueItem, ScoreResponse
 from src.config import load_config
 from src.model import scoring
 from src.model.dataset import build_dataset
-from src.model.explain import ConsentRequired
+from src.model.explain import ConsentRequired, RowsNotShown
 from src.model.scoring import QUEUE_COLUMNS, Scorer, UnknownMerchant
 from src.model.train import train_models
 from src.synth.generate import build_tables
@@ -134,6 +134,16 @@ def test_cards_and_queue_rows_fit_the_api_contract(queue, scorer, tables):
     assert response.merchant_id == merchant_id
     assert response.model_version == "test-version"
     assert "Decision support only" in banner
+
+
+def test_a_source_whose_rows_may_not_be_shown_has_no_queue_and_no_cards(config, tables, saved):
+    hidden = copy.deepcopy(config)
+    hidden["data"]["rows_never_shown"] = ["synthetic_bd"]
+    scorer = Scorer(hidden, tables=tables, saved=saved)
+    with pytest.raises(RowsNotShown):
+        scorer.queue()
+    with pytest.raises(RowsNotShown):
+        scorer.card(scorer.merchant_ids()[0])
 
 
 def test_an_unknown_merchant_gives_a_clear_error(scorer):

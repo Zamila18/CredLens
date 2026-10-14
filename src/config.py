@@ -122,6 +122,9 @@ def validate_config(config: dict[str, Any]) -> None:
         problems.append(
             "data.india_ltfs.coverage_min_history_months must be a positive whole number"
         )
+    hidden = data.get("rows_never_shown")
+    if not isinstance(hidden, list) or any(name not in VALID_MODES for name in hidden):
+        problems.append("data.rows_never_shown must be a list of known data modes")
     kiva = data.get("kiva") or {}
     for name in ("default_known_lag_months", "partner_min_known_loans"):
         if not _is_positive_int(kiva.get(name)):
@@ -307,6 +310,7 @@ SHARES = (
     "labels.paid_in_full_tolerance",
     "model.prefer_simple_if_auc_gain_below",
     "model.calibration_min_brier_gain",
+    "model.calibration_max_auc_gain",
     "model.lightgbm.tuning_share",
     "model.lightgbm.row_share_per_tree",
     "model.lightgbm.input_share_per_tree",

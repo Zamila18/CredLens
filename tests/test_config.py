@@ -153,6 +153,7 @@ def test_home_credit_is_never_presented_as_asian_data():
         ("score", "low_score_warning_below", 150),
         ("labels", "supplied_by_source", ["synthetic_bd"]),
         ("labels", "supplied_by_source", ["mars"]),
+        ("data", "rows_never_shown", ["mars"]),
         ("score", "min_reason_points", -1),
         ("score", "max_inputs_for_exact_reasons", 0),
         ("score", "by_mode", {"mars": {"band_min_coverage": 0.5}}),
@@ -160,6 +161,7 @@ def test_home_credit_is_never_presented_as_asian_data():
         ("score", "by_mode", {"taiwan_cc": {"band_min_coverage": 5}}),
         ("model", "calibration_folds", 1),
         ("model", "calibration_min_brier_gain", -0.1),
+        ("model", "calibration_max_auc_gain", 2),
     ],
 )
 def test_a_wrong_setting_is_named_when_the_config_loads(config, section, key, bad_value):

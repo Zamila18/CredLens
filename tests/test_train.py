@@ -135,7 +135,9 @@ def test_model_beats_both_baselines_on_validation(result):
     report = result["report"]
     metrics = report["validation"]["metrics"]
     baselines = report["baselines"]
-    assert metrics["roc_auc"] > baselines["purchases_only"]["metrics"]["roc_auc"] > 0.5
+    simpler = baselines["simpler_model"]
+    assert simpler["name"] == "purchases_only"
+    assert metrics["roc_auc"] > simpler["metrics"]["roc_auc"] > 0.5
     assert metrics["brier"] < baselines["always_average_rate"]["brier"]
 
 
@@ -197,7 +199,7 @@ def test_if_every_input_points_the_wrong_way_training_stops(config):
 
 
 def test_gain_over_the_baseline_is_measured_on_the_same_loans(result):
-    gain = result["report"]["gain_over_purchases_only"]
+    gain = result["report"]["gain_over_simpler_model"]
     assert gain["range"][0] <= gain["auc_gain"] <= gain["range"][1]
     assert gain["clearly_better"] == (gain["range"][0] > 0)
     assert gain["auc_gain"] > 0

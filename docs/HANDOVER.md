@@ -1,7 +1,7 @@
 # HANDOVER.md: where the project stands and what each person does next
 
 Kept up to date at the end of every phase, so a handover can happen at any time.
-Last updated: end of Phase 7 (Oct 13, 2026).
+Last updated: end of Phase 8 (Oct 14, 2026).
 
 ## 1. What is finished and tested
 
@@ -19,8 +19,9 @@ Last updated: end of Phase 7 (Oct 13, 2026).
 | 7 (part 2). India | The `india_ltfs` mode: adapter, six behaviour inputs (one from the loan, five from the bureau summary), coverage, time split by month, audit columns and organisation identifiers kept away from the model. Half the borrowers have no bureau record and get "Needs more info" | `python tasks.py test` |
 | 7 (part 3). Home Credit | The `homecredit` mode (country not stated): adapter that reads 1.1 GB of history in chunks and saves the per-applicant counts, nine inputs (six from earlier instalments, two from the loan, one outside score kept apart), coverage, a check that no history row is dated after the application | `python tasks.py test` |
 | 7 (part 4). Kiva | The `kiva_asia` mode: reads the 1.16 GB archive in place, keeps no personal data, removes repeated loans, cuts off at mid-2013, works out each field partner's track record as of the posting day. Three inputs, none about borrower behaviour. The description is never read (it reveals the outcome) | `python tasks.py test` |
+| 8. Real-label runs | Training runs for every data mode (`python tasks.py train --all-modes`, about 4 minutes). Validation AUC: Taiwan 0.743, India 0.611, Home Credit 0.746 (0.601 without its outside score), Kiva 0.644 (not usable: see the results page). What each result does and does not show: `reports/REAL_LABEL_RESULTS.md`. Home Credit rows can never be shown: a score card or queue in that mode is refused (`RowsNotShown`); the dashboard shows that mode's totals only. A public mode has no review queue (every outcome is known) | `python tasks.py train --mode taiwan_cc` (needs the raw file on the machine) |
 
-Not built yet: real-label runs (8), API endpoints (9), dashboard (10), ablation and model cards (11), deployment (12).
+Not built yet: API endpoints (9), dashboard (10), ablation and model cards (11), deployment (12).
 
 Data on the lead's laptop only (never in git): Taiwan, India L&T, Home Credit, the Kiva archive, Findex, World Bank informal-sector indicators. Details: `docs/DATA_SOURCES.md`.
 
