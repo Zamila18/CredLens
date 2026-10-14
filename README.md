@@ -27,7 +27,8 @@ Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2
 | Scoring service for the API: review queue and score card, nothing scored without consent | |
 | Training runs on all five data modes, with an honest reading of each: [reports/REAL_LABEL_RESULTS.md](reports/REAL_LABEL_RESULTS.md) | |
 | API contract, sample responses, `GET /health` | |
-| Lint, 620 tests and CI | |
+| Ablation A to D with the negative control ([reports/ablation/](reports/ablation/ABLATION.md)); PostgreSQL path checked | |
+| Lint, 629 tests and CI | |
 
 ### Where the model stands (synthetic data, validation months, seed 42)
 
