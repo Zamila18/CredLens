@@ -51,10 +51,27 @@ DELIVERY_FEATURES = [
     "cod_remit_ontime_rate",
     "dispatch_to_delivery_hours",
 ]
+# Group D: the FinHealth-style questionnaire, as four subscores from 1 to 5 (each the
+# mean of two items; higher means healthier habits). Shown beside the score in the
+# questionnaire panel and measured in the ablation. NEVER in the headline model, which
+# uses groups A, B and C only (PROJECT_BRIEF section 2).
+QUESTIONNAIRE_FEATURES = ["q_spend", "q_save", "q_borrow", "q_plan"]
+# Two single items kept as they are: stress (higher means more stress) and confidence.
+QUESTIONNAIRE_CONTEXT = ["q_stress", "q_confidence"]
+QUESTIONNAIRE_ITEMS = {
+    "q_spend": ["spend1", "spend2"],
+    "q_save": ["save1", "save2"],
+    "q_borrow": ["borrow1", "borrow2"],
+    "q_plan": ["plan1", "plan2"],
+    "q_stress": ["stress"],
+    "q_confidence": ["confidence"],
+}
+
 FEATURE_GROUPS: dict[str, list[str]] = {
     "A": PURCHASE_FEATURES,
     "B": PAYMENT_FEATURES,
     "C": DELIVERY_FEATURES,
+    "D": QUESTIONNAIRE_FEATURES,
 }
 
 # Context columns per group: how much data there is. Shown to the officer and used for
@@ -429,12 +446,32 @@ def _known_payment_counts(
     return history[known].groupby("loan_id").size()
 
 
+def questionnaire_features(cutoffs: pd.DataFrame, questionnaire: pd.DataFrame) -> pd.DataFrame:
+    """The merchant's latest questionnaire answers given before each loan's cutoff.
+
+    Returns one row per loan with the four subscores (QUESTIONNAIRE_FEATURES) and the two
+    single items (QUESTIONNAIRE_CONTEXT). A merchant who had not answered by the cutoff
+    has them all empty. Answers given on or after the cutoff are not used.
+    """
+    index = cutoffs["loan_id"]
+    answered = events_before_cutoff(cutoffs, questionnaire, "answered_at")
+    columns = [*QUESTIONNAIRE_FEATURES, *QUESTIONNAIRE_CONTEXT]
+    if answered.empty:
+        return pd.DataFrame(index=index, columns=columns, dtype=float)
+    latest = answered.sort_values("answered_at").groupby("loan_id").tail(1).set_index("loan_id")
+    result = pd.DataFrame(index=latest.index)
+    for name, items in QUESTIONNAIRE_ITEMS.items():
+        result[name] = latest[items].astype(float).mean(axis=1)
+    return result.reindex(index)[columns]
+
+
 def build_features(tables: dict[str, pd.DataFrame], config: dict[str, Any]) -> pd.DataFrame:
     """Return one row per loan with features built only from data before its cutoff.
 
     Columns: loan_id, merchant_id, cutoff_date, days_known, then the model inputs
     (FEATURE_GROUPS), the context columns (CONTEXT_COLUMNS) and the coverage columns
-    (COVERAGE_COLUMNS). Only the model inputs may be given to a model.
+    (COVERAGE_COLUMNS). Only the model inputs may be given to a model; group D (the
+    questionnaire) is built for the panel and the ablation, never for the headline model.
     A feature that cannot be computed is left empty (NaN); it is never filled in
     silently (docs/MODEL_SPEC.md section 1).
     """
@@ -443,6 +480,7 @@ def build_features(tables: dict[str, pd.DataFrame], config: dict[str, Any]) -> p
         purchase_features(cutoffs, tables["purchases"], config),
         payment_features(cutoffs, tables["loans"], tables["payments"], config),
         delivery_features(cutoffs, tables["deliveries"], config),
+        questionnaire_features(cutoffs, tables["questionnaire"]),
     ]
     model_features = pd.concat(parts, axis=1)
     coverage = coverage_features(cutoffs, tables, model_features, config)
