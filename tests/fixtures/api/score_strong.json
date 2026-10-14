@@ -54,5 +54,7 @@
       "detail": null
     }
   ],
-  "other_contribution": 0.5
+  "other_contribution": 0.5,
+  "summary_en": "Score 94 (Strong), based on 85% of the information this source can give. The model expects at least 9 in 10 loans like this to be repaid on time. Helped most: Stock purchases are growing compared with the previous three months. Held it back most: Returns are higher than similar shops; this may reflect delivery conditions. This supports a decision; the decision is yours.",
+  "summary_bn": "স্কোর 94 (শক্তিশালী), এই উৎসের সম্ভাব্য তথ্যের 85%-এর ভিত্তিতে। মডেলের হিসাবে এমন ১০টি ঋণের মধ্যে অন্তত 9টি সময়মতো পরিশোধ হয়। সবচেয়ে বেশি সাহায্য করেছে: আগের তিন মাসের তুলনায় মাল কেনা বাড়ছে। সবচেয়ে বেশি পিছিয়ে দিয়েছে: সমান ধরনের দোকানের তুলনায় ফেরত বেশি; এটা ডেলিভারির পরিস্থিতির কারণেও হতে পারে। এটি সিদ্ধান্তে সহায়তা মাত্র; সিদ্ধান্ত আপনার।"
 }

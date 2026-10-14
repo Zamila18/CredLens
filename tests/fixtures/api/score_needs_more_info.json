@@ -10,5 +10,7 @@
   "baseline_score": 60.0,
   "reasons_positive": [],
   "reasons_negative": [],
-  "other_contribution": 6.0
+  "other_contribution": 6.0,
+  "summary_en": "Score 66 (Needs more info), based on 35% of the information this source can give. There is too little information to rely on this score; more data is needed first. No single piece of information stood out. The score is low: fewer than 7 in 10 loans like this are expected to be repaid on time. This supports a decision; the decision is yours.",
+  "summary_bn": "স্কোর 66 (আরও তথ্য প্রয়োজন), এই উৎসের সম্ভাব্য তথ্যের 35%-এর ভিত্তিতে। এই স্কোরের ওপর ভরসা করার মতো যথেষ্ট তথ্য নেই; আগে আরও তথ্য দরকার। আলাদা করে কোনো তথ্য চোখে পড়ার মতো নয়। স্কোর কম: এমন ১০টি ঋণের মধ্যে 7টিরও কম সময়মতো পরিশোধ হবে বলে আশা করা হয়। এটি সিদ্ধান্তে সহায়তা মাত্র; সিদ্ধান্ত আপনার।"
 }

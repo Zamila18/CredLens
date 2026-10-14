@@ -100,10 +100,11 @@ def decision_history(
 @router.get(
     "/model/card",
     response_model=ModelCard,
-    dependencies=[Depends(require_roles("admin", "viewer"))],
+    dependencies=[Depends(require_roles(*EVERY_ROLE))],
 )
 def model_card(services: Services = Depends(get_services)) -> ModelCard:
-    """Model facts and limits. Admin, and viewer (read-only)."""
+    """Model facts and limits. Every role: officers make the decisions, so they need the
+    limits most."""
     version = services.scorer.model_version if services.scorer else None
     return load_model_card(services.config["data"]["mode"], version)
 

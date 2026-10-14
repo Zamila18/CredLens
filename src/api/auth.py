@@ -10,9 +10,9 @@ How it works: the request carries the header `X-Demo-Token: <user id>`, for exam
 `officer-1`. The user is looked up in the `users` table and the role comes from there.
 No token, or a token that is not a user: 401. A user whose role may not do the thing: 403.
 
-  officer: queue, profile, score, decide, record questionnaire answers.
+  officer: queue, profile, score, consent, model card, decide, record questionnaire answers.
   admin:   queue, profile, score, decisions, model card, audit log, data import.
-  viewer:  read-only: queue, profile, score, decisions, model card. Can never POST.
+  viewer:  read-only: queue, profile, score, consent, decisions, model card. Can never POST.
 """
 
 from __future__ import annotations

@@ -34,6 +34,7 @@ from src.api.profile import (
 )
 from src.api.schemas import (
     Band,
+    ConsentView,
     MerchantProfile,
     MerchantQueueItem,
     QuestionnaireCreate,
@@ -133,6 +134,7 @@ def review_queue(
                 score=_optional(row.score, int),
                 coverage=_optional(row.coverage, float),
                 band=_optional(row.band, str),
+                low_score_warning=_optional(row.low_score_warning, bool),
                 consent_valid=bool(row.consent_valid),
             )
         )
@@ -195,6 +197,50 @@ def merchant_score(
     add_audit(session, user, "view_score", merchant_id)
     session.commit()
     return card
+
+
+@router.get("/merchants/{merchant_id}/consent", response_model=ConsentView)
+def merchant_consent(
+    merchant_id: str,
+    user: CurrentUser = Depends(ANY_ROLE),
+    services: Services = Depends(get_services),
+    session: Session = Depends(get_session),
+) -> ConsentView:
+    """The merchant's consent, read live from the database. Every role. Audited.
+
+    There is no endpoint to revoke a consent: the scorer reads consent once, when the API
+    starts, so a revoked consent would still be scored until a restart. Revoking must
+    wait until scoring checks consent live.
+    """
+    _refuse_hidden_rows(services)
+    _known_merchant(session, merchant_id)
+    as_of = services.data_today(session)
+    valid, categories = consent_state(session, merchant_id, as_of)
+    rows = session.scalars(
+        select(db.Consent)
+        .where(db.Consent.merchant_id == merchant_id)
+        .order_by(db.Consent.granted_at)
+    ).all()
+    records = [
+        {
+            "consent_id": row.consent_id,
+            "purpose": row.purpose,
+            "data_categories": row.data_categories,
+            "granted_at": row.granted_at.isoformat() if row.granted_at else None,
+            "expires_at": row.expires_at.isoformat() if row.expires_at else None,
+            "revoked_at": row.revoked_at.isoformat() if row.revoked_at else None,
+        }
+        for row in rows
+    ]
+    add_audit(session, user, "view_consent", merchant_id)
+    session.commit()
+    return ConsentView(
+        merchant_id=merchant_id,
+        valid=valid,
+        as_of=as_of.isoformat(),
+        data_categories=sorted(categories),
+        records=records,
+    )
 
 
 @router.post("/merchants/{merchant_id}/questionnaire", response_model=QuestionnaireSummary)

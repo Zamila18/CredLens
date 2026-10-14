@@ -127,6 +127,7 @@ def test_openapi_spec_is_published():
         "/merchants",
         "/merchants/{merchant_id}",
         "/merchants/{merchant_id}/score",
+        "/merchants/{merchant_id}/consent",
         "/merchants/{merchant_id}/decision",
         "/merchants/{merchant_id}/questionnaire",
         "/decisions",
@@ -157,7 +158,8 @@ def role_cases(merchant_id: str) -> list[tuple]:
         ("GET", f"/merchants/{merchant_id}", {}, everyone),
         ("GET", f"/merchants/{merchant_id}/score", {}, everyone),
         ("GET", "/decisions", {}, everyone),
-        ("GET", "/model/card", {}, {"admin", "viewer"}),
+        ("GET", "/model/card", {}, everyone),
+        ("GET", f"/merchants/{merchant_id}/consent", {}, everyone),
         ("GET", "/audit", {}, {"admin"}),
         (
             "POST",
@@ -607,15 +609,14 @@ def test_a_decision_moves_the_merchant_to_decided_in_the_queue(api, merchants):
 # --- model card and audit log -----------------------------------------------------------
 
 
-def test_the_model_card_is_for_admins_and_viewers(api):
-    for headers in (ADMIN, VIEWER):
+def test_the_model_card_is_for_every_role(api):
+    for headers in (OFFICER, ADMIN, VIEWER):
         response = api.get("/model/card", headers=headers)
         assert response.status_code == 200
         card = ModelCard.model_validate(response.json())
         assert card.data_mode == "synthetic_bd"
         assert card.model_version == "test-version"
         assert card.limitations
-    assert api.get("/model/card", headers=OFFICER).status_code == 403
 
 
 def test_the_model_card_placeholder_invents_no_numbers(tmp_path, monkeypatch):
@@ -733,8 +734,19 @@ def test_the_questionnaire_needs_a_missing_answer_to_be_refused(api, merchants):
 
 
 def test_the_questionnaire_needs_a_consent_that_covers_it(api, api_world, merchants):
-    covered_elsewhere = merchants["without_questionnaire_consent"]
-    assert covered_elsewhere, "the data has merchants who consented to the rest but not this"
+    # Every generated consent covers the questionnaire, so make a merchant whose does not.
+    with Session(api_world.engine) as session:
+        as_of = api_world.services.data_today(session)
+        session.add(db.Merchant(merchant_id="TEST-NOQ", onboarded_at=as_of - timedelta(days=200),
+                                consent_data_use=True, questionnaire_done=False))
+        session.flush()
+        session.add(db.Consent(consent_id="TEST-C-NOQ", merchant_id="TEST-NOQ",
+                               purpose="credit_readiness_assessment",
+                               data_categories="purchases|deliveries|payments",
+                               granted_at=as_of - timedelta(days=100),
+                               expires_at=as_of + timedelta(days=300), revoked_at=None))
+        session.commit()
+    covered_elsewhere = ["TEST-NOQ"]
     before = count(api_world, db.Questionnaire)
     response = api.post(
         f"/merchants/{covered_elsewhere[0]}/questionnaire", headers=OFFICER, json=ANSWERS
@@ -842,3 +854,45 @@ def test_the_dashboard_origin_may_call_the_api_and_others_may_not(api):
     assert "access-control-allow-origin" not in blocked.headers
     plain = api.get("/health", headers={"Origin": "http://localhost:5173"})
     assert plain.headers["access-control-allow-origin"] == "http://localhost:5173"
+
+
+# --- added in the Phase 9 review (Oct 15) ----------------------------------------------------
+
+
+def test_every_consenting_merchant_may_be_asked_the_questionnaire(merchants):
+    assert merchants["without_questionnaire_consent"] == []
+    assert len(merchants["with_questionnaire_consent"]) == len(merchants["consenting"])
+
+
+def test_the_score_card_carries_the_plain_summary(api, merchants):
+    merchant_id = merchants["consenting"][0]
+    card = api.get(f"/merchants/{merchant_id}/score", headers=OFFICER).json()
+    assert card["summary_en"].startswith(f"Score {card['score']} ({card['band']})")
+    assert card["summary_bn"].endswith("সিদ্ধান্ত আপনার।")
+
+
+def test_the_queue_carries_the_low_score_warning(api, api_world, queue):
+    rows = api.get("/merchants", headers=OFFICER).json()
+    by_id = {row["merchant_id"]: row for row in rows}
+    for item in queue.itertuples(index=False):
+        row = by_id[item.merchant_id]
+        if item.consent_valid:
+            assert row["low_score_warning"] == bool(item.low_score_warning)
+        else:
+            assert row["low_score_warning"] is None
+
+
+def test_the_consent_view_is_live_and_audited(api, api_world, merchants):
+    from src.api.schemas import ConsentView
+
+    merchant_id = merchants["consenting"][1]
+    before = count(api_world, db.AuditEntry, db.AuditEntry.action == "view_consent")
+    view = ConsentView.model_validate(
+        api.get(f"/merchants/{merchant_id}/consent", headers=VIEWER).json()
+    )
+    assert view.valid and "questionnaire" in view.data_categories and view.records
+    assert count(api_world, db.AuditEntry, db.AuditEntry.action == "view_consent") == before + 1
+    refused = api.get(f"/merchants/{merchants['no_consent'][0]}/consent", headers=OFFICER).json()
+    assert refused["valid"] is False and refused["data_categories"] == []
+    assert api.get("/merchants/NOBODY/consent", headers=OFFICER).status_code == 404
+
