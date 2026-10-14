@@ -11,12 +11,12 @@ Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2
 
 ## Status
 
-**Phases 0 to 7 are done (Oct 13, 2026): scaffold, synthetic data, database, features and labels, two models with a rule for choosing between them, calibration, score, coverage and bands, the reasons behind a score, and adapters for four public data sources. The API endpoints, the dashboard and the runs on public data are being built now.**
+**Phases 0 to 8 are done (Oct 14, 2026): scaffold, synthetic data, database, features and labels, two models with a rule for choosing between them, calibration, score, coverage and bands, the reasons behind a score, adapters for four public data sources, and training runs on all of them. The API endpoints and the dashboard are being built now.**
 
 | Works now | Not built yet |
 |---|---|
 | Project structure, config loading and checks | |
-| Data contract and adapter interface; adapters and features for all four public sources (Taiwan, India, Home Credit, Kiva) | Runs on the public data with real outcomes (Phase 8) |
+| Data contract and adapter interface; adapters and features for all four public sources (Taiwan, India, Home Credit, Kiva) | |
 | Synthetic data generator: 20,000 merchants, three delivery signal strengths | API endpoints for the queue, profile, score, decisions and audit (Phase 9) |
 | Database (SQLite locally): tables, loader, backup, Mifos X-style export; append-only decisions and audit log | React dashboard (Phase 10) |
 | Features built only from data before each loan, labels from the 30-day rule, and a leakage guard | Ablation, group audit, model cards, final check on the held-back test months (Phase 11) |
@@ -24,8 +24,9 @@ Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2
 | Calibration check; score, coverage, band and low-score warning | |
 | Reasons: three up and three down, in English and Bangla, with numbers that add up to the score (exact SHAP values) | |
 | Scoring service for the API: review queue and score card, nothing scored without consent | |
+| Training runs on all five data modes, with an honest reading of each: [reports/REAL_LABEL_RESULTS.md](reports/REAL_LABEL_RESULTS.md) | |
 | API contract, sample responses, `GET /health` | |
-| Lint, 591 tests and CI | |
+| Lint, 608 tests and CI | |
 
 ### Where the model stands (synthetic data, validation months, seed 42)
 
@@ -62,7 +63,7 @@ No partner data is used. Every screen names its data source.
 | `india_ltfs` | India L&T vehicle loans (Kaggle) | Checks the method on real Indian borrowers, half of them with no credit record |
 | `homecredit` | Kaggle Home Credit (country not stated) | Checks the method at larger scale |
 
-`synthetic_bd` runs end to end today; The four public sources are mapped and have their features; their model runs come in Phase 8. Results on synthetic data show that the pipeline is sound. They say nothing about real merchants. The public datasets test the method; none of them is ShopUp data. Sources and licences: [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md).
+`synthetic_bd` runs end to end today; All five modes train with the same code (`python tasks.py train --all-modes`). Validation AUC on the public sources: Taiwan 0.743, India 0.611, Home Credit 0.746 (0.601 without its outside score), Kiva 0.644. Only Taiwan is evidence that the method works; the others show where it cannot, and why. See [reports/REAL_LABEL_RESULTS.md](reports/REAL_LABEL_RESULTS.md). Results on synthetic data show that the pipeline is sound. They say nothing about real merchants. The public datasets test the method; none of them is ShopUp data. Sources and licences: [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md).
 
 ## Run it
 
@@ -74,6 +75,8 @@ python tasks.py test      # run the tests
 python tasks.py lint      # run ruff
 python tasks.py data      # generate the synthetic data and load the local database (about 55 seconds)
 python tasks.py train     # train both models, choose one, measure it on the validation period, save it (about 1 minute)
+python tasks.py train --mode taiwan_cc   # the same for a public data mode (needs its raw file in data/raw/)
+python tasks.py train --all-modes        # all five modes, about 4 minutes
 python -m src.model.scoring   # print one real score card with its reasons (needs data and train first)
 python tasks.py backup    # copy the database with a timestamp
 python tasks.py api       # start the API, then open http://localhost:8000/docs
