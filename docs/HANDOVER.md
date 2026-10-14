@@ -42,17 +42,29 @@ Data on the lead's laptop only (never in git): Taiwan, India L&T, Home Credit, t
 
 Rules that apply to everyone: read `CLAUDE.md`; two people never work in the same folder at the same time; small pull requests; one teammate reviews; merge only when tests pass.
 
-## 3. Who does what next
+## 3. Who does what next (team split of Oct 15)
 
-### Lead (with Claude Code): data, then the model
+| Person | Phases | Folders |
+|---|---|---|
+| Lead (Zamila, with Claude Code) | 11 (parts 2 to 4), documents and checks; the Hostinger deployment at the end, by following `docs/DEPLOY.md` | `src/model/`, `reports/`, `src/synth/`, `src/adapters/`, `src/db/`, `config/`, `docs/` |
+| Dipto | 10: the dashboard | `web/` |
+| Humayra | 12 and 13: backend, database, deployment files and guide, backend review | `src/api/`, `deploy/` (new), `docs/DEPLOY.md`, `docs/adapting.md` |
+
+Dipto and Humayra meet at the API. If a page needs a field or endpoint that is missing, Dipto asks Humayra and she adds it in `src/api/`; Dipto does not edit `src/api/`.
+
+### Lead (with Claude Code)
 | Order | Work | Folders |
 |---|---|---|
-| 1 | Phase 2 follow-up: create the Supabase project, load it, and check the PostgreSQL triggers and backup there | `src/db/` |
-| 2 | Done (Oct 13): Phases 4, 5 and 6: model, calibration, score, coverage, bands, LightGBM, reasons | `src/model/` |
-| 3 | Phase 7: adapters for Taiwan, India L&T, Home Credit, and Kiva if it qualifies | `src/adapters/` |
-| 4 | Phases 8 and 11: real-label runs, ablation, group audit, model cards | `src/model/`, `reports/` |
+| 1 | Phase 11 part 2: group audit (metrics and calibration by group, with ranges; group columns stay audit-only) for every data mode | `src/model/fairness.py`, `reports/` |
+| 2 | Phase 11 part 3: one model card per data mode (`docs/model_card_<mode>.md` and the JSON that `GET /model/card` serves) | `src/model/model_card.py` |
+| 3 | Phase 11 part 4: the test months, once, with the ledger in `reports/<mode>/test_set_use.json` | `reports/` |
+| 4 | Documents and checks (moved from Dipto): Findex codebook check, CGAP Kaleidofin case, first pass of the Bangla review (a native speaker confirms), `docs/starter_kit.md`, `docs/data_inventory.md`, slides text | `docs/`, `config/calibration/` |
+| 5 | Remove the two stale Phase 7 skip placeholders in `tests/test_adapters.py` | `tests/` |
+| 6 | When everything else is done: buy the Hostinger VPS and deploy by following Humayra's `docs/DEPLOY.md` | the server |
 
-### Humayra (heavy work): Phase 10, the dashboard
+Phase 11 stays with the lead: the public data modes need the raw files, which exist only on the lead's laptop and may not be shared.
+
+### Dipto: Phase 10, the dashboard
 Phase 9 (the API) is done, reviewed and fixed. Phase 10 builds the React dashboard in `web/` against it. Everything a page needs is in `GET /openapi.json` and `docs/API_NOTES.md`; sample responses are in `tests/fixtures/api/`.
 
 | Order | Work | Folders |
@@ -60,11 +72,25 @@ Phase 9 (the API) is done, reviewed and fixed. Phase 10 builds the React dashboa
 | 1 | Node.js LTS; create the React app (Vite + TypeScript + Tailwind + shadcn/ui); types from `/openapi.json` | `web/` |
 | 2 | App shell: sidebar, role switch (`officer-1`, `officer-2`, `admin-1`, `viewer-1`, sent as `X-Demo-Token`), banner from `GET /health` on every page, English/Bangla toggle | `web/` |
 | 3 | Review queue (`GET /merchants`): score, coverage, band, low-score warning, consent; "no consent" rows show no score | `web/` |
-| 4 | Merchant detail: timeline, purchases/deliveries/payments panels, score gauge with coverage meter and band, the plain summary (`summary_en`/`summary_bn`) at the top, helps/hurts reasons, questionnaire panel and form (beside the score, never inside it), consent panel (`GET /merchants/{id}/consent`), "Why might this be wrong?", decision form (officers only; override needs a reason) | `web/` |
-| 5 | Decision log, model card (every role), audit log (admin), import page (admin; says imported rows do not change scores yet), portfolio | `web/` |
+| 4 | Merchant detail: timeline, purchases/deliveries/payments panels, score with coverage meter and band, the plain summary (`summary_en`/`summary_bn`) at the top, helps/hurts reasons, questionnaire panel and form (beside the score, never inside it), consent panel (`GET /merchants/{id}/consent`), "Why might this be wrong?", decision form (officers only; override needs a reason) | `web/` |
+| 5 | Decision log, model card (every role), audit log (admin), import page (admin; says imported rows do not change scores yet), portfolio (first to cut if time runs out) | `web/` |
 | 6 | Public data modes: no review queue; show the model card and totals only. Home Credit rows are never shown (the API refuses them) | `web/` |
 
 Must hold on every page: the banner names the data source and says "Decision support only."; a score is never shown without coverage and band; officers see sentences, never feature names; there is no approve or decline button; an override needs a written reason; the browser calls only the API, never the database.
+
+A real baseline score is about 92 and most reasons move the score by 0.2 to 6 points, so design the reason bars for small numbers.
+
+### Humayra: Phases 12 and 13, the backend
+| Order | Work | Where |
+|---|---|---|
+| 1 | Supabase: create the project (HUMAN STEP; the lead can invite her), put `DATABASE_URL` in `.env`, load the synthetic data, check that decisions and the audit log refuse UPDATE, DELETE and TRUNCATE, and that `python tasks.py backup` works there. Never run `tests/test_postgres.py` against Supabase (it is for a throwaway local database only) | `.env` (never committed) |
+| 2 | Find out what the API needs on a server for each data mode. Raw public files never go to the server; public modes show reports and totals only; Home Credit rows never | `src/api/`, `docs/DEPLOY.md` |
+| 3 | Deployment files and guide (Zamila runs them on the Hostinger VPS at the end): the API as a systemd service, an Nginx config that serves the built dashboard and passes `/api` to the API, HTTPS, the whole site behind a password, a production `.env` template (no real values), and `docs/DEPLOY.md` with every command in order for a fresh Ubuntu server. Test what can be tested on a laptop (production settings, the built dashboard served by the API or a local Nginx) | `deploy/`, `docs/DEPLOY.md` |
+| 4 | Which model files and reports the server needs, and how they get there; a health check that waits for the scorer (about 30 seconds to build) | `deploy/`, `docs/DEPLOY.md` |
+| 5 | Offline fallback: one documented way to run API and dashboard on a laptop with no internet | `docs/DEPLOY.md`, `README.md` |
+| 6 | `docs/adapting.md` (how another lender adds a data adapter in `src/adapters/`); a small script that picks the demo merchants (one Strong, one Needs more info, one without consent) | `docs/`, `deploy/` |
+| 7 | Add any field or endpoint Dipto's pages need | `src/api/` |
+| 8 | Phase 13 backend review: every endpoint has the right roles, consent check and audit; nothing approves or declines; hosted and local give the same score; no secrets in the repo; CORS limited to the site; speed of queue, score and consent; backend boxes in `docs/ACCEPTANCE_CHECKLIST.md` filled with evidence | whole repo (read), fixes in her folders |
 
 #### What the API can call for real scores (ready since Oct 13)
 
@@ -87,26 +113,13 @@ card = scorer.card("M0000123")      # one merchant's score card
 
 Sample numbers changed on Oct 13: scores in `tests/fixtures/api/` now follow the new band lines (Strong from 90, coverage from 45%). A real baseline score is about 92 and most reasons move the score by 0.2 to 6 points, so design the reason bars for small numbers.
 
-### Dipto (light work): checks, documents and the things only a person can do
-| Order | Work | Where |
-|---|---|---|
-| 1 | Confirm the Findex column definitions in the Findex codebook and correct `config/calibration/findex_bangladesh.csv` notes if needed | `config/calibration/` |
-| 2 | Read CGAP's Kaleidofin case in "Banking in Layers" and write three lines on what it actually reports | `docs/` |
-| 3 | Check the Bangla sentences in `src/features/dictionary.yaml` with a native speaker's eye; list any that sound unnatural or accusing | Report to the lead; the lead edits the file |
-| 4 | Draft `docs/starter_kit.md` (public sources a lender could use, from `docs/DATA_SOURCES.md` and the team's Finverse result) and `docs/data_inventory.md` (what data exists, who owns it, who may view it) | `docs/` |
-| 5 | When the dashboard exists: walk through it by hand with the demo script and list every problem | Report to Humayra |
-| 6 | Slides and pitch text, following `docs/WORDING_AND_QA.md` | Outside the repository |
-
-### Third teammate (when they arrive)
-Sceptical review of every claim against code and tests (Phase 13), help with deployment, the backup video and rehearsals.
-
 ## 4. First message to paste into your own Claude Code
 
-Humayra:
-> Read CLAUDE.md, PROJECT_BRIEF.md (especially section 18), docs/HANDOVER.md, docs/API_NOTES.md and web/README.md. I am role D (full-stack). Phase 9 is merged and was reviewed and fixed on Oct 15; I now build Phase 10, the React dashboard in web/. Check the repository matches that, run the tests, then wait.
-
 Dipto:
-> Read CLAUDE.md, docs/HANDOVER.md, docs/DATA_SOURCES.md and docs/WORDING_AND_QA.md. I am role A support (documents and checks). Phase 9 is merged. Check the repository matches that, then wait. My first task is in docs/HANDOVER.md section 3, under my name.
+> Read CLAUDE.md, docs/HANDOVER.md, docs/API_NOTES.md and docs/WORDING_AND_QA.md. I am Dipto and I build Phase 10, the React dashboard in web/. Check the repository, run the tests, then wait.
+
+Humayra:
+> Read CLAUDE.md, docs/HANDOVER.md, docs/API_NOTES.md and PROJECT_BRIEF.md section 18. I am Humayra and I do the backend for Phases 12 and 13. Check the repository, run the tests, then wait.
 
 ## 5. What not to touch
 
