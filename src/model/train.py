@@ -32,6 +32,7 @@ The reasons behind a score are computed in src/model/explain.py.
 
 from __future__ import annotations
 
+import argparse
 import json
 import subprocess
 from datetime import datetime
@@ -49,14 +50,14 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from src.adapters import get_adapter
-from src.config import PROJECT_ROOT, load_config
-from src.features.build_features import FEATURE_GROUPS, model_feature_names
-from src.features.dictionary import expected_directions, load_dictionary
+from src.config import PROJECT_ROOT, VALID_MODES, load_config
+from src.features.dictionary import SYNTHETIC_MODE, expected_directions, load_dictionary
 from src.model.boosted import tune_lightgbm
 from src.model.calibrate import choose_calibrator
 from src.model.dataset import build_dataset, dataset_summary, modelling_rows
 from src.model.evaluate import baseline_metrics, evaluate, paired_auc_gain
 from src.model.explain import reasons_summary
+from src.model.inputs import input_groups, model_inputs, simpler_model
 from src.model.preprocess import QuantileClipper
 from src.model.score import NEEDS_MORE_INFO, band_lines, band_summary, score_table
 from src.model.split import split_for_mode
@@ -70,7 +71,6 @@ MODEL_FILE = "model.joblib"
 METADATA_FILE = "metadata.json"
 METRICS_FILE = "metrics.json"
 CALIBRATION_PLOT = "calibration_validation.png"
-HEADLINE_GROUPS = "ABC"  # purchases + payments + deliveries; the questionnaire is never in
 PAYMENT_HISTORY_COLUMN = "avg_pay_delay_days"  # empty exactly when a loan is a first loan
 HISTORY_COLUMN = "cov_history_6_months"  # yes when the merchant has six months of history
 LOGISTIC_REGRESSION = "logistic_regression"
@@ -267,9 +267,9 @@ def choose_model(
     chosen = LIGHTGBM if all(checks.values()) else LOGISTIC_REGRESSION
     failed = [name.replace("_", " ") for name, passed in checks.items() if not passed]
     reason = (
-        f"LightGBM adds {gain['auc_gain']:+.3f} AUC over the logistic regression "
-        f"(range {gain['range'][0]:+.3f} to {gain['range'][1]:+.3f}; the whole range must "
-        f"reach {needed:+.3f}). "
+        f"LightGBM adds {gain['auc_gain']:+.4f} AUC over the logistic regression "
+        f"(range {gain['range'][0]:+.4f} to {gain['range'][1]:+.4f}; the whole range must "
+        f"reach {needed:+.4f}). "
         + ("Both checks pass." if not failed else f"Not met: {', '.join(failed)}.")
     )
     return {
@@ -282,15 +282,20 @@ def choose_model(
 
 
 def _predicted_against_actual(
-    validation: pd.DataFrame, probabilities: np.ndarray
+    validation: pd.DataFrame, probabilities: np.ndarray, needs_more_info: np.ndarray
 ) -> dict[str, dict[str, Any]]:
     """Mean predicted probability next to the actual repaid share, for groups that matter.
 
     A model can be right on average and still be unfair to a group: for example score new
     merchants lower although they repay just as often. This table shows it if it happens.
+    Every data mode gets the two coverage groups (thin files against the rest); the
+    synthetic data also gets first loans and short histories.
     """
     labels = validation["label"].to_numpy()
-    groups: dict[str, np.ndarray] = {}
+    groups: dict[str, np.ndarray] = {
+        "coverage_below_the_line": needs_more_info,
+        "coverage_at_or_above_the_line": ~needs_more_info,
+    }
     first = _first_loans(validation)
     if first is not None:
         groups["first_loans"], groups["repeat_loans"] = first, ~first
@@ -330,8 +335,9 @@ def train_models(
     split = split_for_mode(rows, config, mode)
     validation_labels = split.validation["label"].to_numpy()
 
-    directions = expected_directions(load_dictionary())
-    candidates = model_feature_names(HEADLINE_GROUPS)
+    dictionary = load_dictionary()
+    directions = expected_directions(dictionary, mode)
+    candidates = model_inputs(mode)
     fitted = {
         name: _fit_candidate(name, config, split, candidates, directions, mode)
         for name in config["model"]["candidates"]
@@ -342,12 +348,9 @@ def train_models(
     calibration, probabilities = winner["calibration"], winner["probabilities"]
     headline = winner["evaluation"]
 
-    # Baselines to beat (docs/MODEL_SPEC.md section 9).
-    purchase_model, purchase_features, _ = fit_with_expected_directions(
-        config, split.train, model_feature_names("A"), directions
-    )
-    purchase_probabilities = _score(purchase_model, split.validation, purchase_features)
-    purchases_only = evaluate(validation_labels, purchase_probabilities, config, mode)
+    # Baselines to beat (docs/MODEL_SPEC.md section 9): always the average rate, and a
+    # simpler model with part of the inputs (src/model/inputs.py says which, and why).
+    simpler = _fit_simpler_model(config, split, directions, winner["raw"], mode)
     average_rate = float(split.train["label"].mean())
 
     # Score, coverage and band of every validation loan, as an officer would see them.
@@ -363,6 +366,12 @@ def train_models(
             f"{strong_share:.0%} of validation loans score at or above the Strong line "
             f"({band_lines(config, mode)['band_strong_min_score']}), so this line separates "
             "almost nobody. Set `score.band_strong_min_score` from the score distribution."
+        )
+    if strong_share < 0.01:
+        notes.append(
+            f"Almost no validation loan ({strong_share:.1%}) reaches the Strong line "
+            f"({band_lines(config, mode)['band_strong_min_score']}): with this data the model "
+            "cannot single out loans it expects to be repaid at least nine times in ten."
         )
     if waiting.mean() > 0.4:
         notes.append(
@@ -398,7 +407,7 @@ def train_models(
             }
             for name, candidate in fitted.items()
         },
-        "feature_groups": {group: FEATURE_GROUPS[group] for group in HEADLINE_GROUPS},
+        "feature_groups": input_groups(mode, dictionary),
         "inputs_used": features,
         "inputs_removed_for_pointing_the_wrong_way": winner["removed"],
         "calibration": {
@@ -414,7 +423,7 @@ def train_models(
         "validation": headline,
         "validation_by_history": _by_history(split.validation, probabilities, config, mode),
         "validation_predicted_against_actual": _predicted_against_actual(
-            split.validation, probabilities
+            split.validation, probabilities, waiting
         ),
         "validation_bands": {
             "lines": band_lines(config, mode),
@@ -425,17 +434,16 @@ def train_models(
         },
         "baselines": {
             "always_average_rate": baseline_metrics(validation_labels, average_rate),
-            "purchases_only": {
-                "features": purchase_features,
-                "metrics": purchases_only["metrics"],
-                "ranges": purchases_only["ranges"],
-            },
+            "simpler_model": simpler["baseline"],
         },
-        "gain_over_purchases_only": paired_auc_gain(
-            validation_labels, purchase_probabilities, winner["raw"], config
-        ),
+        "gain_over_simpler_model": simpler["gain"],
         "reasons_check": reasons_summary(
-            {"model": model, "calibrator": calibration["calibrator"], "features": features},
+            {
+                "model": model,
+                "calibrator": calibration["calibrator"],
+                "features": features,
+                "data_mode": mode,
+            },
             split.validation,
             config,
         ),
@@ -452,6 +460,43 @@ def train_models(
         "features": features,
         "report": report,
         "candidates": fitted,
+    }
+
+
+def _fit_simpler_model(
+    config: dict[str, Any],
+    split: Any,
+    directions: dict[str, int],
+    chosen_probabilities: np.ndarray,
+    mode: str,
+) -> dict[str, Any]:
+    """Fit the simpler model of the mode and measure what the full model adds to it.
+
+    It is a logistic regression on part of the inputs, fitted like the main one. If every
+    one of its inputs points against its meaning in this data, it cannot be fitted; the
+    report then says so instead of stopping the whole run.
+    """
+    definition = simpler_model(mode)
+    labels = split.validation["label"].to_numpy()
+    baseline = {"name": definition["name"], "description": definition["description"]}
+    try:
+        model, features, _ = fit_with_expected_directions(
+            config, split.train, definition["features"], directions
+        )
+    except ValueError:
+        baseline.update(
+            features=[],
+            metrics=None,
+            ranges=None,
+            note="Could not be fitted: its inputs point against their meaning in this data.",
+        )
+        return {"baseline": baseline, "gain": None}
+    probabilities = _score(model, split.validation, features)
+    measured = evaluate(labels, probabilities, config, mode)
+    baseline.update(features=features, metrics=measured["metrics"], ranges=measured["ranges"])
+    return {
+        "baseline": baseline,
+        "gain": paired_auc_gain(labels, probabilities, chosen_probabilities, config),
     }
 
 
@@ -505,7 +550,10 @@ def save_artifacts(
         "data_mode": mode,
         "code_commit": commit,
         "data_seed": config["seed"],
-        "delivery_signal_strength": config["data"]["delivery_signal_strength"],
+        # Only the synthetic data has a signal strength; public data is what it is.
+        "delivery_signal_strength": (
+            config["data"]["delivery_signal_strength"] if mode == SYNTHETIC_MODE else None
+        ),
         "model": report["model"],
         "calibrator": report["calibration"]["method"],
         "feature_list": result["features"],
@@ -518,6 +566,7 @@ def save_artifacts(
     saved = {
         "model": result["model"],
         "model_name": result["model_name"],
+        "data_mode": mode,
         "calibrator": result["calibrator"],
         "features": result["features"],
         "version_id": metadata["version_id"],
@@ -570,18 +619,24 @@ def write_report(
 
 
 def run_training(config: dict[str, Any]) -> dict[str, Any]:
-    """The whole training run for the active data mode. Returns the result and metadata."""
+    """The whole training run for the data mode in the config. Returns the result and metadata."""
+    mode = config["data"]["mode"]
     tables = get_adapter(config).load_all()
-    dataset = build_dataset(tables, config)
-    result = train_models(dataset, config)
+    dataset = build_dataset(tables, config, mode=mode)
+    result = train_models(dataset, config, mode)
     metadata = save_artifacts(result, config)
     paths = write_report(result, metadata)
     return {**result, "metadata": metadata, "paths": paths}
 
 
-def main() -> int:
-    """Command line: train, save and print a short summary."""
+def main(argv: list[str] | None = None) -> int:
+    """Command line: train one data mode, save the model and print a short summary."""
+    parser = argparse.ArgumentParser(description="Train and measure the model of one data mode.")
+    parser.add_argument("--mode", choices=VALID_MODES, help="data mode; default: the config's")
+    arguments = parser.parse_args(argv)
     config = load_config()
+    if arguments.mode:
+        config["data"]["mode"] = arguments.mode
     run = run_training(config)
     report, metadata = run["report"], run["metadata"]
     validation = report["validation"]
@@ -596,9 +651,17 @@ def main() -> int:
     print(
         f"    AUC {metrics['roc_auc']:.3f} "
         f"(range {ranges['roc_auc'][0]:.3f} to {ranges['roc_auc'][1]:.3f}); "
-        f"purchases-only baseline {baseline['purchases_only']['metrics']['roc_auc']:.3f}; "
         "average-rate baseline 0.500"
     )
+    simpler, gain = baseline["simpler_model"], report["gain_over_simpler_model"]
+    if simpler["metrics"] is None:
+        print(f"    simpler model ({simpler['name']}): {simpler['note']}")
+    else:
+        print(
+            f"    simpler model ({simpler['name']}): AUC {simpler['metrics']['roc_auc']:.3f}; "
+            f"the model in use adds {gain['auc_gain']:+.3f} "
+            f"(range {gain['range'][0]:+.3f} to {gain['range'][1]:+.3f})"
+        )
     print(
         f"    Brier {metrics['brier']:.4f} "
         f"(average-rate baseline {baseline['always_average_rate']['brier']:.4f}); "
@@ -614,11 +677,6 @@ def main() -> int:
         f"{name} {numbers['brier']:.4f}" for name, numbers in calibration["candidates"].items()
     )
     print(f"    calibration: '{calibration['method']}' chosen (out-of-fold Brier: {compared})")
-    gain = report["gain_over_purchases_only"]
-    print(
-        f"    gain over purchases only: {gain['auc_gain']:+.3f} "
-        f"(range {gain['range'][0]:+.3f} to {gain['range'][1]:+.3f})"
-    )
     for name, part in report["validation_by_history"].items():
         print(
             f"    {name.replace('_', ' ')}: AUC {part['roc_auc']:.3f} "

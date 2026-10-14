@@ -44,7 +44,12 @@ import numpy as np
 import pandas as pd
 
 from src.config import banner_text
-from src.features.dictionary import detail_text, load_dictionary, reason_sentences
+from src.features.dictionary import (
+    detail_text,
+    features_for_mode,
+    load_dictionary,
+    reason_sentences,
+)
 from src.model.score import band_for, coverage_for_rows, low_score_warning, score_from_probability
 
 
@@ -154,6 +159,8 @@ def explain_score(
     tests; it is never shown to an officer.
     """
     dictionary = dictionary or load_dictionary()
+    # Each data mode has its own inputs and sentences; a saved model says which mode it is.
+    entries = features_for_mode(dictionary, saved.get("data_mode"))
     settings = config["score"]
     parts = contributions_for_row(saved, feature_row, config)
     probability = parts["probability"]
@@ -165,7 +172,7 @@ def explain_score(
         if abs(points) < settings["min_reason_points"]:
             continue
         raised = points > 0
-        entry = dictionary["features"][name]
+        entry = entries[name]
         value = _as_number(feature_row.get(name))
         sentences = reason_sentences(entry, raised, value)
         if sentences is None:

@@ -83,9 +83,21 @@ def task_data(args: argparse.Namespace) -> int:
     return run_in_venv(["-m", "src.db.load"] + (["--reset"] if args.reset_db else []))
 
 
-def task_train(_: argparse.Namespace) -> int:
+PUBLIC_MODES = ("taiwan_cc", "india_ltfs", "homecredit", "kiva_asia")
+
+
+def task_train(args: argparse.Namespace) -> int:
     """Build features, train, evaluate on the validation period, save the model and report."""
-    return run_in_venv(["-m", "src.model.train"])
+    if args.all_modes:
+        for mode in ("synthetic_bd", *PUBLIC_MODES):
+            code = run_in_venv(["-m", "src.model.train", "--mode", mode])
+            if code != 0:
+                return code
+        return 0
+    command = ["-m", "src.model.train"]
+    if args.mode:
+        command += ["--mode", args.mode]
+    return run_in_venv(command)
 
 
 def task_api(_: argparse.Namespace) -> int:
@@ -138,6 +150,10 @@ def build_parser() -> argparse.ArgumentParser:
     data.set_defaults(func=task_data)
 
     train = tasks.add_parser("train", help="features, training, calibration, reports")
+    train.add_argument("--mode", choices=VALID_MODES, help="data mode; default: the config's")
+    train.add_argument(
+        "--all-modes", action="store_true", help="train the synthetic data and all public modes"
+    )
     train.set_defaults(func=task_train)
     tasks.add_parser("api", help="run FastAPI on :8000").set_defaults(func=task_api)
     tasks.add_parser("app", help="run the React dashboard on :5173").set_defaults(func=task_app)
