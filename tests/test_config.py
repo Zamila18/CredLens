@@ -153,6 +153,7 @@ def test_home_credit_is_never_presented_as_asian_data():
         ("score", "low_score_warning_below", 150),
         ("labels", "supplied_by_source", ["synthetic_bd"]),
         ("labels", "supplied_by_source", ["mars"]),
+        ("data", "rows_never_shown", ["mars"]),
         ("score", "min_reason_points", -1),
         ("score", "max_inputs_for_exact_reasons", 0),
         ("score", "by_mode", {"mars": {"band_min_coverage": 0.5}}),

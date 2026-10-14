@@ -122,6 +122,9 @@ def validate_config(config: dict[str, Any]) -> None:
         problems.append(
             "data.india_ltfs.coverage_min_history_months must be a positive whole number"
         )
+    hidden = data.get("rows_never_shown")
+    if not isinstance(hidden, list) or any(name not in VALID_MODES for name in hidden):
+        problems.append("data.rows_never_shown must be a list of known data modes")
     kiva = data.get("kiva") or {}
     for name in ("default_known_lag_months", "partner_min_known_loans"):
         if not _is_positive_int(kiva.get(name)):

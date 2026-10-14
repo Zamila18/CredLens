@@ -208,6 +208,19 @@ class ConsentRequired(PermissionError):
     """Raised instead of a score when the merchant has no valid consent."""
 
 
+class RowsNotShown(PermissionError):
+    """Raised instead of a score card for a data mode whose rows may never be shown."""
+
+
+def refuse_hidden_rows(config: dict[str, Any], mode: str) -> None:
+    """Stop if the data mode's individual rows may not be shown (`data.rows_never_shown`)."""
+    if mode in config["data"]["rows_never_shown"]:
+        raise RowsNotShown(
+            f"Rows of '{mode}' are never shown one by one (the source's terms allow totals "
+            "only). See its model card instead."
+        )
+
+
 def score_card(
     saved: dict[str, Any],
     feature_row: pd.Series,
@@ -217,6 +230,9 @@ def score_card(
     consent_valid: bool | None = None,
 ) -> dict[str, Any]:
     """Everything an officer sees for one merchant: score, coverage, band and reasons.
+
+    A data mode listed in `data.rows_never_shown` (Home Credit) raises `RowsNotShown`:
+    its individual rows may never appear on a screen, only totals.
 
     No valid consent, no score: `consent_valid` must be True, given either as the
     argument or as the `consent_valid` column of the row (rows from
@@ -234,6 +250,7 @@ def score_card(
             "This merchant has no valid consent on record, so no score is computed."
         )
     mode = mode or config["data"]["mode"]
+    refuse_hidden_rows(config, mode)
     explanation = explain_score(saved, feature_row, config, dictionary)
     coverage = float(coverage_for_rows(feature_row.to_frame().T, config, mode).iloc[0])
     score = explanation["score"]

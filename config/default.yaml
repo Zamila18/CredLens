@@ -15,6 +15,9 @@ data:
     sample_size: null            # null = all rows (about 30,000)
     coverage_min_months: 4       # of the six statement months: "enough history" for the coverage checklist
     age_band_edges: [30, 40, 50] # audit only: under 30, 30 to 39, 40 to 49, 50 and over
+  # Data modes whose individual rows may never be shown, only totals (competition rules;
+  # docs/DATA_SOURCES.md section 1.4). Asking for one row's score card is refused.
+  rows_never_shown: [homecredit]
   homecredit:
     sample_size: 50000           # applicants sampled with the seed; null = all rows
     chunk_rows: 1000000          # the 1.1 GB of history files are read this many rows at a time

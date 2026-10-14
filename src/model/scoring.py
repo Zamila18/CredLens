@@ -36,7 +36,7 @@ import pandas as pd
 from src.adapters import get_adapter
 from src.config import load_config
 from src.model.dataset import build_dataset
-from src.model.explain import calibrated_probability, score_card
+from src.model.explain import calibrated_probability, refuse_hidden_rows, score_card
 from src.model.labels import LABELLED
 from src.model.score import score_table
 from src.model.train import load_model
@@ -113,9 +113,14 @@ class Scorer:
         Columns: merchant_id, loan_id, pending_since (the day the loan was issued),
         consent_valid, score, coverage, band, low_score_warning. Oldest first. A merchant
         without valid consent is listed with no score, coverage or band. Whether an
-        officer has already decided is not known here; the API adds that from the
+        decided is not known here; the API adds that from the
         decisions table.
+
+        A data mode whose rows may never be shown (Home Credit) raises `RowsNotShown`.
+        A public data mode has no pending loans (every outcome is known), so its queue is
+        empty.
         """
+        refuse_hidden_rows(self.config, self.mode)
         pending = self._latest[self._latest["label_status"] != LABELLED]
         issued = pd.to_datetime(pending["cutoff_date"]).dt.strftime("%Y-%m-%d")
         queue = pd.DataFrame(
