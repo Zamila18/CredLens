@@ -298,8 +298,10 @@ def _refuse_bulk_change(orm_execute_state) -> None:
 def _append_only_triggers(table: str) -> None:
     """Database-level guard: triggers that refuse UPDATE and DELETE on one table.
 
-    The SQLite triggers are covered by tests. The PostgreSQL ones follow the same idea
-    but have not been run yet: check them when the Supabase database is first created.
+    Both sets are covered by tests: SQLite always, PostgreSQL by tests/test_postgres.py
+    when a test database is given (checked on Oct 14, 2026 against PostgreSQL 18.3).
+    On PostgreSQL a row trigger does not fire on TRUNCATE, which empties a table in one
+    statement, so a statement trigger refuses TRUNCATE as well. (SQLite has no TRUNCATE.)
 
     What triggers cannot do: whoever owns the database can drop a trigger and then change
     a row. On the shared PostgreSQL database the application's own account must therefore
@@ -334,8 +336,13 @@ def _append_only_triggers(table: str) -> None:
         f"CREATE TRIGGER {table}_no_change BEFORE UPDATE OR DELETE ON {table} "
         f"FOR EACH ROW EXECUTE FUNCTION {table}_append_only()"
     )
+    no_truncate = DDL(
+        f"CREATE TRIGGER {table}_no_truncate BEFORE TRUNCATE ON {table} "
+        f"FOR EACH STATEMENT EXECUTE FUNCTION {table}_append_only()"
+    )
     event.listen(target, "after_create", function.execute_if(dialect="postgresql"))
     event.listen(target, "after_create", trigger.execute_if(dialect="postgresql"))
+    event.listen(target, "after_create", no_truncate.execute_if(dialect="postgresql"))
 
 
 for _table in APPEND_ONLY_TABLES:
