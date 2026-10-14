@@ -21,6 +21,8 @@ Run on Oct 14, 2026 with `python tasks.py train --all-modes`, seed 42. The numbe
 | Other candidate | LightGBM 0.722 | LightGBM 0.761 | logistic regression 0.595 | LightGBM 0.751 | LightGBM 0.406 |
 | Simpler model, and its AUC | purchases only, 0.667 | latest month only, 0.697 | loan terms only, 0.565 | without the outside score, 0.601 | without the field partner, 0.644 |
 | What the full model adds (range) | +0.043 (+0.028 to +0.060) | +0.046 (+0.033 to +0.059) | +0.046 (+0.042 to +0.050) | +0.144 (+0.119 to +0.169) | 0.000 |
+| AUC for loans under the coverage line (how many) | 0.583 (899) | 0.637 (469) | 0.580 (33,705) | 0.744 (409) | 0.468 (648) |
+| AUC for the rest (how many) | 0.734 (4,954) | 0.750 (4,531) | 0.629 (33,083) | 0.746 (7,924) | 0.656 (14,465) |
 | Brier (always-average baseline) | 0.0819 (0.0871) | 0.1381 (0.1723) | 0.1514 (0.1556) | 0.0681 (0.0739) | 0.0497 (0.0516) |
 | Calibration error, and method | 0.012, none | 0.008, isotonic | 0.005, Platt | 0.006, none | 0.065, Platt |
 | Not repaid among the 20 lowest-scored (overall) | 55% (10%) | 60% (22%) | 50% (19%) | 65% (8%) | 0% (5%) |
@@ -38,7 +40,7 @@ The band lines are the same everywhere (Strong from a score of 90, coverage from
 - LightGBM reached 0.761. Its gain over the logistic regression is +0.018, and the low end of the range of that gain is 0.0099, just under the 0.01 the rule asks for, so the simpler model stays. It is a near miss, stated as such.
 
 ### India vehicle loans: the problem, measured
-- **Shows:** half the borrowers (50%) have no credit-bureau record. For them the only input is the loan's terms, and the model's ranking is close to chance: AUC 0.565 from loan terms alone. With the bureau summary, for those who have one, the whole population reaches 0.611. Only 5% of loans reach the Strong band.
+- **Shows:** half the borrowers (50%) have no credit-bureau record. For them the only input is the loan's terms, and the model ranks them barely better than chance: AUC 0.580 inside that group. For borrowers with a record it is 0.629, still weak. Over everyone, 0.611; a model on the loan's terms alone gets 0.565. Only 5% of loans reach the Strong band.
 - **Does not show:** that the method works. An AUC of 0.61 is well under the 0.70 benchmark and is reported as it is.
 - **Why it matters for this project:** this is the thin-file gap in real data. A conventional bureau summary says little about who misses a first instalment and nothing about half the borrowers. That is the gap that purchase, delivery and payment records are meant to fill. Use this column as the problem statement, not as a result.
 - The outcome here is missing the first instalment, an early warning, not a loan going bad.
@@ -49,7 +51,7 @@ The band lines are the same everywhere (Strong from a score of 90, coverage from
 - The split is random, because the source has no calendar dates. Rows of this source are never shown on a screen; only these totals.
 
 ### Kiva, Asia: no information about the borrower, and the numbers say so
-- **Shows:** Kiva knows the loan's terms and the field partner, and nothing about how a borrower paid before. The model ends up using the loan's term alone. The field partner's past default rate pointed the wrong way and was removed: the partners that failed in 2012 had clean records until then. LightGBM, which is forced to treat a bad track record as bad, scored 0.406, worse than a coin toss.
+- **Shows:** Kiva knows the loan's terms and the field partner, and nothing about how a borrower paid before. On the validation months the model works from the loan's term alone. Of the two partner inputs, the past default rate pointed the wrong way and was removed: the partners that failed in 2012 had clean records until then. The other, "the partner carries the loss", has a weight but changes nothing after 2011: 19% of training loans had it and none of the validation or held-back loans did, because the practice had stopped. LightGBM, which is forced to treat a bad track record as bad, scored 0.406, worse than a coin toss.
 - **The AUC of 0.644 is misleading on its own.** The 20 lowest-scored loans were all repaid, only 4% of the defaults sit in the lowest-scored fifth, the calibration error is 6.5%, and 96% of loans land in the Strong band. This model cannot be used to pick out risky loans.
 - **Does not show:** anything about scoring a merchant from behaviour. Do not quote the Kiva AUC as support. What Kiva shows is the opposite case: where the only information is about the intermediary, a score cannot be trusted.
 
@@ -72,3 +74,5 @@ Where a source records how people actually behaved over time (Taiwan), behaviour
 - The ranges treat loans as independent.
 - The inputs were chosen by the rule "behaviour only; how much data exists is context". Sources where "little data" predicts trouble (Taiwan clients known only by a credit limit repay less often) lose that signal on purpose and get "Needs more info" instead.
 - No group audit yet (sex, age band, state, country): Phase 11.
+- The thin-file rows above show the tool's design at work: in every source but Home Credit, the model ranks loans under the coverage line worse than the rest (on Kiva, worse than chance). That is why those loans get "Needs more info" instead of a band.
+- Home Credit's individual rows are never shown (competition rules): asking for a score card or a review queue in that mode is refused in code (`data.rows_never_shown`). Only totals like these appear.

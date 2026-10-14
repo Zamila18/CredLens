@@ -473,6 +473,24 @@
       "predicted_minus_actual": -0.022245119951464498
     }
   },
+  "validation_by_coverage": {
+    "coverage_below_the_line": {
+      "loans": 899,
+      "roc_auc": 0.5826136499940027,
+      "roc_auc_range": [
+        0.5280015218264079,
+        0.6368774251293641
+      ]
+    },
+    "coverage_at_or_above_the_line": {
+      "loans": 4954,
+      "roc_auc": 0.7338868411040105,
+      "roc_auc_range": [
+        0.710619566338189,
+        0.7572981844872725
+      ]
+    }
+  },
   "validation_bands": {
     "lines": {
       "band_strong_min_score": 90,
@@ -620,5 +638,5 @@
     "cod_remit_ontime_rate": 0.2064,
     "dispatch_to_delivery_hours": -0.2317
   },
-  "model_version": "synthetic_bd-20261014-000913-3a1d56f"
+  "model_version": "synthetic_bd-20261014-135335-4198b26"
 }

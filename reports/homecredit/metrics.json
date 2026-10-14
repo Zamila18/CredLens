@@ -375,6 +375,24 @@
       "predicted_minus_actual": -0.000733563353633615
     }
   },
+  "validation_by_coverage": {
+    "coverage_below_the_line": {
+      "loans": 409,
+      "roc_auc": 0.7440318302387268,
+      "roc_auc_range": [
+        0.6514428899327426,
+        0.8254162580685204
+      ]
+    },
+    "coverage_at_or_above_the_line": {
+      "loans": 7924,
+      "roc_auc": 0.7456947106014282,
+      "roc_auc_range": [
+        0.7259930560215402,
+        0.7642198310155315
+      ]
+    }
+  },
   "validation_bands": {
     "lines": {
       "band_strong_min_score": 90,
@@ -513,5 +531,5 @@
     "credit_to_goods_ratio": -0.2213,
     "external_score": 0.7489
   },
-  "model_version": "homecredit-20261014-001145-3a1d56f"
+  "model_version": "homecredit-20261014-135834-4198b26"
 }

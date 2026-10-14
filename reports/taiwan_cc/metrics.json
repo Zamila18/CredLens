@@ -367,6 +367,24 @@
       "predicted_minus_actual": -0.0020734913469410143
     }
   },
+  "validation_by_coverage": {
+    "coverage_below_the_line": {
+      "loans": 469,
+      "roc_auc": 0.6370883923087827,
+      "roc_auc_range": [
+        0.5844004026964711,
+        0.6933042606757914
+      ]
+    },
+    "coverage_at_or_above_the_line": {
+      "loans": 4531,
+      "roc_auc": 0.750219611901504,
+      "roc_auc_range": [
+        0.7310819629743317,
+        0.7673308856029838
+      ]
+    }
+  },
   "validation_bands": {
     "lines": {
       "band_strong_min_score": 90,
@@ -498,5 +516,5 @@
     "balance_growth_6m": -0.0245,
     "no_payment_month_share": -0.1648
   },
-  "model_version": "taiwan_cc-20261014-000936-3a1d56f"
+  "model_version": "taiwan_cc-20261014-135411-4198b26"
 }

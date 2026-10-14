@@ -369,6 +369,24 @@
       "predicted_minus_actual": -0.0007866776143572451
     }
   },
+  "validation_by_coverage": {
+    "coverage_below_the_line": {
+      "loans": 33705,
+      "roc_auc": 0.5795927614652132,
+      "roc_auc_range": [
+        0.572744208129809,
+        0.5866402254484827
+      ]
+    },
+    "coverage_at_or_above_the_line": {
+      "loans": 33083,
+      "roc_auc": 0.6286199641445293,
+      "roc_auc_range": [
+        0.6203165983308175,
+        0.6359931498936832
+      ]
+    }
+  },
   "validation_bands": {
     "lines": {
       "band_strong_min_score": 90,
@@ -492,5 +510,5 @@
     "delinquent_accounts_6m": -0.0483,
     "loan_enquiries": -0.0941
   },
-  "model_version": "india_ltfs-20261014-001118-3a1d56f"
+  "model_version": "india_ltfs-20261014-135734-4198b26"
 }

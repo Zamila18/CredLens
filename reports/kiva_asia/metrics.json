@@ -358,6 +358,24 @@
       "predicted_minus_actual": 0.0008785935280332113
     }
   },
+  "validation_by_coverage": {
+    "coverage_below_the_line": {
+      "loans": 648,
+      "roc_auc": 0.4682891705069124,
+      "roc_auc_range": [
+        0.38505530440822683,
+        0.5661834871990478
+      ]
+    },
+    "coverage_at_or_above_the_line": {
+      "loans": 14465,
+      "roc_auc": 0.6560284814655789,
+      "roc_auc_range": [
+        0.6454429464993613,
+        0.6655835337543166
+      ]
+    }
+  },
   "validation_bands": {
     "lines": {
       "band_strong_min_score": 90,
@@ -466,5 +484,5 @@
     "repayment_term_months": -0.3423,
     "partner_covers_default": 1.618
   },
-  "model_version": "kiva_asia-20261014-001212-3a1d56f"
+  "model_version": "kiva_asia-20261014-135932-4198b26"
 }
