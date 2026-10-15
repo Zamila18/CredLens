@@ -245,6 +245,9 @@ coverage_weights:                # synthetic_bd; must sum to 1.0
 fairness:
   group_columns: [town_tier, shop_type, has_trade_license]
   flag_gap_points: 0.05          # candidate gap; flagged only if bootstrap ranges do not overlap or it persists across seeds
+  min_group_outcomes: 30         # a group is measured only with at least this many repaid AND this many not-repaid loans
+  bootstrap_resamples: 200       # resamples per group (fewer than the model's 500: there are many groups)
+  seeds: [42, 7, 123]            # synthetic data only: the audit is repeated on data generated with each seed
   audit_only_columns:
     kiva_asia: [borrower_genders, country]
     taiwan_cc: [SEX, EDUCATION, MARRIAGE, age_band]
