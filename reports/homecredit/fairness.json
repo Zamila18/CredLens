@@ -1,0 +1,499 @@
+{
+  "data_mode": "homecredit",
+  "model_version": "homecredit-20261014-135834-4198b26",
+  "measured_on": "validation months (the test months are not used)",
+  "validation_loans": 8333,
+  "seeds": [
+    42
+  ],
+  "columns": [
+    "CODE_GENDER",
+    "age_band",
+    "REGION_RATING_CLIENT"
+  ],
+  "rules": {
+    "gap_line": 0.05,
+    "flagged_when": "the gap is above the line and the ranges of the group and the rest do not overlap",
+    "min_group_outcomes": 30,
+    "range_level": 0.95,
+    "calibration_gap_meaning": "positive: the model expects more repayment from this group than it shows, compared with the rest"
+  },
+  "flagged": [
+    "age_band = under 30: ranking",
+    "REGION_RATING_CLIENT = 2: ranking"
+  ],
+  "groups": [
+    {
+      "column": "CODE_GENDER",
+      "group": "F",
+      "loans": 5568,
+      "not_repaid": 395,
+      "share_repaid": 0.929058908045977,
+      "mean_predicted": 0.9222159151590238,
+      "mean_score": 92.22790948275862,
+      "share_strong": 0.7501795977011494,
+      "share_needs_more_info": 0.04310344827586207,
+      "mean_score_range": [
+        92.07168642241379,
+        92.41912715517242
+      ],
+      "share_strong_range": [
+        0.7379400143678161,
+        0.7620465158045977
+      ],
+      "share_needs_more_info_range": [
+        0.03807022270114943,
+        0.04939385775862069
+      ],
+      "roc_auc": 0.7570677348550285,
+      "roc_auc_range": [
+        0.7329261450613118,
+        0.7840388050433883
+      ],
+      "rest_roc_auc": 0.7243417305585981,
+      "rest_roc_auc_range": [
+        0.6900569439351992,
+        0.7547010961251024
+      ],
+      "predicted_minus_actual": -0.006842992886953225,
+      "predicted_minus_actual_range": [
+        -0.012682793935388853,
+        -0.0003815866028198091
+      ],
+      "rest_predicted_minus_actual": 0.012734305015025704,
+      "rest_predicted_minus_actual_range": [
+        0.003469275653033098,
+        0.022559256271635738
+      ],
+      "ranking_gap": 0.032726004296430466,
+      "ranking": "no gap",
+      "calibration_gap": -0.01957729790197893,
+      "calibration": "no gap"
+    },
+    {
+      "column": "CODE_GENDER",
+      "group": "M",
+      "loans": 2765,
+      "not_repaid": 275,
+      "share_repaid": 0.9005424954792043,
+      "mean_predicted": 0.91327680049423,
+      "mean_score": 91.3370705244123,
+      "share_strong": 0.6925858951175407,
+      "share_needs_more_info": 0.06112115732368897,
+      "mean_score_range": [
+        91.06177215189874,
+        91.6135533453888
+      ],
+      "share_strong_range": [
+        0.6744665461121158,
+        0.7066998191681736
+      ],
+      "share_needs_more_info_range": [
+        0.05135623869801085,
+        0.07161844484629296
+      ],
+      "roc_auc": 0.7243417305585981,
+      "roc_auc_range": [
+        0.6910562546642056,
+        0.7549641836195053
+      ],
+      "rest_roc_auc": 0.7570677348550285,
+      "rest_roc_auc_range": [
+        0.7337390621497735,
+        0.785969526425731
+      ],
+      "predicted_minus_actual": 0.012734305015025704,
+      "predicted_minus_actual_range": [
+        0.0016026629867496925,
+        0.02287610907751252
+      ],
+      "rest_predicted_minus_actual": -0.006842992886953225,
+      "rest_predicted_minus_actual_range": [
+        -0.012256697010263332,
+        -0.0008690555708337121
+      ],
+      "ranking_gap": -0.032726004296430466,
+      "ranking": "no gap",
+      "calibration_gap": 0.01957729790197893,
+      "calibration": "no gap"
+    },
+    {
+      "column": "age_band",
+      "group": "30 to 39",
+      "loans": 2173,
+      "not_repaid": 214,
+      "share_repaid": 0.9015186378278877,
+      "mean_predicted": 0.9144531361832364,
+      "mean_score": 91.45098941555453,
+      "share_strong": 0.7045559134836631,
+      "share_needs_more_info": 0.05476300046019328,
+      "mean_score_range": [
+        91.12046709618039,
+        91.70738610216291
+      ],
+      "share_strong_range": [
+        0.6879774505292222,
+        0.7215945697192822
+      ],
+      "share_needs_more_info_range": [
+        0.046007823285780035,
+        0.06445006902899218
+      ],
+      "roc_auc": 0.7501371575236269,
+      "roc_auc_range": [
+        0.7174007599412663,
+        0.7803201069985615
+      ],
+      "rest_roc_auc": 0.7414260691173938,
+      "rest_roc_auc_range": [
+        0.7166528830325365,
+        0.7681537153856143
+      ],
+      "predicted_minus_actual": 0.012934498355348767,
+      "predicted_minus_actual_range": [
+        0.0010167415059788019,
+        0.023846141685425138
+      ],
+      "rest_predicted_minus_actual": -0.005032158434120637,
+      "rest_predicted_minus_actual_range": [
+        -0.010800593576626423,
+        0.001172671554387397
+      ],
+      "ranking_gap": 0.008711088406233025,
+      "ranking": "no gap",
+      "calibration_gap": 0.017966656789469404,
+      "calibration": "no gap"
+    },
+    {
+      "column": "age_band",
+      "group": "40 to 49",
+      "loans": 2097,
+      "not_repaid": 149,
+      "share_repaid": 0.9289461134954697,
+      "mean_predicted": 0.9288460759657499,
+      "mean_score": 92.88650453028136,
+      "share_strong": 0.7920839294229852,
+      "share_needs_more_info": 0.04148783977110158,
+      "mean_score_range": [
+        92.5986409155937,
+        93.1672746781116
+      ],
+      "share_strong_range": [
+        0.7715665236051502,
+        0.8087863614687649
+      ],
+      "share_needs_more_info_range": [
+        0.03338102050548403,
+        0.04914163090128756
+      ],
+      "roc_auc": 0.7469888235050921,
+      "roc_auc_range": [
+        0.7022235201166946,
+        0.7870157101109739
+      ],
+      "rest_roc_auc": 0.7428016315618897,
+      "rest_roc_auc_range": [
+        0.722442150053009,
+        0.7660308512225285
+      ],
+      "predicted_minus_actual": -0.00010003752971987634,
+      "predicted_minus_actual_range": [
+        -0.010273055788298445,
+        0.009912762434499038
+      ],
+      "rest_predicted_minus_actual": -0.0004300276344110232,
+      "rest_predicted_minus_actual_range": [
+        -0.007357109481783346,
+        0.005486423269197546
+      ],
+      "ranking_gap": 0.004187191943202384,
+      "ranking": "no gap",
+      "calibration_gap": 0.00032999010469114687,
+      "calibration": "no gap"
+    },
+    {
+      "column": "age_band",
+      "group": "50 to 59",
+      "loans": 1893,
+      "not_repaid": 117,
+      "share_repaid": 0.9381933438985737,
+      "mean_predicted": 0.9304782562307232,
+      "mean_score": 93.05388272583201,
+      "share_strong": 0.786582144743793,
+      "share_needs_more_info": 0.04384574749075541,
+      "mean_score_range": [
+        92.79503433703117,
+        93.28837823560487
+      ],
+      "share_strong_range": [
+        0.7696777601690439,
+        0.803499735868991
+      ],
+      "share_needs_more_info_range": [
+        0.035393555203380875,
+        0.0533676703645008
+      ],
+      "roc_auc": 0.7290992915992917,
+      "roc_auc_range": [
+        0.6797461729098683,
+        0.7719429035983539
+      ],
+      "rest_roc_auc": 0.7449865781439534,
+      "rest_roc_auc_range": [
+        0.7214659578495201,
+        0.7644453896534774
+      ],
+      "predicted_minus_actual": -0.007715087667850451,
+      "predicted_minus_actual_range": [
+        -0.0186847569218764,
+        0.002959600519382726
+      ],
+      "rest_predicted_minus_actual": 0.0018188245228620836,
+      "rest_predicted_minus_actual_range": [
+        -0.004427216565532119,
+        0.0077043606178309205
+      ],
+      "ranking_gap": -0.01588728654466176,
+      "ranking": "no gap",
+      "calibration_gap": -0.009533912190712535,
+      "calibration": "no gap"
+    },
+    {
+      "column": "age_band",
+      "group": "under 30",
+      "loans": 1170,
+      "not_repaid": 135,
+      "share_repaid": 0.8846153846153846,
+      "mean_predicted": 0.8799132836010825,
+      "mean_score": 88.0017094017094,
+      "share_strong": 0.5299145299145299,
+      "share_needs_more_info": 0.06495726495726496,
+      "mean_score_range": [
+        87.53089743589743,
+        88.58805555555556
+      ],
+      "share_strong_range": [
+        0.5008333333333334,
+        0.5582478632478632
+      ],
+      "share_needs_more_info_range": [
+        0.05126068376068376,
+        0.0777991452991453
+      ],
+      "roc_auc": 0.6739810341742709,
+      "roc_auc_range": [
+        0.6237092334570584,
+        0.7177747008169922
+      ],
+      "rest_roc_auc": 0.7529424869852621,
+      "rest_roc_auc_range": [
+        0.733906034122001,
+        0.7754897012967905
+      ],
+      "predicted_minus_actual": -0.004702101014302129,
+      "predicted_minus_actual_range": [
+        -0.02169156291033615,
+        0.010082547852868688
+      ],
+      "rest_predicted_minus_actual": 0.0003643762611649226,
+      "rest_predicted_minus_actual_range": [
+        -0.004658071377727998,
+        0.0053241229343124795
+      ],
+      "ranking_gap": -0.0789614528109912,
+      "ranking": "flagged",
+      "calibration_gap": -0.005066477275467052,
+      "calibration": "no gap"
+    },
+    {
+      "column": "age_band",
+      "group": "60 and over",
+      "loans": 1000,
+      "not_repaid": 55,
+      "share_repaid": 0.945,
+      "mean_predicted": 0.9343178018876146,
+      "mean_score": 93.453,
+      "share_strong": 0.791,
+      "share_needs_more_info": 0.044,
+      "mean_score_range": [
+        93.05172499999999,
+        93.8511
+      ],
+      "share_strong_range": [
+        0.765,
+        0.817025
+      ],
+      "share_needs_more_info_range": [
+        0.032975000000000004,
+        0.059
+      ],
+      "roc_auc": 0.7652910052910054,
+      "roc_auc_range": [
+        0.7060947662758491,
+        0.8209228742052351
+      ],
+      "rest_roc_auc": 0.7421837219265316,
+      "rest_roc_auc_range": [
+        0.7226708931995898,
+        0.7650896781965835
+      ],
+      "predicted_minus_actual": -0.010682198112385355,
+      "predicted_minus_actual_range": [
+        -0.022780579675473804,
+        0.004724266789074988
+      ],
+      "rest_predicted_minus_actual": 0.001062425621761398,
+      "rest_predicted_minus_actual_range": [
+        -0.004300814281782877,
+        0.006376599235948646
+      ],
+      "ranking_gap": 0.023107283364473763,
+      "ranking": "no gap",
+      "calibration_gap": -0.011744623734146753,
+      "calibration": "no gap"
+    },
+    {
+      "column": "REGION_RATING_CLIENT",
+      "group": "2",
+      "loans": 6207,
+      "not_repaid": 497,
+      "share_repaid": 0.9199291122925729,
+      "mean_predicted": 0.9212406777869293,
+      "mean_score": 92.13436442725954,
+      "share_strong": 0.7393265667794425,
+      "share_needs_more_info": 0.0504269373288223,
+      "mean_score_range": [
+        91.95274287095215,
+        92.29816739165459
+      ],
+      "share_strong_range": [
+        0.7282060576768166,
+        0.7488319639117126
+      ],
+      "share_needs_more_info_range": [
+        0.0462340905429354,
+        0.05590865152247462
+      ],
+      "roc_auc": 0.7290295186178366,
+      "roc_auc_range": [
+        0.7094955141392167,
+        0.7495705523398191
+      ],
+      "rest_roc_auc": 0.7954769452065742,
+      "rest_roc_auc_range": [
+        0.7596136858619533,
+        0.831470683334772
+      ],
+      "predicted_minus_actual": 0.0013115654943564037,
+      "predicted_minus_actual_range": [
+        -0.004811371859247828,
+        0.007833829087767856
+      ],
+      "rest_predicted_minus_actual": -0.005189237089125109,
+      "rest_predicted_minus_actual_range": [
+        -0.015162423109587377,
+        0.004218519876738123
+      ],
+      "ranking_gap": -0.06644742658873759,
+      "ranking": "flagged",
+      "calibration_gap": 0.006500802583481513,
+      "calibration": "no gap"
+    },
+    {
+      "column": "REGION_RATING_CLIENT",
+      "group": "3",
+      "loans": 1271,
+      "not_repaid": 141,
+      "share_repaid": 0.8890637293469709,
+      "mean_predicted": 0.8920616957949384,
+      "mean_score": 89.20220298977183,
+      "share_strong": 0.6231313926042487,
+      "share_needs_more_info": 0.024390243902439025,
+      "mean_score_range": [
+        88.73717545239968,
+        89.61083792289536
+      ],
+      "share_strong_range": [
+        0.5932140047206924,
+        0.6443745082612117
+      ],
+      "share_needs_more_info_range": [
+        0.015735641227380016,
+        0.03225806451612903
+      ],
+      "roc_auc": 0.7630138705830666,
+      "roc_auc_range": [
+        0.7115012698060205,
+        0.8032693251740765
+      ],
+      "rest_roc_auc": 0.7389218095016807,
+      "rest_roc_auc_range": [
+        0.716977141582837,
+        0.7612607483353827
+      ],
+      "predicted_minus_actual": 0.0029979664479675705,
+      "predicted_minus_actual_range": [
+        -0.013156833137940646,
+        0.01904567428614893
+      ],
+      "rest_predicted_minus_actual": -0.0009490011871108317,
+      "rest_predicted_minus_actual_range": [
+        -0.007303009781141928,
+        0.004179510951881677
+      ],
+      "ranking_gap": 0.02409206108138584,
+      "ranking": "no gap",
+      "calibration_gap": 0.003946967635078402,
+      "calibration": "no gap"
+    },
+    {
+      "column": "REGION_RATING_CLIENT",
+      "group": "1",
+      "loans": 855,
+      "not_repaid": 32,
+      "share_repaid": 0.9625730994152046,
+      "mean_predicted": 0.9452131773019338,
+      "mean_score": 94.52397660818714,
+      "share_strong": 0.8315789473684211,
+      "share_needs_more_info": 0.07602339181286549,
+      "mean_score_range": [
+        94.19994152046785,
+        94.79093567251462
+      ],
+      "share_strong_range": [
+        0.809327485380117,
+        0.856140350877193
+      ],
+      "share_needs_more_info_range": [
+        0.056140350877192984,
+        0.09593567251461989
+      ],
+      "roc_auc": 0.7977673147023087,
+      "roc_auc_range": [
+        0.7054196352918907,
+        0.8792812622579379
+      ],
+      "rest_roc_auc": 0.7372662651927625,
+      "rest_roc_auc_range": [
+        0.715364157059841,
+        0.7560663661715533
+      ],
+      "predicted_minus_actual": -0.017359922113270865,
+      "predicted_minus_actual_range": [
+        -0.028844565139801322,
+        -0.004261155851413178
+      ],
+      "rest_predicted_minus_actual": 0.001598195022577853,
+      "rest_predicted_minus_actual_range": [
+        -0.005604058435697925,
+        0.007726196513573263
+      ],
+      "ranking_gap": 0.060501049509546156,
+      "ranking": "gap, but within the ranges",
+      "calibration_gap": -0.018958117135848718,
+      "calibration": "no gap"
+    }
+  ],
+  "seconds": 7.8,
+  "note": "Audit columns are never model inputs. This shows where the model measurably works differently on these data; it does not show that the model is fair."
+}

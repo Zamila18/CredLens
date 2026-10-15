@@ -1,0 +1,586 @@
+{
+  "data_mode": "taiwan_cc",
+  "model_version": "taiwan_cc-20261014-135411-4198b26",
+  "measured_on": "validation months (the test months are not used)",
+  "validation_loans": 5000,
+  "seeds": [
+    42
+  ],
+  "columns": [
+    "SEX",
+    "EDUCATION",
+    "MARRIAGE",
+    "age_band"
+  ],
+  "rules": {
+    "gap_line": 0.05,
+    "flagged_when": "the gap is above the line and the ranges of the group and the rest do not overlap",
+    "min_group_outcomes": 30,
+    "range_level": 0.95,
+    "calibration_gap_meaning": "positive: the model expects more repayment from this group than it shows, compared with the rest"
+  },
+  "flagged": [],
+  "groups": [
+    {
+      "column": "SEX",
+      "group": "2",
+      "loans": 3023,
+      "not_repaid": 619,
+      "share_repaid": 0.7952365200132319,
+      "mean_predicted": 0.787175911665981,
+      "mean_score": 78.70592127026133,
+      "share_strong": 0.26662256037049287,
+      "share_needs_more_info": 0.10618590803837248,
+      "mean_score_range": [
+        78.04620410188554,
+        79.32158451869005
+      ],
+      "share_strong_range": [
+        0.25071121402580215,
+        0.2838322858087992
+      ],
+      "share_needs_more_info_range": [
+        0.0949305325835263,
+        0.11579556731723455
+      ],
+      "roc_auc": 0.725237823874587,
+      "roc_auc_range": [
+        0.7004405917585348,
+        0.7519443953806381
+      ],
+      "rest_roc_auc": 0.7640918925623251,
+      "rest_roc_auc_range": [
+        0.7388852528943725,
+        0.7918345178899584
+      ],
+      "predicted_minus_actual": -0.008060608347250864,
+      "predicted_minus_actual_range": [
+        -0.021000119322793144,
+        0.00576020409695746
+      ],
+      "rest_predicted_minus_actual": 0.011893106143292753,
+      "rest_predicted_minus_actual_range": [
+        -0.004489092174207438,
+        0.02560530386696632
+      ],
+      "ranking_gap": -0.03885406868773811,
+      "ranking": "no gap",
+      "calibration_gap": -0.019953714490543617,
+      "calibration": "no gap"
+    },
+    {
+      "column": "SEX",
+      "group": "1",
+      "loans": 1977,
+      "not_repaid": 487,
+      "share_repaid": 0.753667172483561,
+      "mean_predicted": 0.7655602786268537,
+      "mean_score": 76.55184623166414,
+      "share_strong": 0.2357106727364694,
+      "share_needs_more_info": 0.07486090035407182,
+      "mean_score_range": [
+        75.51086241780476,
+        77.37811077389985
+      ],
+      "share_strong_range": [
+        0.21951188669701568,
+        0.2524152756702074
+      ],
+      "share_needs_more_info_range": [
+        0.06422610015174507,
+        0.08650733434496713
+      ],
+      "roc_auc": 0.7640918925623251,
+      "roc_auc_range": [
+        0.7383288121666224,
+        0.7915553600127482
+      ],
+      "rest_roc_auc": 0.725237823874587,
+      "rest_roc_auc_range": [
+        0.6970656975585361,
+        0.7517680840331938
+      ],
+      "predicted_minus_actual": 0.011893106143292753,
+      "predicted_minus_actual_range": [
+        -0.0036915270403369577,
+        0.03169147019098169
+      ],
+      "rest_predicted_minus_actual": -0.008060608347250864,
+      "rest_predicted_minus_actual_range": [
+        -0.01940654827041612,
+        0.005718066067119438
+      ],
+      "ranking_gap": 0.03885406868773811,
+      "ranking": "no gap",
+      "calibration_gap": 0.019953714490543617,
+      "calibration": "no gap"
+    },
+    {
+      "column": "EDUCATION",
+      "group": "2",
+      "loans": 2353,
+      "not_repaid": 553,
+      "share_repaid": 0.764980875478113,
+      "mean_predicted": 0.7682360038428745,
+      "mean_score": 76.81512962175945,
+      "share_strong": 0.23714407139821506,
+      "share_needs_more_info": 0.07734806629834254,
+      "mean_score_range": [
+        75.97888865278368,
+        77.69460263493413
+      ],
+      "share_strong_range": [
+        0.22012324691882704,
+        0.25585422864428387
+      ],
+      "share_needs_more_info_range": [
+        0.06671270718232045,
+        0.08884402889927752
+      ],
+      "roc_auc": 0.7427993771348202,
+      "roc_auc_range": [
+        0.7182744326188838,
+        0.7663406776280461
+      ],
+      "rest_roc_auc": 0.7421207756251824,
+      "rest_roc_auc_range": [
+        0.7157695799150264,
+        0.7668852239909228
+      ],
+      "predicted_minus_actual": 0.003255128364761495,
+      "predicted_minus_actual_range": [
+        -0.01146550470420162,
+        0.019052318811101317
+      ],
+      "rest_predicted_minus_actual": -0.0032164205631780574,
+      "rest_predicted_minus_actual_range": [
+        -0.019985775432551266,
+        0.011258299433184071
+      ],
+      "ranking_gap": 0.0006786015096378328,
+      "ranking": "no gap",
+      "calibration_gap": 0.006471548927939552,
+      "calibration": "no gap"
+    },
+    {
+      "column": "EDUCATION",
+      "group": "1",
+      "loans": 1724,
+      "not_repaid": 349,
+      "share_repaid": 0.7975638051044084,
+      "mean_predicted": 0.8026839080580612,
+      "mean_score": 80.25638051044083,
+      "share_strong": 0.2952436194895592,
+      "share_needs_more_info": 0.12761020881670534,
+      "mean_score_range": [
+        79.58684744779583,
+        81.00888921113689
+      ],
+      "share_strong_range": [
+        0.27604408352668214,
+        0.3156032482598608
+      ],
+      "share_needs_more_info_range": [
+        0.11135440835266822,
+        0.14212587006960556
+      ],
+      "roc_auc": 0.7281010679864548,
+      "roc_auc_range": [
+        0.6919046389956692,
+        0.7544853606161894
+      ],
+      "rest_roc_auc": 0.7486366494430965,
+      "rest_roc_auc_range": [
+        0.7294814418798529,
+        0.7727606885848624
+      ],
+      "predicted_minus_actual": 0.005120102953652839,
+      "predicted_minus_actual_range": [
+        -0.013573809773161923,
+        0.024067529595187497
+      ],
+      "rest_predicted_minus_actual": -0.0029553130892999713,
+      "rest_predicted_minus_actual_range": [
+        -0.0148998092690676,
+        0.011576444308077322
+      ],
+      "ranking_gap": -0.020535581456641694,
+      "ranking": "no gap",
+      "calibration_gap": 0.00807541604295281,
+      "calibration": "no gap"
+    },
+    {
+      "column": "EDUCATION",
+      "group": "3",
+      "loans": 845,
+      "not_repaid": 201,
+      "share_repaid": 0.762130177514793,
+      "mean_predicted": 0.7546331868172201,
+      "mean_score": 75.45680473372781,
+      "share_strong": 0.21893491124260356,
+      "share_needs_more_info": 0.06627218934911243,
+      "mean_score_range": [
+        74.03875739644971,
+        76.80955621301776
+      ],
+      "share_strong_range": [
+        0.19171597633136095,
+        0.24272189349112427
+      ],
+      "share_needs_more_info_range": [
+        0.0520414201183432,
+        0.08523668639053256
+      ],
+      "roc_auc": 0.765871728314947,
+      "roc_auc_range": [
+        0.7249543637950182,
+        0.8106862483948551
+      ],
+      "rest_roc_auc": 0.7372780280492989,
+      "rest_roc_auc_range": [
+        0.714987030515576,
+        0.7563453668576664
+      ],
+      "predicted_minus_actual": -0.007496990697572814,
+      "predicted_minus_actual_range": [
+        -0.03614233734850603,
+        0.018928127944291766
+      ],
+      "rest_predicted_minus_actual": 0.001318991323946972,
+      "rest_predicted_minus_actual_range": [
+        -0.01011974254911622,
+        0.011937857181863888
+      ],
+      "ranking_gap": 0.028593700265648114,
+      "ranking": "no gap",
+      "calibration_gap": -0.008815982021519786,
+      "calibration": "no gap"
+    },
+    {
+      "column": "EDUCATION",
+      "group": "5",
+      "loans": 49,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "EDUCATION",
+      "group": "4",
+      "loans": 19,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "EDUCATION",
+      "group": "0",
+      "loans": 7,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "EDUCATION",
+      "group": "6",
+      "loans": 3,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "MARRIAGE",
+      "group": "2",
+      "loans": 2630,
+      "not_repaid": 537,
+      "share_repaid": 0.7958174904942966,
+      "mean_predicted": 0.7817138901903207,
+      "mean_score": 78.16045627376425,
+      "share_strong": 0.24904942965779467,
+      "share_needs_more_info": 0.09049429657794676,
+      "mean_score_range": [
+        77.4657794676806,
+        78.91503802281369
+      ],
+      "share_strong_range": [
+        0.2322813688212928,
+        0.2650190114068441
+      ],
+      "share_needs_more_info_range": [
+        0.07945817490494297,
+        0.09963878326996198
+      ],
+      "roc_auc": 0.7444514436255997,
+      "roc_auc_range": [
+        0.7225961191657634,
+        0.7712206580678946
+      ],
+      "rest_roc_auc": 0.7415207719983723,
+      "rest_roc_auc_range": [
+        0.7141201309409805,
+        0.7656129985110585
+      ],
+      "predicted_minus_actual": -0.01410360030397595,
+      "predicted_minus_actual_range": [
+        -0.027371048461325355,
+        -0.0019754793911897404
+      ],
+      "rest_predicted_minus_actual": 0.015290261861184762,
+      "rest_predicted_minus_actual_range": [
+        0.0015167995232028498,
+        0.02901135058435223
+      ],
+      "ranking_gap": 0.002930671627227377,
+      "ranking": "no gap",
+      "calibration_gap": -0.02939386216516071,
+      "calibration": "no gap"
+    },
+    {
+      "column": "MARRIAGE",
+      "group": "1",
+      "loans": 2299,
+      "not_repaid": 551,
+      "share_repaid": 0.7603305785123967,
+      "mean_predicted": 0.7752813445893644,
+      "mean_score": 77.52109612875164,
+      "share_strong": 0.2640278381905176,
+      "share_needs_more_info": 0.09786863853849499,
+      "mean_score_range": [
+        76.68579817311874,
+        78.30754675946064
+      ],
+      "share_strong_range": [
+        0.24573727707699,
+        0.2801326663766855
+      ],
+      "share_needs_more_info_range": [
+        0.08699434536755112,
+        0.11136363636363636
+      ],
+      "roc_auc": 0.740646816480956,
+      "roc_auc_range": [
+        0.7132497786384966,
+        0.7740060716539298
+      ],
+      "rest_roc_auc": 0.7452671217349689,
+      "rest_roc_auc_range": [
+        0.7197748394521707,
+        0.7649725609846887
+      ],
+      "predicted_minus_actual": 0.014950766076967659,
+      "predicted_minus_actual_range": [
+        0.002102636509687657,
+        0.03340196536049876
+      ],
+      "rest_predicted_minus_actual": -0.013041969418510657,
+      "rest_predicted_minus_actual_range": [
+        -0.02615807627720562,
+        -0.0006289350658984877
+      ],
+      "ranking_gap": -0.004620305254012913,
+      "ranking": "no gap",
+      "calibration_gap": 0.027992735495478316,
+      "calibration": "no gap"
+    },
+    {
+      "column": "MARRIAGE",
+      "group": "3",
+      "loans": 63,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "MARRIAGE",
+      "group": "0",
+      "loans": 8,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "age_band",
+      "group": "30 to 39",
+      "loans": 1855,
+      "not_repaid": 378,
+      "share_repaid": 0.7962264150943397,
+      "mean_predicted": 0.7883963016703962,
+      "mean_score": 78.8355795148248,
+      "share_strong": 0.27439353099730457,
+      "share_needs_more_info": 0.10619946091644204,
+      "mean_score_range": [
+        78.04901617250674,
+        79.78842318059299
+      ],
+      "share_strong_range": [
+        0.2511455525606469,
+        0.29111859838274934
+      ],
+      "share_needs_more_info_range": [
+        0.0932345013477089,
+        0.12075471698113208
+      ],
+      "roc_auc": 0.7660494424204648,
+      "roc_auc_range": [
+        0.7355115345407728,
+        0.7991143272617492
+      ],
+      "rest_roc_auc": 0.7293410457973966,
+      "rest_roc_auc_range": [
+        0.706531359970942,
+        0.7515612405766838
+      ],
+      "predicted_minus_actual": -0.007830113423943463,
+      "predicted_minus_actual_range": [
+        -0.02186558403904579,
+        0.008760745055456813
+      ],
+      "rest_predicted_minus_actual": 0.004346681148796994,
+      "rest_predicted_minus_actual_range": [
+        -0.00784003061113024,
+        0.01746420583337659
+      ],
+      "ranking_gap": 0.03670839662306824,
+      "ranking": "no gap",
+      "calibration_gap": -0.012176794572740457,
+      "calibration": "no gap"
+    },
+    {
+      "column": "age_band",
+      "group": "under 30",
+      "loans": 1606,
+      "not_repaid": 357,
+      "share_repaid": 0.7777085927770859,
+      "mean_predicted": 0.7720347105357556,
+      "mean_score": 77.18555417185554,
+      "share_strong": 0.23412204234122042,
+      "share_needs_more_info": 0.074719800747198,
+      "mean_score_range": [
+        76.29881693648817,
+        78.08530510585305
+      ],
+      "share_strong_range": [
+        0.2148038605230386,
+        0.2577988792029888
+      ],
+      "share_needs_more_info_range": [
+        0.06218866749688669,
+        0.08718866749688668
+      ],
+      "roc_auc": 0.7492929918164224,
+      "roc_auc_range": [
+        0.7181251228817485,
+        0.7805617642236471
+      ],
+      "rest_roc_auc": 0.7396609467948443,
+      "rest_roc_auc_range": [
+        0.713744031497549,
+        0.7608636134896534
+      ],
+      "predicted_minus_actual": -0.0056738822413303636,
+      "predicted_minus_actual_range": [
+        -0.025624504022783608,
+        0.013006729017311723
+      ],
+      "rest_predicted_minus_actual": 0.0024330308459421524,
+      "rest_predicted_minus_actual_range": [
+        -0.00992813443569806,
+        0.013610441981766665
+      ],
+      "ranking_gap": 0.009632045021578106,
+      "ranking": "no gap",
+      "calibration_gap": -0.008106913087272516,
+      "calibration": "no gap"
+    },
+    {
+      "column": "age_band",
+      "group": "40 to 49",
+      "loans": 1093,
+      "not_repaid": 264,
+      "share_repaid": 0.7584629460201281,
+      "mean_predicted": 0.7736426916917599,
+      "mean_score": 77.35224153705398,
+      "share_strong": 0.2644098810612992,
+      "share_needs_more_info": 0.10338517840805124,
+      "mean_score_range": [
+        76.20052607502288,
+        78.38231930466605
+      ],
+      "share_strong_range": [
+        0.23785452881976213,
+        0.2900503202195791
+      ],
+      "share_needs_more_info_range": [
+        0.08689387008234219,
+        0.12081427264409882
+      ],
+      "roc_auc": 0.7212230873268268,
+      "roc_auc_range": [
+        0.6820734001869936,
+        0.7646997131191976
+      ],
+      "rest_roc_auc": 0.7495483835968892,
+      "rest_roc_auc_range": [
+        0.7308964669473649,
+        0.7661049016158644
+      ],
+      "predicted_minus_actual": 0.015179745671631828,
+      "predicted_minus_actual_range": [
+        -0.002336498397889448,
+        0.03896215793243935
+      ],
+      "rest_predicted_minus_actual": -0.0044653212714468316,
+      "rest_predicted_minus_actual_range": [
+        -0.014145846803067581,
+        0.006871508032518422
+      ],
+      "ranking_gap": -0.028325296270062417,
+      "ranking": "no gap",
+      "calibration_gap": 0.01964506694307866,
+      "calibration": "no gap"
+    },
+    {
+      "column": "age_band",
+      "group": "50 and over",
+      "loans": 446,
+      "not_repaid": 107,
+      "share_repaid": 0.7600896860986547,
+      "mean_predicted": 0.77397108760863,
+      "mean_score": 77.41031390134529,
+      "share_strong": 0.21973094170403587,
+      "share_needs_more_info": 0.08744394618834081,
+      "mean_score_range": [
+        75.56535874439463,
+        79.2109865470852
+      ],
+      "share_strong_range": [
+        0.17937219730941703,
+        0.2556614349775785
+      ],
+      "share_needs_more_info_range": [
+        0.06278026905829596,
+        0.11434977578475336
+      ],
+      "roc_auc": 0.6815675571361618,
+      "roc_auc_range": [
+        0.6138862689321609,
+        0.746844532312787
+      ],
+      "rest_roc_auc": 0.7489030521379326,
+      "rest_roc_auc_range": [
+        0.7288157200329363,
+        0.7688317368123909
+      ],
+      "predicted_minus_actual": 0.0138814015099753,
+      "predicted_minus_actual_range": [
+        -0.02658953524509696,
+        0.05489214660241589
+      ],
+      "rest_predicted_minus_actual": -0.0015471351036226988,
+      "rest_predicted_minus_actual_range": [
+        -0.011080384387914737,
+        0.008561492087089896
+      ],
+      "ranking_gap": -0.06733549500177083,
+      "ranking": "gap, but within the ranges",
+      "calibration_gap": 0.015428536613597998,
+      "calibration": "no gap"
+    }
+  ],
+  "seconds": 6.1,
+  "note": "Audit columns are never model inputs. This shows where the model measurably works differently on these data; it does not show that the model is fair."
+}

@@ -1,0 +1,338 @@
+{
+  "data_mode": "kiva_asia",
+  "model_version": "kiva_asia-20261014-135932-4198b26",
+  "measured_on": "validation months (the test months are not used)",
+  "validation_loans": 15113,
+  "seeds": [
+    42
+  ],
+  "columns": [
+    "borrower_genders",
+    "country"
+  ],
+  "rules": {
+    "gap_line": 0.05,
+    "flagged_when": "the gap is above the line and the ranges of the group and the rest do not overlap",
+    "min_group_outcomes": 30,
+    "range_level": 0.95,
+    "calibration_gap_meaning": "positive: the model expects more repayment from this group than it shows, compared with the rest"
+  },
+  "flagged": [
+    "borrower_genders = female: ranking",
+    "borrower_genders = male: ranking",
+    "country = Philippines: ranking",
+    "country = Pakistan: ranking",
+    "country = Pakistan: calibration",
+    "country = Indonesia: ranking",
+    "country = Indonesia: calibration"
+  ],
+  "groups": [
+    {
+      "column": "borrower_genders",
+      "group": "female",
+      "loans": 13758,
+      "not_repaid": 726,
+      "share_repaid": 0.9472307021369385,
+      "mean_predicted": 0.9481759412930116,
+      "mean_score": 94.75904928041867,
+      "share_strong": 0.9622764936764064,
+      "share_needs_more_info": 0.037723506323593545,
+      "mean_score_range": [
+        94.737378252653,
+        94.77497092600669
+      ],
+      "share_strong_range": [
+        0.9592927751126616,
+        0.964898604448321
+      ],
+      "share_needs_more_info_range": [
+        0.03510139555167902,
+        0.04070722488733827
+      ],
+      "roc_auc": 0.6588679465845463,
+      "roc_auc_range": [
+        0.649788214329439,
+        0.6705103952192916
+      ],
+      "rest_roc_auc": 0.5113330861221841,
+      "rest_roc_auc_range": [
+        0.4647938470148473,
+        0.5608834172727117
+      ],
+      "predicted_minus_actual": 0.000945239156073141,
+      "predicted_minus_actual_range": [
+        -0.00247932342532943,
+        0.004743146265644669
+      ],
+      "rest_predicted_minus_actual": -0.00973879248083731,
+      "rest_predicted_minus_actual_range": [
+        -0.019441364804582997,
+        0.0030968761581887023
+      ],
+      "ranking_gap": 0.1475348604623622,
+      "ranking": "flagged",
+      "calibration_gap": 0.010684031636910452,
+      "calibration": "no gap"
+    },
+    {
+      "column": "borrower_genders",
+      "group": "male",
+      "loans": 1319,
+      "not_repaid": 61,
+      "share_repaid": 0.9537528430629265,
+      "mean_predicted": 0.9406490995233519,
+      "mean_score": 94.00985595147839,
+      "share_strong": 0.9158453373768006,
+      "share_needs_more_info": 0.0841546626231994,
+      "mean_score_range": [
+        93.9005307050796,
+        94.10394238059136
+      ],
+      "share_strong_range": [
+        0.9006633813495072,
+        0.9302501895375285
+      ],
+      "share_needs_more_info_range": [
+        0.06974981046247157,
+        0.0993366186504928
+      ],
+      "roc_auc": 0.5159243138992415,
+      "roc_auc_range": [
+        0.46335472047725007,
+        0.5656613864279667
+      ],
+      "rest_roc_auc": 0.6582009989348824,
+      "rest_roc_auc_range": [
+        0.6474736917743671,
+        0.6686116807439443
+      ],
+      "predicted_minus_actual": -0.013103743539574664,
+      "predicted_minus_actual_range": [
+        -0.023790948089437314,
+        -0.0020906151004316817
+      ],
+      "rest_predicted_minus_actual": 0.0012391165888369082,
+      "rest_predicted_minus_actual_range": [
+        -0.0025654608474679984,
+        0.004936243844646723
+      ],
+      "ranking_gap": -0.14227668503564084,
+      "ranking": "flagged",
+      "calibration_gap": -0.014342860128411572,
+      "calibration": "no gap"
+    },
+    {
+      "column": "borrower_genders",
+      "group": "mixed",
+      "loans": 36,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "country",
+      "group": "Philippines",
+      "loans": 10857,
+      "not_repaid": 605,
+      "share_repaid": 0.9442755825734549,
+      "mean_predicted": 0.9519876683509868,
+      "mean_score": 95.14829142488718,
+      "share_strong": 1.0,
+      "share_needs_more_info": 0.0,
+      "mean_score_range": [
+        95.13630606981671,
+        95.1608639587363
+      ],
+      "share_strong_range": [
+        1.0,
+        1.0
+      ],
+      "share_needs_more_info_range": [
+        0.0,
+        0.0
+      ],
+      "roc_auc": 0.8156033251322863,
+      "roc_auc_range": [
+        0.8063375267805284,
+        0.825494924362997
+      ],
+      "rest_roc_auc": 0.32708777903303415,
+      "rest_roc_auc_range": [
+        0.2959027627744045,
+        0.36218495105321213
+      ],
+      "predicted_minus_actual": 0.007712085777531907,
+      "predicted_minus_actual_range": [
+        0.0032486202794794364,
+        0.012042761698638438
+      ],
+      "rest_predicted_minus_actual": -0.019718416068830735,
+      "rest_predicted_minus_actual_range": [
+        -0.025687106791786127,
+        -0.014051594250133116
+      ],
+      "ranking_gap": 0.48851554609925213,
+      "ranking": "flagged",
+      "calibration_gap": 0.027430501846362643,
+      "calibration": "no gap"
+    },
+    {
+      "column": "country",
+      "group": "Vietnam",
+      "loans": 790,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "country",
+      "group": "Tajikistan",
+      "loans": 724,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "country",
+      "group": "Cambodia",
+      "loans": 698,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "country",
+      "group": "Pakistan",
+      "loans": 605,
+      "not_repaid": 130,
+      "share_repaid": 0.7851239669421488,
+      "mean_predicted": 0.9431641238218418,
+      "mean_score": 94.11735537190083,
+      "share_strong": 0.775206611570248,
+      "share_needs_more_info": 0.22479338842975208,
+      "mean_score_range": [
+        94.08756198347108,
+        94.14710743801653
+      ],
+      "share_strong_range": [
+        0.7454132231404959,
+        0.8033057851239669
+      ],
+      "share_needs_more_info_range": [
+        0.19669421487603306,
+        0.2545867768595041
+      ],
+      "roc_auc": 0.4521295546558705,
+      "roc_auc_range": [
+        0.41028616003790863,
+        0.4954425523265722
+      ],
+      "rest_roc_auc": 0.6451666723860975,
+      "rest_roc_auc_range": [
+        0.6348268214277017,
+        0.6574551806363528
+      ],
+      "predicted_minus_actual": 0.15804015687969297,
+      "predicted_minus_actual_range": [
+        0.12650244791017254,
+        0.18456176509783215
+      ],
+      "rest_predicted_minus_actual": -0.006603650290494589,
+      "rest_predicted_minus_actual_range": [
+        -0.00964165456041472,
+        -0.0033353965442022037
+      ],
+      "ranking_gap": -0.19303711773022697,
+      "ranking": "flagged",
+      "calibration_gap": 0.16464380717018756,
+      "calibration": "flagged"
+    },
+    {
+      "column": "country",
+      "group": "Samoa",
+      "loans": 466,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "country",
+      "group": "Mongolia",
+      "loans": 396,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "country",
+      "group": "Indonesia",
+      "loans": 253,
+      "not_repaid": 41,
+      "share_repaid": 0.8379446640316206,
+      "mean_predicted": 0.923710170964452,
+      "mean_score": 92.28853754940711,
+      "share_strong": 0.6403162055335968,
+      "share_needs_more_info": 0.35968379446640314,
+      "mean_score_range": [
+        92.0034584980237,
+        92.55750988142292
+      ],
+      "share_strong_range": [
+        0.5848814229249012,
+        0.699703557312253
+      ],
+      "share_needs_more_info_range": [
+        0.300296442687747,
+        0.4151185770750988
+      ],
+      "roc_auc": 0.39030142659917166,
+      "roc_auc_range": [
+        0.30600388656795946,
+        0.4762727120765709
+      ],
+      "rest_roc_auc": 0.6449389379950413,
+      "rest_roc_auc_range": [
+        0.6359091573731406,
+        0.6551728961514621
+      ],
+      "predicted_minus_actual": 0.08576550693283136,
+      "predicted_minus_actual_range": [
+        0.05092599562190337,
+        0.12939125971017978
+      ],
+      "rest_predicted_minus_actual": -0.0014730913025764458,
+      "rest_predicted_minus_actual_range": [
+        -0.005510855707178408,
+        0.0019661879903436043
+      ],
+      "ranking_gap": -0.25463751139586965,
+      "ranking": "flagged",
+      "calibration_gap": 0.0872385982354078,
+      "calibration": "flagged"
+    },
+    {
+      "column": "country",
+      "group": "India",
+      "loans": 111,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "country",
+      "group": "Timor-Leste",
+      "loans": 89,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "country",
+      "group": "Kyrgyzstan",
+      "loans": 76,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "country",
+      "group": "Nepal",
+      "loans": 48,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    }
+  ],
+  "seconds": 5.2,
+  "note": "Audit columns are never model inputs. This shows where the model measurably works differently on these data; it does not show that the model is fair."
+}
