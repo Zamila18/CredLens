@@ -11,6 +11,7 @@ import { AuditPage } from '@/pages/AuditPage'
 import { DecisionsPage } from '@/pages/DecisionsPage'
 import { DevStates } from '@/pages/DevStates'
 import { MerchantPage } from '@/pages/merchant/MerchantPage'
+import { ModelCardPage } from '@/pages/model/ModelCardPage'
 import { NotFound, Placeholder } from '@/pages/Placeholder'
 import { QueuePage } from '@/pages/QueuePage'
 
@@ -23,7 +24,7 @@ export default function App() {
           <Route path="merchants/:merchantId" element={<MerchantPage />} />
           <Route path="decisions" element={<DecisionsPage />} />
           <Route path="portfolio" element={<Placeholder title="Portfolio" part="Part 4" mockup="Portfolio.dc.html" />} />
-          <Route path="model" element={<Placeholder title="Model card" part="Part 4" mockup="ModelCard.dc.html" />} />
+          <Route path="model" element={<ModelCardPage />} />
           <Route path="consent" element={<Placeholder title="Consent" part="Part 4" mockup="Consent.dc.html" />} />
           <Route path="demo/consent" element={<Placeholder title="Mock consent page" part="Part 4" mockup="ConsentMobile.dc.html" />} />
           <Route
