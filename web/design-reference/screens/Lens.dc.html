@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CredLens · Lens dial</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 220px; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #13201C; display: flex; flex-direction: column; align-items: center; gap: 10px">
+  <div style="position: relative; width: 200px; height: 200px">
+    <svg width="200" height="200" viewBox="0 0 200 200" role="img" aria-label="{{aria}}">
+      <circle cx="100" cy="100" r="90" fill="none" stroke="#C3C9C0" stroke-width="3" stroke-dasharray="2 5"></circle>
+      <circle cx="100" cy="100" r="90" fill="none" stroke="#2D4F45" stroke-width="6" stroke-linecap="round" stroke-dasharray="{{covDash}}" transform="rotate(-90 100 100)"></circle>
+      <circle cx="100" cy="100" r="70" fill="none" stroke="#E8EAE4" stroke-width="14"></circle>
+      <circle cx="100" cy="100" r="70" fill="none" stroke="{{scoreColor}}" stroke-width="14" stroke-linecap="round" stroke-dasharray="{{scoreDash}}" transform="rotate(-90 100 100)"></circle>
+    </svg>
+    <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0">
+      <sc-if value="{{hasScore}}" hint-placeholder-val="{{ true }}">
+        <span style="{{numStyle}}">{{score}}</span>
+        <span style="font-size: 12px; color: #55625C; margin-top: -4px">of 100</span>
+      </sc-if>
+      <sc-if value="{{noScore}}" hint-placeholder-val="{{ false }}">
+        <svg width="26" height="26" viewBox="0 0 18 18" fill="none" stroke="#4A524E" stroke-width="1.4" aria-hidden="true"><rect x="3.5" y="8" width="11" height="7.5" rx="1.5"></rect><path d="M6 8V5.8a3 3 0 0 1 6 0V8"></path></svg>
+        <span style="font-size: 13px; font-weight: 600; color: #4A524E; margin-top: 4px">No score</span>
+      </sc-if>
+    </div>
+  </div>
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 6px">
+    <span style="{{chipStyle}}">{{bandLabel}}</span>
+    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4C5853">{{covLabel}}</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"score":{"editor":"int","min":0,"max":100,"default":94},"coverage":{"editor":"float","min":0,"max":1,"step":0.01,"default":0.85},"band":{"editor":"enum","options":["Strong","Review","Needs more info","none"],"default":"Strong"},"warn":{"editor":"boolean","default":false},"$preview":{"width":220,"height":270}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var band = this.props.band ?? 'Strong';
+    var hasScore = band !== 'none';
+    var score = hasScore ? Number(this.props.score ?? 94) : 0;
+    var cov = hasScore ? Number(this.props.coverage ?? 0.85) : 0;
+    var warn = this.props.warn === true || this.props.warn === 'true';
+    var C1 = 2 * Math.PI * 70, C2 = 2 * Math.PI * 90;
+    var colors = { 'Strong': '#0E5A4A', 'Review': '#B5650D', 'Needs more info': '#8A97BF', 'none': '#C3C9C0' };
+    var chips = {
+      'Strong': 'background: #DCEFE6; color: #0B4A3D',
+      'Review': 'background: #FBEBD2; color: #7A4304',
+      'Needs more info': 'background: #E8ECF6; color: #33406A; box-shadow: inset 0 0 0 1.5px #8A97BF',
+      'none': 'background: #ECEDE9; color: #4A524E'
+    };
+    var numColor = band === 'Needs more info' ? '#6D79A0' : (warn ? '#8A3A10' : '#13201C');
+    return {
+      hasScore: hasScore,
+      noScore: !hasScore,
+      score: score,
+      scoreColor: colors[band] || '#0E5A4A',
+      scoreDash: (C1 * score / 100).toFixed(1) + ' ' + C1.toFixed(1),
+      covDash: (C2 * cov).toFixed(1) + ' ' + C2.toFixed(1),
+      numStyle: "font-family: 'IBM Plex Mono', monospace; font-size: 54px; line-height: 58px; font-weight: 600; letter-spacing: -0.03em; color: " + numColor,
+      chipStyle: 'display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; ' + (chips[band] || chips.none),
+      bandLabel: hasScore ? (warn && band !== 'Needs more info' ? band + ' · low score' : band) : 'Consent needed',
+      covLabel: hasScore ? 'coverage ' + Math.round(cov * 100) + '%' : 'scoring blocked',
+      aria: hasScore ? 'Score ' + score + ' of 100, band ' + band + ', coverage ' + Math.round(cov * 100) + ' percent' : 'No score: consent needed'
+    };
+  }
+}
+</script>
+</body>
+</html>

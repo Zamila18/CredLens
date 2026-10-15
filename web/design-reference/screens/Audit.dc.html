@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CredLens · Audit log</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F1}
+a{color:#0E5A4A}a:hover{color:#08392F}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.card{background:#FFFFFF;border:1px solid #E1E4DD;border-radius:16px}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 100vh; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #13201C; background: #F4F5F1">
+  <div style="flex: 1 1 240px; background: #0F1D19">
+    <dc-import name="Sidebar" active="audit" hint-size="100%,900px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 10px 32px; background: #E9ECE4; border-bottom: 1px solid #DADED5; font-size: 13px">
+      <div style="display: flex; align-items: center; gap: 10px; color: #2B3631">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#2B3631" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6.5"></circle><path d="M8 7.2v4"></path><circle cx="8" cy="4.9" r=".6" fill="#2B3631"></circle></svg>
+        <span style="font-weight: 600">Synthetic demo data.</span>
+        <span>Decision support only.</span>
+      </div>
+      <div class="mono" style="color: #55625C; font-size: 12px">admin only · this view is itself audited</div>
+    </div>
+
+    <div style="padding: 28px 32px 56px; display: flex; flex-direction: column; gap: 24px; max-width: 1240px; width: 100%; box-sizing: border-box">
+      <header style="display: flex; flex-direction: column; gap: 8px">
+        <h1 style="margin: 0; font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.01em">Audit log</h1>
+        <p style="margin: 0; color: #4C5853; font-size: 15px; max-width: 700px">Who viewed or changed what, and when. A profile read and a score read are each written before anything is shown. Newest first.</p>
+      </header>
+
+      <section class="card" style="overflow: hidden">
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 14px 20px; border-bottom: 1px solid #E6E8E2">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4C5853">Actor
+            <select style="font: inherit; font-size: 13px; padding: 8px 10px; border-radius: 8px; border: 1px solid #D5D9D0; background: #FFFFFF; min-height: 36px"><option>Everyone</option><option>FIX-OFFICER-1</option><option>FIX-ADMIN-1</option></select>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4C5853">Action
+            <select style="font: inherit; font-size: 13px; padding: 8px 10px; border-radius: 8px; border: 1px solid #D5D9D0; background: #FFFFFF; min-height: 36px"><option>All</option><option>view_profile</option><option>record_decision</option><option>view_audit_log</option></select>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4C5853; margin-left: auto">Rows
+            <select style="font: inherit; font-size: 13px; padding: 8px 10px; border-radius: 8px; border: 1px solid #D5D9D0; background: #FFFFFF; min-height: 36px"><option>200</option><option>500</option><option>1000</option></select>
+          </label>
+        </div>
+        <ol style="list-style: none; margin: 0; padding: 0">
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+            <li style="display: grid; grid-template-columns: 150px 28px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 16px 20px; border-top: 1px solid #EEF0EA">
+              <span class="mono" style="font-size: 13px; color: #3C4843">{{r.when}}</span>
+              <span style="{{r.icon}}" aria-hidden="true">{{r.glyph}}</span>
+              <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+                <span style="font-size: 14px"><span class="mono" style="font-weight: 600">{{r.actor}}</span> {{r.verb}} <span class="mono" style="font-weight: 600">{{r.target}}</span></span>
+                <span class="mono" style="font-size: 12px; color: #55625C">{{r.action}} · role {{r.role}} · #{{r.id}}</span>
+              </span>
+              <span style="font-size: 12px; font-weight: 600; color: #4A524E; background: #ECEDE9; padding: 3px 10px; border-radius: 999px">{{r.role}}</span>
+            </li>
+          </sc-for>
+        </ol>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var raw = [
+      { id: 3, actor: 'FIX-ADMIN-1', role: 'admin', action: 'view_audit_log', merchant_id: null, timestamp: '2026-06-11T12:00:00' },
+      { id: 2, actor: 'FIX-OFFICER-1', role: 'officer', action: 'record_decision', merchant_id: 'FIX-M003', timestamp: '2026-06-11T10:42:00' },
+      { id: 1, actor: 'FIX-OFFICER-1', role: 'officer', action: 'view_profile', merchant_id: 'FIX-M003', timestamp: '2026-06-11T10:38:00' }
+    ];
+    var verbs = { view_profile: ['opened the profile of', 'V', '#E8ECF6', '#33406A'], record_decision: ['recorded a decision on', 'D', '#DCEFE6', '#0B4A3D'], view_audit_log: ['opened', 'A', '#ECEDE9', '#4A524E'] };
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return {
+      rows: raw.map(function (r) {
+        var v = verbs[r.action]; var d = r.timestamp.split('T'); var p = d[0].split('-');
+        return Object.assign({}, r, {
+          when: Number(p[2]) + ' ' + months[Number(p[1]) - 1] + ' ' + p[0] + ' · ' + d[1].slice(0, 5),
+          verb: v[0], target: r.merchant_id || 'the audit log', glyph: v[1],
+          icon: "display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; background: " + v[2] + '; color: ' + v[3]
+        });
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

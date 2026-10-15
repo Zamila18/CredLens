@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CredLens · Model card</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F1}
+a{color:#0E5A4A}a:hover{color:#08392F}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.card{background:#FFFFFF;border:1px solid #E1E4DD;border-radius:16px}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#4C5853}
+.tab{border:1px solid #D5D9D0;background:#FFFFFF;font:inherit;font-size:14px;color:#2E3934;padding:10px 16px;border-radius:12px;cursor:pointer;min-height:44px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left}
+.tab.on{background:#13201C;border-color:#13201C;color:#FFFFFF}
+.tab small{font-family:'IBM Plex Mono',monospace;font-size:11px;opacity:.75}
+.trk{position:relative;height:10px;border-radius:5px;background:#EEF0EA}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 100vh; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #13201C; background: #F4F5F1">
+  <div style="flex: 1 1 240px; background: #0F1D19">
+    <dc-import name="Sidebar" active="model" hint-size="100%,900px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 10px 32px; background: #E9ECE4; border-bottom: 1px solid #DADED5; font-size: 13px">
+      <div style="display: flex; align-items: center; gap: 10px; color: #2B3631">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#2B3631" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6.5"></circle><path d="M8 7.2v4"></path><circle cx="8" cy="4.9" r=".6" fill="#2B3631"></circle></svg>
+        <span style="font-weight: 600">{{m.banner}}</span>
+        <span>Decision support only.</span>
+      </div>
+      <div class="mono" style="color: #55625C; font-size: 12px">data_mode {{m.key}} · validation period · test months untouched</div>
+    </div>
+
+    <div style="padding: 28px 32px 56px; display: flex; flex-direction: column; gap: 24px; max-width: 1240px; width: 100%; box-sizing: border-box">
+      <header style="display: flex; flex-direction: column; gap: 8px">
+        <h1 style="margin: 0; font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.01em">Model card</h1>
+        <p style="margin: 0; color: #4C5853; font-size: 15px; max-width: 720px">What the model is for, how it was tested and where it falls short. One card per data source, produced by the same code. Decision support for credit officers: the officer decides and records why.</p>
+      </header>
+
+      <div role="tablist" aria-label="Data source" style="display: flex; flex-wrap: wrap; gap: 8px">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+          <button type="button" role="tab" aria-selected="{{t.on}}" class="{{t.cls}}" onClick="{{t.pick}}"><span style="font-weight: 600">{{t.label}}</span><small>{{t.key}}</small></button>
+        </sc-for>
+      </div>
+
+      <section class="card" style="padding: 24px; display: flex; flex-direction: column; gap: 20px">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: flex-start">
+          <div style="display: flex; flex-direction: column; gap: 6px; max-width: 640px">
+            <span class="eyebrow">What this source tells us</span>
+            <h2 style="margin: 0; font-size: 24px; line-height: 30px; font-weight: 600; letter-spacing: -0.01em">{{m.headline}}</h2>
+          </div>
+          <dl style="margin: 0; display: grid; grid-template-columns: auto auto; gap: 4px 16px; font-size: 13px">
+            <dt style="color: #4C5853">Model in use</dt><dd style="margin: 0; font-weight: 600">{{m.model}}</dd>
+            <dt style="color: #4C5853">Inputs</dt><dd style="margin: 0">{{m.inputs}}</dd>
+            <dt style="color: #4C5853">Split</dt><dd style="margin: 0">{{m.split}}</dd>
+            <dt style="color: #4C5853">Loans train / val / held back</dt><dd class="mono" style="margin: 0">{{m.sizes}}</dd>
+            <dt style="color: #4C5853">Repaid, validation</dt><dd class="mono" style="margin: 0">{{m.repaid}}</dd>
+          </dl>
+        </div>
+        <sc-if value="{{m.hasFlag}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 12px; background: #FBEBD2; color: #5E3403">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#5E3403" stroke-width="1.6" aria-hidden="true"><path d="M10 3 18 17H2z"></path><path d="M10 8v4"></path><circle cx="10" cy="14.6" r=".7" fill="#5E3403"></circle></svg>
+            <span style="font-size: 14px; line-height: 20px; font-weight: 500">{{m.flag}}</span>
+          </div>
+        </sc-if>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px">
+          <div style="padding: 16px; border-radius: 12px; background: #F2F8F5; display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 13px; font-weight: 600; color: #0B4A3D">Shows</span>
+            <span style="font-size: 14px; line-height: 21px">{{m.shows}}</span>
+          </div>
+          <div style="padding: 16px; border-radius: 12px; background: #EEF0F7; display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 13px; font-weight: 600; color: #262F52">Does not show</span>
+            <span style="font-size: 14px; line-height: 21px">{{m.notShows}}</span>
+          </div>
+        </div>
+      </section>
+
+      <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px" aria-label="Headline metrics">
+        <div class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 12px; grid-column: 1 / -1">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap">
+            <span class="eyebrow">Ranking · ROC-AUC</span>
+            <span style="font-size: 12px; color: #4C5853">0.50 is a coin toss · 0.70 is a useful bar for this kind of lending</span>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap">
+            <span class="mono" style="font-size: 40px; line-height: 44px; font-weight: 600">{{m.auc}}</span>
+            <span class="mono" style="font-size: 14px; color: #3C4843">95% range {{m.aucLo}} to {{m.aucHi}}</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <div class="trk" aria-hidden="true">
+              <span style="position: absolute; top: 0; bottom: 0; left: {{rng.left}}%; width: {{rng.width}}%; border-radius: 5px; background: #8FB9AB"></span>
+              <span style="position: absolute; top: -4px; width: 4px; height: 18px; border-radius: 2px; left: {{rng.dot}}%; background: #0E5A4A"></span>
+              <span style="position: absolute; top: -6px; bottom: -6px; width: 0; left: 50%; border-left: 2px dashed #8A3A10"></span>
+            </div>
+            <div class="mono" style="display: flex; justify-content: space-between; font-size: 11px; color: #55625C"><span>0.50</span><span>0.60</span><span>0.70 bar</span><span>0.80</span><span>0.90</span></div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px 20px; font-size: 13px; color: #2E3934">
+            <span>Simpler model ({{m.simpler}}): <span class="mono" style="font-weight: 600">{{m.simplerAuc}}</span></span>
+            <span>Full model adds: <span class="mono" style="font-weight: 600">{{m.gain}}</span></span>
+            <span>Other candidate: <span class="mono">{{m.other}}</span></span>
+          </div>
+        </div>
+        <div class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 8px">
+          <span class="eyebrow">Probability error · Brier</span>
+          <span class="mono" style="font-size: 32px; font-weight: 600">{{m.brier}}</span>
+          <span style="font-size: 13px; color: #3C4843">Always guessing the average: <span class="mono">{{m.brierBase}}</span>. Lower is better.</span>
+        </div>
+        <div class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 8px">
+          <span class="eyebrow">Calibration error</span>
+          <span class="mono" style="font-size: 32px; font-weight: 600">{{m.cal}}</span>
+          <span style="font-size: 13px; color: #3C4843">Method: {{m.calMethod}}. Does a 90 mean about 90 in 100 repay?</span>
+        </div>
+        <div class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 8px">
+          <span class="eyebrow">Lowest 20 scored</span>
+          <span class="mono" style="font-size: 32px; font-weight: 600">{{m.low20}}</span>
+          <span style="font-size: 13px; color: #3C4843">did not repay, against <span class="mono">{{m.overall}}</span> overall.</span>
+        </div>
+      </section>
+
+      <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr)); gap: 16px">
+        <div class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-direction: column; gap: 4px">
+            <h2 style="margin: 0; font-size: 18px; font-weight: 600">Bands</h2>
+            <span style="font-size: 13px; color: #4C5853">Same lines in every source: Strong from 90, coverage from 45%.</span>
+          </div>
+          <div style="display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: #EEF0EA" aria-hidden="true">
+            <sc-for list="{{bands}}" as="b" hint-placeholder-count="3"><span style="{{b.seg}}"></span></sc-for>
+          </div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px">
+            <thead><tr style="text-align: left; font-size: 12px; color: #4C5853"><th scope="col" style="padding: 6px 0; font-weight: 600">Band</th><th scope="col" style="padding: 6px 0; font-weight: 600; text-align: right">Share of loans</th><th scope="col" style="padding: 6px 0; font-weight: 600; text-align: right">Repaid</th></tr></thead>
+            <tbody>
+              <sc-for list="{{bands}}" as="b" hint-placeholder-count="3">
+                <tr style="border-top: 1px solid #EEF0EA"><td style="padding: 10px 0"><span style="{{b.chip}}">{{b.name}}</span></td><td class="mono" style="padding: 10px 0; text-align: right">{{b.share}}</td><td class="mono" style="padding: 10px 0; text-align: right">{{b.repaid}}</td></tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        <div class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-direction: column; gap: 4px">
+            <h2 style="margin: 0; font-size: 18px; font-weight: 600">Thin files rank worse</h2>
+            <span style="font-size: 13px; color: #4C5853">AUC inside each coverage group. This is why low coverage says Needs more info.</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 14px">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <div style="display: flex; justify-content: space-between; font-size: 14px"><span>Under the coverage line <span class="mono" style="color: #4C5853">({{m.underN}} loans)</span></span><span class="mono" style="font-weight: 600">{{m.under}}</span></div>
+              <div class="trk" aria-hidden="true"><span style="position: absolute; top: 0; bottom: 0; left: 0; border-radius: 5px; width: {{cov.under}}%; background: repeating-linear-gradient(90deg,#5A6894 0 5px,#C5CCE0 5px 7px)"></span></div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <div style="display: flex; justify-content: space-between; font-size: 14px"><span>Everyone else <span class="mono" style="color: #4C5853">({{m.overN}} loans)</span></span><span class="mono" style="font-weight: 600">{{m.over}}</span></div>
+              <div class="trk" aria-hidden="true"><span style="position: absolute; top: 0; bottom: 0; left: 0; border-radius: 5px; width: {{cov.over}}%; background: #0E5A4A"></span></div>
+            </div>
+            <span class="mono" style="font-size: 11px; color: #55625C">bars on a 0.40 to 0.90 scale</span>
+          </div>
+        </div>
+      </section>
+
+      <sc-if value="{{isSynth}}" hint-placeholder-val="{{ true }}">
+        <section class="card" style="padding: 24px; display: flex; flex-direction: column; gap: 20px">
+          <div style="display: flex; flex-direction: column; gap: 4px">
+            <span class="eyebrow">Synthetic only · the REDX question</span>
+            <h2 style="margin: 0; font-size: 22px; font-weight: 600">Does delivery data add anything?</h2>
+            <p style="margin: 0; font-size: 14px; color: #3C4843; max-width: 760px">We wrote the generator, so we can set how strongly delivery behaviour is tied to repayment. At strength 0 there is no link, and the delivery inputs must add nothing. If they did, the pipeline would be leaking.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 24px">
+            <div style="display: flex; flex-direction: column; gap: 14px">
+              <span style="font-size: 13px; font-weight: 600">AUC added by delivery inputs, by planted signal strength</span>
+              <sc-for list="{{strengths}}" as="s" hint-placeholder-count="3">
+                <div style="display: grid; grid-template-columns: 110px minmax(0, 1fr) 70px; align-items: center; gap: 12px">
+                  <span style="font-size: 13px">{{s.label}}</span>
+                  <div class="trk" aria-hidden="true"><span style="{{s.bar}}"></span></div>
+                  <span class="mono" style="font-size: 13px; font-weight: 600; text-align: right">{{s.v}}</span>
+                </div>
+              </sc-for>
+              <span style="font-size: 13px; color: #3C4843">Seeds 42, 7 and 123. At strength 0 the range always spans zero: the negative control holds. This proves the method can find a signal. It does not prove REDX data predicts repayment.</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 14px">
+              <span style="font-size: 13px; font-weight: 600">Feature sets, added one at a time</span>
+              <sc-for list="{{ablation}}" as="a" hint-placeholder-count="4">
+                <div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) 90px; align-items: center; gap: 12px">
+                  <span style="font-size: 13px">{{a.label}}</span>
+                  <div class="trk" aria-hidden="true"><span style="{{a.bar}}"></span></div>
+                  <span class="mono" style="font-size: 13px; font-weight: 600; text-align: right">{{a.v}}</span>
+                </div>
+              </sc-for>
+              <span style="font-size: 13px; color: #3C4843">The questionnaire is shown beside the score, never inside the headline model.</span>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px">
+            <div style="padding: 16px; border-radius: 12px; background: #F4F5F1; display: flex; flex-direction: column; gap: 6px">
+              <span style="font-size: 13px; font-weight: 600">Why the simpler model stays</span>
+              <span style="font-size: 14px; line-height: 21px">LightGBM reached <span class="mono">0.722</span> against <span class="mono">0.710</span>. Its gain, <span class="mono">+0.013</span> (range <span class="mono">+0.003</span> to <span class="mono">+0.021</span>), does not clear <span class="mono">+0.010</span> across the whole range, so the logistic regression an officer can follow stays in use.</span>
+            </div>
+            <div style="padding: 16px; border-radius: 12px; background: #F4F5F1; display: flex; flex-direction: column; gap: 6px">
+              <span style="font-size: 13px; font-weight: 600">First loans are the hard case</span>
+              <span style="font-size: 14px; line-height: 21px">First loans <span class="mono">0.665</span> (<span class="mono">0.633</span> to <span class="mono">0.694</span>) against repeat loans <span class="mono">0.770</span> (<span class="mono">0.738</span> to <span class="mono">0.801</span>).</span>
+            </div>
+          </div>
+        </section>
+      </sc-if>
+
+      <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr)); gap: 16px">
+        <div class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 12px">
+          <h2 style="margin: 0; font-size: 18px; font-weight: 600">Calibration</h2>
+          <div style="position: relative; height: 220px; border-left: 1px solid #C3C9C0; border-bottom: 1px solid #C3C9C0; background: linear-gradient(to top right, transparent calc(50% - 1px), #C3C9C0 calc(50% - 1px), #C3C9C0 calc(50% + 1px), transparent calc(50% + 1px))">
+            <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center">
+              <span style="font-size: 13px; color: #3C4843; background: #FFFFFF; padding: 8px 12px; border-radius: 8px; border: 1px solid #E1E4DD">Predicted against actual, by equal-count bin.<br>Points arrive with reports/{{m.key}}/model_card.json.</span>
+            </div>
+          </div>
+          <div class="mono" style="display: flex; justify-content: space-between; font-size: 11px; color: #55625C"><span>predicted 0</span><span>1</span></div>
+        </div>
+        <div class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 12px">
+          <h2 style="margin: 0; font-size: 18px; font-weight: 600">Results by group</h2>
+          <span style="font-size: 13px; color: #4C5853">{{m.groups}} Audit only, never model inputs. A gap is flagged only when the ranges do not overlap.</span>
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px">
+            <thead><tr style="text-align: left; font-size: 12px; color: #4C5853"><th scope="col" style="padding: 6px 0; font-weight: 600">Group</th><th scope="col" style="padding: 6px 0; font-weight: 600">AUC (range)</th><th scope="col" style="padding: 6px 0; font-weight: 600">Avg score</th><th scope="col" style="padding: 6px 0; font-weight: 600">Gap flag</th></tr></thead>
+            <tbody>
+              <tr style="border-top: 1px solid #EEF0EA"><td style="padding: 9px 0">[group]</td><td class="mono" style="padding: 9px 0; color: #55625C">[from fairness.py]</td><td class="mono" style="padding: 9px 0; color: #55625C">[—]</td><td style="padding: 9px 0; color: #55625C">[—]</td></tr>
+              <tr style="border-top: 1px solid #EEF0EA"><td style="padding: 9px 0">[group]</td><td class="mono" style="padding: 9px 0; color: #55625C">[from fairness.py]</td><td class="mono" style="padding: 9px 0; color: #55625C">[—]</td><td style="padding: 9px 0; color: #55625C">[—]</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 18px; font-weight: 600">Limitations, in plain words</h2>
+        <ul style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; line-height: 21px; color: #2E3934">
+          <li>All results use synthetic or public data. They show that the pipeline is sound, not that the model is accurate on ShopUp merchants.</li>
+          <li>The delivery (REDX) signal is a hypothesis tested by ablation, including a zero-signal control. It is not an established predictor of repayment.</li>
+          <li>Labels exist only for merchants who previously received credit. The model may not generalize to applicants who would have been declined under earlier policy.</li>
+          <li>Scores are less certain for merchants with short history. A thin file is never treated as a bad file.</li>
+          <li>Group columns are used only to audit results, never as model inputs.</li>
+          <li>The tool supports a human decision. It must not be used for automatic approval or decline.</li>
+        </ul>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2100}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { mode: 'synthetic_bd' };
+  }
+  renderVals() {
+    var self = this;
+    var D = {
+      synthetic_bd: { label: 'Synthetic', banner: 'Synthetic demo data.', headline: 'The pipeline, not the world', model: 'Logistic regression', inputs: '10, behaviour', split: 'By time', sizes: '13,318 / 5,853 / 6,023', repaid: '90.4%', auc: 0.710, lo: 0.688, hi: 0.729, other: 'LightGBM 0.722', simpler: 'purchases only', simplerAuc: '0.667', gain: '+0.043 (+0.028 to +0.060)', under: 0.583, underN: '899', over: 0.734, overN: '4,954', brier: '0.0819', brierBase: '0.0871', cal: '0.012', calMethod: 'none needed', low20: '55%', overall: '10%', bands: [56, 95.2, 29, 82.1, 15, 88.3], shows: 'The whole pipeline runs and behaves as designed: time split, two candidate models, calibration, bands, reasons, and a negative control.', notShows: 'How accurate the tool would be for real merchants. The data is generated by our own code.', flag: '', groups: 'Town tier, shop type and trade licence.' },
+      taiwan_cc: { label: 'Taiwan cards', banner: 'Public data: Taiwan credit cards, not ShopUp data.', headline: 'The method works on real behaviour', model: 'Logistic regression', inputs: '8, behaviour', split: 'Random (weaker)', sizes: '20,000 / 5,000 / 5,000', repaid: '77.9%', auc: 0.743, lo: 0.725, hi: 0.761, other: 'LightGBM 0.761', simpler: 'latest month only', simplerAuc: '0.697', gain: '+0.046 (+0.033 to +0.059)', under: 0.637, underN: '469', over: 0.750, overN: '4,531', brier: '0.1381', brierBase: '0.1723', cal: '0.008', calMethod: 'isotonic', low20: '60%', overall: '22%', bands: [25, 89.4, 65, 73.9, 9, 74.0], shows: 'Six months of real payment behaviour rank real outcomes, and the bands separate: 89% of Strong loans repaid against 74% of Review loans.', notShows: 'Anything about merchants. These are consumer credit cards in Taiwan, 2005, split at random, which is easier than a forward test.', flag: '', groups: 'Sex, education, marital status and age band.' },
+      india_ltfs: { label: 'India loans', banner: 'Public data: India L&T vehicle loans, not ShopUp data.', headline: 'The thin-file problem, measured', model: 'LightGBM', inputs: '6: 1 loan term, 5 bureau', split: 'By time', sizes: '68,002 / 66,788 / 98,364', repaid: '80.8%', auc: 0.611, lo: 0.606, hi: 0.617, other: 'Logistic regression 0.595', simpler: 'loan terms only', simplerAuc: '0.565', gain: '+0.046 (+0.042 to +0.050)', under: 0.580, underN: '33,705', over: 0.629, overN: '33,083', brier: '0.1514', brierBase: '0.1556', cal: '0.005', calMethod: 'Platt', low20: '50%', overall: '19%', bands: [5, 91.1, 44, 81.6, 50, 79.0], shows: 'Half the borrowers have no bureau record. For them a bureau summary ranks barely better than chance. That is the gap purchase, delivery and payment records are meant to fill.', notShows: 'That the method works. 0.61 is well under the 0.70 bar. The outcome is a missed first instalment, an early warning, not a loan going bad.', flag: 'Use this source as the problem statement, not as a result.', groups: 'Age band, employment type and state.' },
+      homecredit: { label: 'Home Credit', banner: 'Public data: Home Credit (country not stated), not ShopUp data.', headline: 'Most of the ranking comes from a score bought elsewhere', model: 'Logistic regression', inputs: '9: 6 instalment history, 2 loan terms, 1 outside score', split: 'Random (weaker)', sizes: '33,333 / 8,333 / 8,334', repaid: '92.0%', auc: 0.746, lo: 0.725, hi: 0.764, other: 'LightGBM 0.751', simpler: 'without the outside score', simplerAuc: '0.601', gain: '+0.144 (+0.119 to +0.169)', under: 0.744, underN: '409', over: 0.746, overN: '7,924', brier: '0.0681', brierBase: '0.0739', cal: '0.006', calMethod: 'none needed', low20: '65%', overall: '8%', bands: [73, 95.2, 22, 81.2, 5, 92.2], shows: 'With the outside score the AUC is 0.746; without it, 0.601. The applicant’s own history carries little here.', notShows: 'That repayment history alone is enough on this data, or anything about Asia: the publisher does not state the country.', flag: 'Country not stated. Rows from this source are never shown: totals only.', groups: 'Gender, age band and region rating.' },
+      kiva_asia: { label: 'Kiva Asia', banner: 'Public data: Kiva (Asia), not ShopUp data.', headline: 'No information about the borrower, and the numbers say so', model: 'Logistic regression', inputs: '3: 1 loan term, 2 field partner', split: 'By time', sizes: '32,581 / 15,113 / 17,610', repaid: '94.8%', auc: 0.644, lo: 0.634, hi: 0.655, other: 'LightGBM 0.406', simpler: 'without the field partner', simplerAuc: '0.644', gain: '0.000', under: 0.468, underN: '648', over: 0.656, overN: '14,465', brier: '0.0497', brierBase: '0.0516', cal: '0.065', calMethod: 'Platt', low20: '0%', overall: '5%', bands: [96, 94.7, 0, null, 4, 95.7], shows: 'Where the only information is about the intermediary, a score cannot be trusted.', notShows: 'Anything about scoring a merchant from behaviour. Kiva holds no borrower behaviour at all.', flag: 'Do not quote this AUC as support. The 20 lowest-scored loans all repaid, and 96% of loans land in Strong.', groups: 'Gender and country.' }
+    };
+    var order = ['synthetic_bd', 'taiwan_cc', 'india_ltfs', 'homecredit', 'kiva_asia'];
+    var key = this.state.mode;
+    var m = Object.assign({ key: key }, D[key]);
+    m.hasFlag = !!m.flag;
+    var pos = function (v) { return Math.max(0, Math.min(100, (v - 0.5) / 0.4 * 100)); };
+    var pos2 = function (v) { return Math.max(0, Math.min(100, (v - 0.4) / 0.5 * 100)); };
+    var tabs = order.map(function (k) {
+      var on = k === key;
+      return { key: k, label: D[k].label, on: on, cls: on ? 'tab on' : 'tab', pick: function () { self.setState({ mode: k }); } };
+    });
+    var b = m.bands;
+    var mkBand = function (name, share, repaid, color, chip) {
+      return { name: name, share: share + '%', repaid: repaid == null ? '—' : repaid.toFixed(1) + '%', seg: 'display: block; height: 14px; width: ' + share + '%; background: ' + color, chip: 'display: inline-flex; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; ' + chip };
+    };
+    var bands = [
+      mkBand('Strong', b[0], b[1], '#0E5A4A', 'background: #DCEFE6; color: #0B4A3D'),
+      mkBand('Review', b[2], b[3], '#E0A44A', 'background: #FBEBD2; color: #7A4304'),
+      mkBand('Needs more info', b[4], b[5], 'repeating-linear-gradient(90deg,#5A6894 0 5px,#C5CCE0 5px 7px)', 'background: #E8ECF6; color: #33406A; box-shadow: inset 0 0 0 1.5px #8A97BF')
+    ];
+    var gbar = function (v, max) { return 'position: absolute; top: 0; bottom: 0; left: 0; border-radius: 5px; background: #0E5A4A; width: ' + Math.max(1.5, v / max * 100).toFixed(1) + '%'; };
+    var abar = function (v) { return 'position: absolute; top: 0; bottom: 0; left: 0; border-radius: 5px; background: #2D4F45; width: ' + pos(v).toFixed(1) + '%'; };
+    return {
+      m: m,
+      tabs: tabs,
+      isSynth: key === 'synthetic_bd',
+      rng: { left: pos(m.lo).toFixed(1), width: (pos(m.hi) - pos(m.lo)).toFixed(1), dot: (pos(m.auc) - 0.5).toFixed(1) },
+      cov: { under: pos2(m.under).toFixed(1), over: pos2(m.over).toFixed(1) },
+      bands: bands,
+      strengths: [
+        { label: 'Strength 0', v: '≈ 0.000', bar: gbar(0, 0.06) },
+        { label: 'Strength 0.5', v: '≈ +0.025', bar: gbar(0.025, 0.06) },
+        { label: 'Strength 1', v: '≈ +0.055', bar: gbar(0.055, 0.06) }
+      ],
+      ablation: [
+        { label: 'A · purchases', v: '0.667', bar: abar(0.667) },
+        { label: 'A + B · payments', v: '[Phase 11]', bar: 'display: none' },
+        { label: 'A + B + C · deliveries', v: '0.710', bar: abar(0.710) },
+        { label: 'D · questionnaire', v: 'beside score', bar: 'display: none' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

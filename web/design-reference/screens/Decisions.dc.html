@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CredLens · Decision log</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F1}
+a{color:#0E5A4A}a:hover{color:#08392F}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.card{background:#FFFFFF;border:1px solid #E1E4DD;border-radius:16px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 100vh; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #13201C; background: #F4F5F1">
+  <div style="flex: 1 1 240px; background: #0F1D19">
+    <dc-import name="Sidebar" active="decisions" hint-size="100%,900px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 10px 32px; background: #E9ECE4; border-bottom: 1px solid #DADED5; font-size: 13px">
+      <div style="display: flex; align-items: center; gap: 10px; color: #2B3631">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#2B3631" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6.5"></circle><path d="M8 7.2v4"></path><circle cx="8" cy="4.9" r=".6" fill="#2B3631"></circle></svg>
+        <span style="font-weight: 600">Synthetic demo data.</span>
+        <span>Decision support only.</span>
+      </div>
+      <div class="mono" style="color: #55625C; font-size: 12px">data_mode synthetic_bd</div>
+    </div>
+
+    <div style="padding: 28px 32px 56px; display: flex; flex-direction: column; gap: 24px; max-width: 1240px; width: 100%; box-sizing: border-box">
+      <header style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px">
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <h1 style="margin: 0; font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.01em">Decision log</h1>
+          <p style="margin: 0; color: #4C5853; font-size: 15px; max-width: 680px">Every human decision, with the score that was on screen and the model that made it. Nothing here can be edited or deleted.</p>
+        </div>
+        <span style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #2E3934; background: #E9ECE4; padding: 8px 12px; border-radius: 10px">
+          <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="#2E3934" stroke-width="1.5" aria-hidden="true"><rect x="3.5" y="8" width="11" height="7.5" rx="1.5"></rect><path d="M6 8V5.8a3 3 0 0 1 6 0V8"></path></svg>
+          Append-only
+        </span>
+      </header>
+
+      <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 12px" aria-label="Summary">
+        <div class="card" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 4px">
+          <span style="font-size: 13px; color: #4C5853">Officer agreed with the band</span>
+          <span class="mono" style="font-size: 28px; font-weight: 600">1 of 2</span>
+          <span style="font-size: 12px; color: #55625C">accepts against overrides; needs-more-info left out</span>
+        </div>
+        <div class="card" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 4px">
+          <span style="font-size: 13px; color: #4C5853">Overrides with a written reason</span>
+          <span class="mono" style="font-size: 28px; font-weight: 600">1 of 1</span>
+          <span style="font-size: 12px; color: #55625C">the database refuses an override without one</span>
+        </div>
+        <div class="card" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 4px">
+          <span style="font-size: 13px; color: #4C5853">Asked for more information</span>
+          <span class="mono" style="font-size: 28px; font-weight: 600">1</span>
+          <span style="font-size: 12px; color: #55625C">evidence requested before deciding</span>
+        </div>
+      </section>
+
+      <section class="card" style="overflow: hidden">
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 14px 20px; border-bottom: 1px solid #E6E8E2">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4C5853">Merchant
+            <input type="text" placeholder="FIX-M…" style="font: inherit; font-size: 13px; padding: 8px 10px; border-radius: 8px; border: 1px solid #D5D9D0; min-height: 20px; width: 140px">
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4C5853">Action
+            <select style="font: inherit; font-size: 13px; padding: 8px 10px; border-radius: 8px; border: 1px solid #D5D9D0; background: #FFFFFF; min-height: 36px"><option>All</option><option>Accept</option><option>Override: raise</option><option>Override: lower</option><option>Needs more info</option></select>
+          </label>
+        </div>
+        <div style="overflow-x: auto">
+          <table style="width: 100%; min-width: 900px; border-collapse: collapse; font-size: 14px">
+            <thead>
+              <tr style="text-align: left; color: #4C5853; font-size: 12px; text-transform: uppercase; letter-spacing: .04em">
+                <th scope="col" style="padding: 14px 20px; font-weight: 600">When</th>
+                <th scope="col" style="padding: 14px 12px; font-weight: 600">Merchant</th>
+                <th scope="col" style="padding: 14px 12px; font-weight: 600">Score shown</th>
+                <th scope="col" style="padding: 14px 12px; font-weight: 600">Action</th>
+                <th scope="col" style="padding: 14px 12px; font-weight: 600">Why</th>
+                <th scope="col" style="padding: 14px 20px; font-weight: 600">Officer · model</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+                <tr style="border-top: 1px solid #E6E8E2; vertical-align: top">
+                  <td class="mono" style="padding: 16px 20px; font-size: 13px; white-space: nowrap">{{r.when}}</td>
+                  <td class="mono" style="padding: 16px 12px; font-weight: 600"><a href="Merchant.dc.html" style="text-decoration: none">{{r.merchant_id}}</a></td>
+                  <td class="mono" style="padding: 16px 12px; font-size: 18px; font-weight: 600">{{r.score_shown}}</td>
+                  <td style="padding: 16px 12px"><span class="chip" style="{{r.chip}}">{{r.action}}</span></td>
+                  <td style="padding: 16px 12px; max-width: 380px; line-height: 20px">{{r.reason}}</td>
+                  <td class="mono" style="padding: 16px 20px; font-size: 12px; color: #3C4843; white-space: nowrap">{{r.officer_id}}<br>{{r.model_version}}</td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var chips = {
+      accept: ['Accept', 'background: #DCEFE6; color: #0B4A3D'],
+      override_up: ['Override: raise', 'background: #FBEBD2; color: #7A4304'],
+      override_down: ['Override: lower', 'background: #FBEBD2; color: #7A4304'],
+      needs_more_info: ['Needs more info', 'background: #E8ECF6; color: #33406A; box-shadow: inset 0 0 0 1.5px #8A97BF']
+    };
+    var raw = [
+      { merchant_id: 'FIX-M006', officer_id: 'FIX-OFFICER-1', model_version: 'fixture-0', score_shown: 39, officer_action: 'needs_more_info', reason_text: 'Asked for recent purchase receipts before deciding.', decided_at: '2026-06-12T09:15:00' },
+      { merchant_id: 'FIX-M002', officer_id: 'FIX-OFFICER-2', model_version: 'fixture-0', score_shown: 81, officer_action: 'accept', reason_text: null, decided_at: '2026-06-11T11:05:00' },
+      { merchant_id: 'FIX-M003', officer_id: 'FIX-OFFICER-1', model_version: 'fixture-0', score_shown: 48, officer_action: 'override_up', reason_text: 'Visited the shop; the late payment followed a flood and has since been cleared.', decided_at: '2026-06-11T10:42:00' }
+    ];
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return {
+      rows: raw.map(function (r) {
+        var d = r.decided_at.split('T'); var p = d[0].split('-');
+        var c = chips[r.officer_action];
+        return Object.assign({}, r, { when: Number(p[2]) + ' ' + months[Number(p[1]) - 1] + ' · ' + d[1].slice(0, 5), action: c[0], chip: c[1], reason: r.reason_text || 'No note. Accepting needs none.' });
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

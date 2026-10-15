@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<title>Mock consent page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=Noto+Sans+Bengali:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.en{font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:12px;color:#4C5853;line-height:16px}
+.item{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:#FFFFFF;border:1px solid #E1E4DD;cursor:pointer}
+.item input{width:20px;height:20px;margin:2px 0 0;accent-color:#0E5A4A;flex:none}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F4F5F1; font-family: 'Noto Sans Bengali', 'IBM Plex Sans', sans-serif; color: #13201C; display: flex; flex-direction: column">
+  <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background: #E9ECE4; font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; color: #2B3631">
+    <span style="font-weight: 600">Demo screen · not live</span>
+    <span>Synthetic demo data.</span>
+  </div>
+
+  <sc-if value="{{asking}}" hint-placeholder-val="{{ true }}">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 16px; padding: 22px 20px 20px">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <h1 style="margin: 0; font-size: 23px; line-height: 32px; font-weight: 700">আপনার তথ্য ব্যবহারের অনুমতি</h1>
+        <span class="en">Permission to use your data</span>
+        <p style="margin: 4px 0 0; font-size: 15px; line-height: 24px; color: #2E3934">ঋণের প্রস্তুতি যাচাই করতে আমরা নিচের তথ্য দেখব।</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <label class="item"><input type="checkbox" checked="{{ true }}" disabled="{{ true }}"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 600">মাল কেনার হিসাব</span><span class="en">Stock purchases · Mokam</span></span></label>
+        <label class="item"><input type="checkbox" checked="{{ true }}" disabled="{{ true }}"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 600">ডেলিভারির হিসাব</span><span class="en">Deliveries and returns · REDX</span></span></label>
+        <label class="item"><input type="checkbox" checked="{{ true }}" disabled="{{ true }}"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 600">পেমেন্টের হিসাব</span><span class="en">Repayments · Baki</span></span></label>
+        <label class="item"><input type="checkbox" checked="{{q}}" onChange="{{toggleQ}}"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 600">আর্থিক অভ্যাসের ১০টি প্রশ্ন (ঐচ্ছিক)</span><span class="en">10 financial-habit questions · optional, never part of the score</span></span></label>
+      </div>
+      <dl style="margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; font-size: 14px; line-height: 20px; padding: 14px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E1E4DD">
+        <dt style="color: #4C5853">কেন</dt><dd style="margin: 0">শুধু ঋণের প্রস্তুতি যাচাই</dd>
+        <dt style="color: #4C5853">কতদিন</dt><dd style="margin: 0">২ বছর</dd>
+        <dt style="color: #4C5853">বাতিল</dt><dd style="margin: 0">যেকোনো সময় অনুমতি তুলে নিতে পারবেন</dd>
+      </dl>
+      <p style="margin: 0; font-size: 14px; line-height: 22px; color: #0B4A3D; font-weight: 500">সিদ্ধান্ত নেবেন একজন কর্মকর্তা, কম্পিউটার নয়।</p>
+      <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px">
+        <button type="button" onClick="{{allow}}" style="border: 0; background: #0E5A4A; color: #FFFFFF; font: inherit; font-size: 17px; font-weight: 600; padding: 14px; border-radius: 12px; cursor: pointer; min-height: 52px">অনুমতি দিন</button>
+        <button type="button" style="border: 1px solid #CFD6CC; background: #FFFFFF; color: #2E3934; font: inherit; font-size: 16px; font-weight: 500; padding: 12px; border-radius: 12px; cursor: pointer; min-height: 48px">এখন না</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{done}}" hint-placeholder-val="{{ false }}">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 16px; padding: 40px 20px 20px; align-items: flex-start">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="24" r="22" stroke="#0E5A4A" stroke-width="2.5"></circle><path d="M14 25l7 7 13-15" stroke="#0E5A4A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      <h1 style="margin: 0; font-size: 23px; line-height: 32px; font-weight: 700">অনুমতি দেওয়া হয়েছে</h1>
+      <span class="en">Consent recorded with the date. A credit officer will now review your shop.</span>
+      <p style="margin: 0; font-size: 15px; line-height: 24px">{{qLine}}</p>
+      <div style="margin-top: auto; width: 100%; display: flex; flex-direction: column; gap: 8px">
+        <button type="button" onClick="{{withdraw}}" style="border: 1.5px solid #8A3A10; background: #FFFFFF; color: #8A3A10; font: inherit; font-size: 16px; font-weight: 600; padding: 12px; border-radius: 12px; cursor: pointer; min-height: 48px">অনুমতি তুলে নিন</button>
+        <span class="en" style="text-align: center">Withdraw consent: scoring stops at once</span>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{withdrawn}}" hint-placeholder-val="{{ false }}">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 16px; padding: 40px 20px 20px">
+      <h1 style="margin: 0; font-size: 23px; line-height: 32px; font-weight: 700">অনুমতি তুলে নেওয়া হয়েছে</h1>
+      <span class="en">Consent withdrawn. Your data is no longer used for scoring.</span>
+      <button type="button" onClick="{{reset}}" style="margin-top: auto; border: 1px solid #CFD6CC; background: #FFFFFF; color: #2E3934; font: inherit; font-size: 16px; font-weight: 500; padding: 12px; border-radius: 12px; cursor: pointer; min-height: 48px">আবার দেখুন</button>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { step: 'ask', q: true };
+  }
+  renderVals() {
+    var self = this;
+    var s = this.state.step;
+    return {
+      asking: s === 'ask',
+      done: s === 'done',
+      withdrawn: s === 'withdrawn',
+      q: this.state.q,
+      toggleQ: function () { self.setState({ q: !self.state.q }); },
+      allow: function () { self.setState({ step: 'done' }); },
+      withdraw: function () { self.setState({ step: 'withdrawn' }); },
+      reset: function () { self.setState({ step: 'ask' }); },
+      qLine: this.state.q ? 'কেনা, ডেলিভারি, পেমেন্ট এবং প্রশ্নের উত্তর।' : 'কেনা, ডেলিভারি এবং পেমেন্ট। প্রশ্নের উত্তর নয়।'
+    };
+  }
+}
+</script>
+</body>
+</html>

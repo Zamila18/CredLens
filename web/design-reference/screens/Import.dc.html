@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CredLens · Data import</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F1}
+a{color:#0E5A4A}a:hover{color:#08392F}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.card{background:#FFFFFF;border:1px solid #E1E4DD;border-radius:16px}
+.tb{display:flex;align-items:center;gap:12px;width:100%;border:1.5px solid #E1E4DD;background:#FFFFFF;font:inherit;color:#13201C;padding:10px 12px;border-radius:10px;cursor:pointer;min-height:44px;text-align:left}
+.tb.on{border-color:#0E5A4A;background:#EEF6F2}
+.tb .n{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;background:#ECEEE8;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600}
+.tb.on .n{background:#0E5A4A;color:#FFFFFF}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 100vh; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #13201C; background: #F4F5F1">
+  <div style="flex: 1 1 240px; background: #0F1D19">
+    <dc-import name="Sidebar" active="import" hint-size="100%,900px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 10px 32px; background: #E9ECE4; border-bottom: 1px solid #DADED5; font-size: 13px">
+      <div style="display: flex; align-items: center; gap: 10px; color: #2B3631">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#2B3631" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6.5"></circle><path d="M8 7.2v4"></path><circle cx="8" cy="4.9" r=".6" fill="#2B3631"></circle></svg>
+        <span style="font-weight: 600">Synthetic demo data.</span>
+        <span>Decision support only.</span>
+      </div>
+      <div class="mono" style="color: #55625C; font-size: 12px">admin only · synthetic or fixture files only</div>
+    </div>
+
+    <div style="padding: 28px 32px 56px; display: flex; flex-direction: column; gap: 24px; max-width: 1240px; width: 100%; box-sizing: border-box">
+      <header style="display: flex; flex-direction: column; gap: 8px">
+        <h1 style="margin: 0; font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.01em">Data import</h1>
+        <p style="margin: 0; color: #4C5853; font-size: 15px; max-width: 740px">Upload a CSV exported from the lender’s systems. Each file is checked against the data contract before anything loads. Nobody types purchase or delivery records here.</p>
+      </header>
+
+      <div style="padding: 14px 16px; border-radius: 12px; background: #EEF0F7; color: #262F52; font-size: 14px; line-height: 20px">In production the three source systems feed CredLens on a schedule. New merchants get a score after the next training run, not on upload.</div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+        <section class="card" style="flex: 1 1 280px; padding: 18px; display: flex; flex-direction: column; gap: 10px">
+          <h2 style="margin: 0; font-size: 16px; font-weight: 600">1 · Pick a table</h2>
+          <span style="font-size: 13px; color: #4C5853">Import in this order, so every id points at something already loaded.</span>
+          <div role="radiogroup" aria-label="Table" style="display: flex; flex-direction: column; gap: 6px">
+            <sc-for list="{{tables}}" as="t" hint-placeholder-count="7">
+              <button type="button" role="radio" aria-checked="{{t.on}}" class="{{t.cls}}" onClick="{{t.pick}}"><span class="n">{{t.n}}</span><span class="mono" style="font-size: 14px; font-weight: 500">{{t.name}}</span></button>
+            </sc-for>
+          </div>
+        </section>
+
+        <div style="flex: 999 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+          <section class="card" style="padding: 18px; display: flex; flex-direction: column; gap: 14px">
+            <h2 style="margin: 0; font-size: 16px; font-weight: 600">2 · Choose the file</h2>
+            <label style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 32px 16px; border: 2px dashed #B9C2BD; border-radius: 14px; background: #FAFBF8; cursor: pointer; text-align: center">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2D4F45" stroke-width="1.6" aria-hidden="true"><path d="M12 15V4"></path><path d="M7.5 8.5 12 4l4.5 4.5"></path><path d="M4 15v4h16v-4"></path></svg>
+              <span style="font-size: 15px; font-weight: 600">Drop <span class="mono">{{selected}}.csv</span> here, or browse</span>
+              <span style="font-size: 13px; color: #4C5853">CSV only · up to 10 MB · exact column names from the contract</span>
+              <input type="file" accept=".csv,text/csv" style="position: absolute; width: 1px; height: 1px; opacity: 0">
+            </label>
+            <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+              <label style="display: flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer">
+                <input type="checkbox" checked="{{dry}}" onChange="{{toggleDry}}" style="width: 20px; height: 20px; accent-color: #0E5A4A">
+                Check only, do not load
+              </label>
+              <button type="button" onClick="{{run}}" style="border: 0; background: #0E5A4A; color: #FFFFFF; font: inherit; font-weight: 600; font-size: 15px; padding: 12px 20px; border-radius: 10px; cursor: pointer; min-height: 48px">{{runLabel}}</button>
+            </div>
+          </section>
+
+          <sc-if value="{{ran}}" hint-placeholder-val="{{ true }}">
+            <section class="card" style="padding: 18px; display: flex; flex-direction: column; gap: 14px">
+              <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px">
+                <h2 style="margin: 0; font-size: 16px; font-weight: 600">3 · What the check found</h2>
+                <span style="font-size: 12px; color: #55625C">Example of the report layout</span>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr)); gap: 12px">
+                <div style="padding: 14px; border-radius: 12px; background: #F2F8F5; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13px; color: #0B4A3D; font-weight: 600">Rows accepted</span><span class="mono" style="font-size: 26px; font-weight: 600">[n]</span></div>
+                <div style="padding: 14px; border-radius: 12px; background: #FCF4E7; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13px; color: #7A4304; font-weight: 600">Rows rejected</span><span class="mono" style="font-size: 26px; font-weight: 600">[n]</span></div>
+                <div style="padding: 14px; border-radius: 12px; background: #F4F5F1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13px; font-weight: 600">Loaded</span><span style="font-size: 15px; font-weight: 600; padding-top: 6px">{{loadedLabel}}</span></div>
+              </div>
+              <div style="overflow-x: auto">
+                <table style="width: 100%; min-width: 520px; border-collapse: collapse; font-size: 13px">
+                  <thead><tr style="text-align: left; color: #4C5853; font-size: 12px"><th scope="col" style="padding: 6px 0; font-weight: 600">Row</th><th scope="col" style="padding: 6px 0; font-weight: 600">Rejected because</th></tr></thead>
+                  <tbody>
+                    <tr style="border-top: 1px solid #EEF0EA"><td class="mono" style="padding: 9px 0">[row]</td><td style="padding: 9px 0">merchant_id is not a known merchant</td></tr>
+                    <tr style="border-top: 1px solid #EEF0EA"><td class="mono" style="padding: 9px 0">[row]</td><td style="padding: 9px 0">id already exists; an import never overwrites a row</td></tr>
+                    <tr style="border-top: 1px solid #EEF0EA"><td class="mono" style="padding: 9px 0">[row]</td><td style="padding: 9px 0">date is not a real date</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <span style="font-size: 13px; color: #4C5853">Every import writes an audit entry. Scores change only after the next training run and API restart.</span>
+            </section>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1060}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { table: 'merchants', dry: true, ran: false };
+  }
+  renderVals() {
+    var self = this;
+    var names = ['merchants', 'loans', 'purchases', 'deliveries', 'payments', 'questionnaire', 'consents'];
+    return {
+      tables: names.map(function (n, i) {
+        var on = self.state.table === n;
+        return { n: i + 1, name: n, on: on, cls: on ? 'tb on' : 'tb', pick: function () { self.setState({ table: n, ran: false }); } };
+      }),
+      selected: this.state.table,
+      dry: this.state.dry,
+      toggleDry: function () { self.setState({ dry: !self.state.dry, ran: false }); },
+      run: function () { self.setState({ ran: true }); },
+      runLabel: this.state.dry ? 'Check file' : 'Check and load',
+      ran: this.state.ran,
+      loadedLabel: this.state.dry ? 'Nothing: check only' : 'Accepted rows only'
+    };
+  }
+}
+</script>
+</body>
+</html>
