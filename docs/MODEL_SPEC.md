@@ -108,6 +108,8 @@ As built (Oct 15, `src/model/fairness.py`, `python -m src.model.fairness --all-m
 Model card per data mode (`docs/model_card_<mode>.md` plus JSON at `/model/card?mode=`): intended use (decision support only), data (synthetic with generator settings and signal strengths, or the public source with filters and licence), label definition and exclusions, split dates and counts, models compared and chosen, metrics with ranges and calibration plot, ablation results, group results and flagged gaps, limitations and out-of-scope uses (no automatic approval, no real-world validity claim), selection bias, and "public data is not ShopUp data".
 Versioning: each trained model gets a version id storing commit, data seed, config, metrics, calibrator. Every score and decision records it.
 
+As built (Oct 15, `src/model/model_card.py`, `python -m src.model.model_card --all-modes`): every number comes from `reports/<mode>/metrics.json`, `fairness.json` and `reports/ablation/ablation.json`; the words about each source come from `docs/DATA_SOURCES.md` and `reports/REAL_LABEL_RESULTS.md`. Inputs are described with the dictionary's definitions, never feature names, because officers read the card too. Only the synthetic card states officer decision support as its use; the public-data cards say the model is a method check, not for scoring anyone. A group audit of another model version is left off the card, and the API flags a card written for another version than the running one. The API serves any mode's card with `GET /model/card?mode=`. Test results join the card in part 4.
+
 ## Files (suggested)
 `src/model/labels.py, split.py, train.py, calibrate.py, score.py, explain.py, evaluate.py, ablation.py, fairness.py, model_card.py`
 

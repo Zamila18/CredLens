@@ -1,0 +1,185 @@
+{
+  "data_mode": "homecredit",
+  "model_version": "homecredit-20261014-135834-4198b26",
+  "intended_use": "A check of the method on public data with real outcomes. This model is not for scoring anyone: it shows how the same pipeline does where the outcomes are known.",
+  "metrics": {
+    "measured_on": "validation period (the held-back test period is not used here)",
+    "split": "at random, keeping the same share of repaid loans in each part",
+    "split_note": "Weaker split: this data source has no usable dates, so loans were divided at random (keeping the same share of repaid loans in each part) instead of by time.",
+    "train_loans": 33333.0,
+    "validation_loans": 8333.0,
+    "model": "logistic regression",
+    "calibration": "none (the model's probabilities were already well calibrated)",
+    "inputs": "Share of the instalments on earlier loans paid on or before the due day | Share of the instalments on earlier loans paid more than 30 days late, or still unpaid after 30 days | Share of the instalments on earlier loans where less than 99% of the amount due was paid | The on-time share over instalments due in the 365 days before the application | Share of the monthly records of earlier store and cash loans with an amount overdue | The loan's repayment amount divided by the income stated in the application | The loan amount divided by the price of the goods it pays for | Average of the scores \"from external data sources\" that the application has (up to three)",
+    "share_repaid": 0.9196,
+    "roc_auc": 0.7457,
+    "roc_auc_range": [
+      0.7247,
+      0.7642
+    ],
+    "brier": 0.0681,
+    "brier_range": [
+      0.0637,
+      0.0725
+    ],
+    "brier_always_average_rate": 0.0739,
+    "calibration_error": 0.0062,
+    "calibration_error_range": [
+      0.0055,
+      0.0139
+    ],
+    "simpler_model": "the applicant's own repayment behaviour and loan terms, without the outside score",
+    "simpler_model_roc_auc": 0.6013,
+    "auc_gain_over_simpler_model": 0.1443,
+    "auc_gain_over_simpler_model_range": [
+      0.1194,
+      0.1691
+    ],
+    "auc_benchmark": 0.7,
+    "band_strong_share": 0.7311,
+    "band_strong_share_repaid": 0.9517,
+    "band_review_share": 0.2198,
+    "band_review_share_repaid": 0.8122,
+    "band_needs_more_info_share": 0.0491,
+    "band_needs_more_info_share_repaid": 0.9218,
+    "data_source": "Home Credit Default Risk (Kaggle, 2018), a sample of applicants; the publisher does not state the country",
+    "terms": "Kaggle competition rules limit use to that competition and forbid redistribution; used here only as a local, non-commercial method check, by the team lead's decision. Rows are never shown; only totals",
+    "label": "Repaid: the applicant had no payment difficulties",
+    "banner": "Public data: Home Credit (country not stated), not ShopUp data. Decision support only.",
+    "what_this_shows": "Most of the ranking comes from a credit score bought from outside; the applicant's own instalment history and loan terms carry little.",
+    "what_this_does_not_show": "That repayment history alone is enough on this data, or anything about Asia: the country is not stated.",
+    "group_findings": "Ranking differs for age band 'under 30' (1,170 loans): AUC 0.67 against 0.75 for everyone else. Ranking differs for region rating '2' (6,207 loans): AUC 0.73 against 0.80 for everyone else."
+  },
+  "ablation": [],
+  "group_results": [
+    {
+      "column": "CODE_GENDER",
+      "group": "F",
+      "loans": 5568,
+      "share_repaid": 0.9291,
+      "mean_score": 92.2279,
+      "roc_auc": 0.7571,
+      "ranking_gap": 0.0327,
+      "ranking": "no gap",
+      "calibration_gap": -0.0196,
+      "calibration": "no gap"
+    },
+    {
+      "column": "CODE_GENDER",
+      "group": "M",
+      "loans": 2765,
+      "share_repaid": 0.9005,
+      "mean_score": 91.3371,
+      "roc_auc": 0.7243,
+      "ranking_gap": -0.0327,
+      "ranking": "no gap",
+      "calibration_gap": 0.0196,
+      "calibration": "no gap"
+    },
+    {
+      "column": "age_band",
+      "group": "30 to 39",
+      "loans": 2173,
+      "share_repaid": 0.9015,
+      "mean_score": 91.451,
+      "roc_auc": 0.7501,
+      "ranking_gap": 0.0087,
+      "ranking": "no gap",
+      "calibration_gap": 0.018,
+      "calibration": "no gap"
+    },
+    {
+      "column": "age_band",
+      "group": "40 to 49",
+      "loans": 2097,
+      "share_repaid": 0.9289,
+      "mean_score": 92.8865,
+      "roc_auc": 0.747,
+      "ranking_gap": 0.0042,
+      "ranking": "no gap",
+      "calibration_gap": 0.0003,
+      "calibration": "no gap"
+    },
+    {
+      "column": "age_band",
+      "group": "50 to 59",
+      "loans": 1893,
+      "share_repaid": 0.9382,
+      "mean_score": 93.0539,
+      "roc_auc": 0.7291,
+      "ranking_gap": -0.0159,
+      "ranking": "no gap",
+      "calibration_gap": -0.0095,
+      "calibration": "no gap"
+    },
+    {
+      "column": "age_band",
+      "group": "under 30",
+      "loans": 1170,
+      "share_repaid": 0.8846,
+      "mean_score": 88.0017,
+      "roc_auc": 0.674,
+      "ranking_gap": -0.079,
+      "ranking": "flagged",
+      "calibration_gap": -0.0051,
+      "calibration": "no gap"
+    },
+    {
+      "column": "age_band",
+      "group": "60 and over",
+      "loans": 1000,
+      "share_repaid": 0.945,
+      "mean_score": 93.453,
+      "roc_auc": 0.7653,
+      "ranking_gap": 0.0231,
+      "ranking": "no gap",
+      "calibration_gap": -0.0117,
+      "calibration": "no gap"
+    },
+    {
+      "column": "REGION_RATING_CLIENT",
+      "group": "2",
+      "loans": 6207,
+      "share_repaid": 0.9199,
+      "mean_score": 92.1344,
+      "roc_auc": 0.729,
+      "ranking_gap": -0.0664,
+      "ranking": "flagged",
+      "calibration_gap": 0.0065,
+      "calibration": "no gap"
+    },
+    {
+      "column": "REGION_RATING_CLIENT",
+      "group": "3",
+      "loans": 1271,
+      "share_repaid": 0.8891,
+      "mean_score": 89.2022,
+      "roc_auc": 0.763,
+      "ranking_gap": 0.0241,
+      "ranking": "no gap",
+      "calibration_gap": 0.0039,
+      "calibration": "no gap"
+    },
+    {
+      "column": "REGION_RATING_CLIENT",
+      "group": "1",
+      "loans": 855,
+      "share_repaid": 0.9626,
+      "mean_score": 94.524,
+      "roc_auc": 0.7978,
+      "ranking_gap": 0.0605,
+      "ranking": "gap, but within the ranges",
+      "calibration_gap": -0.019,
+      "calibration": "no gap"
+    }
+  ],
+  "limitations": [
+    "Public data, not ShopUp data; the country is not stated, so it carries no claim about Asia. The split is random because the source has no calendar dates.",
+    "Individual rows are never shown on any screen: the competition rules forbid redistribution. Only totals like these appear.",
+    "Labels exist only for people who received credit before. The model may not work for applicants who would have been turned down under earlier policy.",
+    "Scores are less certain when coverage is low. A thin file is never treated as a bad file: below the coverage line the band is 'Needs more info', whatever the score.",
+    "The numbers above are from the validation period. It was also used to choose the model and the calibration, so they are a little optimistic.",
+    "Group columns are used only to audit results, never as model inputs. The group audit shows where the model works measurably differently on these data; it does not show that the model is fair.",
+    "The tool supports a human decision. It must not be used for automatic approval or decline."
+  ]
+}

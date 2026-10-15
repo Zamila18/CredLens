@@ -29,7 +29,8 @@ Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2
 | API contract, sample responses, `GET /health` | |
 | Ablation A to D with the negative control ([reports/ablation/](reports/ablation/ABLATION.md)); PostgreSQL path checked | |
 | Group audit on every data mode, with a planted-gap test ([reports/FAIRNESS.md](reports/FAIRNESS.md)) | |
-| Lint, 747 tests and CI | |
+| One model card per data mode ([docs/model_card_synthetic_bd.md](docs/model_card_synthetic_bd.md) and the others), served by `GET /model/card` | |
+| Lint, 761 tests and CI | |
 
 ### Where the model stands (synthetic data, validation months, seed 42)
 
