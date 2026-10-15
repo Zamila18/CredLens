@@ -1,16 +1,18 @@
 /**
- * Merchant detail (Merchant.dc.html), read-only part.
+ * Merchant detail (Merchant.dc.html).
  *
- * Calls: GET /merchants/{id} (profile), GET /merchants/{id}/score, GET /merchants/{id}/consent.
+ * Calls: GET /merchants/{id} (profile), GET /merchants/{id}/score, GET /merchants/{id}/consent,
+ * GET /decisions?merchant_id=; officers also POST a decision and questionnaire answers.
  * Profile and score reads are audited by the API, so they are asked fresh on every visit.
  * "Pending since" comes from the queue (GET /merchants), which the sidebar already loads.
  *
  * Without consent the API refuses the score (consent_required): the right column then
  * shows the no-consent dial and the callout, with no decision form and no questionnaire.
  */
+import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 
-import type { ConsentView, MerchantProfile, QueueItem, Score } from '@/api/types'
+import type { ConsentView, Decision, MerchantProfile, QueueItem, Score } from '@/api/types'
 import { useApi } from '@/api/useApi'
 import { useSession, type Lang } from '@/app/session-context'
 import { Chip } from '@/components/BandChip'
@@ -18,10 +20,13 @@ import { ErrorCallout } from '@/components/ErrorCallout'
 import { CheckIcon } from '@/components/icons'
 import { Card, Eyebrow, Page } from '@/components/Page'
 import { Segmented } from '@/components/Segmented'
+import { Button } from '@/components/ui/button'
 import { humanize } from '@/lib/consent'
 import { fmtDate } from '@/lib/format'
 import { ConsentPanel } from './ConsentPanel'
+import { DecisionForm, DecisionHistory, ReadOnlyDecisionNote } from './DecisionPanels'
 import { EvidenceCards, Timeline } from './Evidence'
+import { QuestionnaireForm } from './QuestionnaireForm'
 import { HabitsPanel, NoConsentScore, ScoreCard, WhyMightThisBeWrong, WhyThisScore } from './ScorePanels'
 
 /** ["purchases", "payments", "questionnaire"] -> "purchases, payments and the questionnaire". */
@@ -97,16 +102,28 @@ function Loading({ what }: { what: string }) {
   return <Card className="p-5 text-sm text-muted">Loading {what}…</Card>
 }
 
+/** One merchant's page. The key makes React start fresh for every merchant (no answers carried over). */
 export function MerchantPage() {
   const { merchantId = '' } = useParams()
-  const { lang } = useSession()
+  return <MerchantView key={merchantId} merchantId={merchantId} />
+}
+
+function MerchantView({ merchantId }: { merchantId: string }) {
+  const { lang, role } = useSession()
   const id = encodeURIComponent(merchantId)
+  const isOfficer = role === 'officer'
 
   const profile = useApi<MerchantProfile>(`/merchants/${id}`, undefined, { noCache: true })
   const score = useApi<Score>(`/merchants/${id}/score`, undefined, { noCache: true })
   const consent = useApi<ConsentView>(`/merchants/${id}/consent`, undefined, { noCache: true })
   const queue = useApi<QueueItem[]>('/merchants')
   const queueRow = queue.data?.find((r) => r.merchant_id === merchantId)
+  const decisions = useApi<Decision[]>('/decisions', { merchant_id: merchantId })
+
+  // Questionnaire answers saved on this visit replace the ones in the profile.
+  const [savedAnswers, setSavedAnswers] = useState<MerchantProfile['questionnaire'] | undefined>(undefined)
+  const [answering, setAnswering] = useState(false)
+  const [justSaved, setJustSaved] = useState(false)
 
   const breadcrumb = (
     <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-[13px] text-muted">
@@ -138,6 +155,21 @@ export function MerchantPage() {
   }
 
   const noConsent = score.error?.code === 'consent_required'
+  const questionnaire = savedAnswers !== undefined ? savedAnswers : profile.data.questionnaire
+  const coversQuestionnaire = !consent.data || consent.data.data_categories.includes('questionnaire')
+
+  let habitsAction = null
+  if (justSaved && !answering) {
+    habitsAction = <span className="font-medium text-lens-dark">Saved. The score did not change.</span>
+  } else if (isOfficer && !answering && coversQuestionnaire) {
+    habitsAction = (
+      <Button variant="outline" size="sm" onClick={() => { setAnswering(true); setJustSaved(false) }}>
+        Record new answers
+      </Button>
+    )
+  } else if (isOfficer && !coversQuestionnaire) {
+    habitsAction = <span>Consent does not cover the questionnaire.</span>
+  }
 
   return (
     <Page wide>
@@ -166,7 +198,20 @@ export function MerchantPage() {
             <>
               <ScoreCard score={score.data} lang={lang} />
               <WhyThisScore score={score.data} lang={lang} />
-              <HabitsPanel profile={profile.data} />
+              <HabitsPanel questionnaire={questionnaire} action={habitsAction}>
+                {answering && (
+                  <QuestionnaireForm
+                    merchantId={merchantId}
+                    lang={lang}
+                    onCancel={() => setAnswering(false)}
+                    onSaved={(summary) => {
+                      setSavedAnswers(summary)
+                      setAnswering(false)
+                      setJustSaved(true)
+                    }}
+                  />
+                )}
+              </HabitsPanel>
               <WhyMightThisBeWrong />
             </>
           )}
@@ -177,6 +222,9 @@ export function MerchantPage() {
           ) : (
             <Loading what="the consent record" />
           )}
+          {/* No decision without a score: no form when consent is missing or the score failed. */}
+          {score.data && (isOfficer ? <DecisionForm merchantId={merchantId} score={score.data} onRecorded={decisions.reload} /> : <ReadOnlyDecisionNote />)}
+          <DecisionHistory decisions={decisions.data} error={decisions.error} />
         </div>
       </div>
     </Page>

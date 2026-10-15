@@ -128,10 +128,17 @@ const HABITS: { key: 'spend' | 'save' | 'borrow' | 'plan'; label: string }[] = [
 /**
  * Financial habits (the questionnaire). Shown beside the score, never inside it:
  * saving new answers does not change the score. `action` is the officer's
- * "Record new answers" button (added in Part 3b).
+ * "Record new answers" button; `children` is the form when it is open.
  */
-export function HabitsPanel({ profile, action }: { profile: MerchantProfile; action?: ReactNode }) {
-  const q = profile.questionnaire
+export function HabitsPanel({
+  questionnaire: q,
+  action,
+  children,
+}: {
+  questionnaire: MerchantProfile['questionnaire']
+  action?: ReactNode
+  children?: ReactNode
+}) {
   return (
     <Card className="flex flex-col gap-3.5 p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -165,6 +172,7 @@ export function HabitsPanel({ profile, action }: { profile: MerchantProfile; act
         </span>
         {action}
       </div>
+      {children}
     </Card>
   )
 }

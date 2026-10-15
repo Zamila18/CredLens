@@ -61,7 +61,9 @@ async function toApiError(res: Response): Promise<ApiError> {
   }
   if (res.status === 422 && Array.isArray(detail)) {
     const first = detail[0] as { msg?: string } | undefined
-    return new ApiError(422, 'validation', first?.msg ?? 'The request was refused.')
+    // FastAPI writes "Value error, A written reason is required..."; keep only the sentence.
+    const msg = (first?.msg ?? 'The request was refused.').replace(/^Value error,\s*/, '')
+    return new ApiError(422, 'validation', msg)
   }
   return new ApiError(res.status, `http_${res.status}`, res.statusText || 'Request failed.')
 }
