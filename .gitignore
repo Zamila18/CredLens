@@ -13,6 +13,8 @@ reports/*.png
 reports/**/*.png
 # Kept: the ablation chart is part of the evidence (built from synthetic data only)
 !reports/ablation/delivery_gain.png
+# Kept: drawn from the saved test results; redrawing them never looks at the test period
+!reports/*/calibration_test.png
 
 # Secrets
 .env

@@ -31,7 +31,7 @@
 - What happens with real data? Request a small anonymised sample under consent; run the same pipeline; revalidate; publish a new model card.
 
 ## v2 answers (from the team review)
-- Why believe the REDX result? Not yet. Synthetic runs show the pipeline finds a signal when one exists and none when absent. Real-label runs (Kiva Asia, Taiwan credit cards, and Home Credit whose country is not stated) show the method works on real outcomes. The REDX question itself needs partner data; the same code runs on it.
+- Why believe the REDX result? Not yet. Synthetic runs show the pipeline finds a signal when one exists and none when absent. On real outcomes, only Taiwan's credit cards show the method working (test AUC 0.75, on loans held back until the end). India shows the thin-file problem itself (0.60), Home Credit's ranking comes mostly from a score bought from outside, and Kiva cannot be scored at all (its model ranks later loans the wrong way round). Say this plainly; never quote Kiva or India as support. The REDX question itself needs partner data; the same code runs on it.
 - Why no ShopUp data? The hackathon requires no proprietary partner data. The schema is ShopUp-shaped, so their extract plugs in through an adapter.
 - How does consent work in Bangladesh? Platform consent recorded in the consents table; scoring blocked without it. AA, SGFinDex and Open Finance PH are design references.
 - What if returns come from riders? Part of synthetic returns is logistics noise; features prefer merchant-attributable events; reasons are neutral observations.

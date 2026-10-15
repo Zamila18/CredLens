@@ -1,0 +1,8 @@
+[
+  {
+    "number": 1,
+    "when": "2026-10-15T11:01:13",
+    "purpose": "final report (Phase 11 part 4)",
+    "detail": "Model homecredit-20261014-135834-4198b26: AUC, Brier, calibration, bands and coverage groups on the 8,334 test loans. Nothing is chosen or tuned from the result."
+  }
+]

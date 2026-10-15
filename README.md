@@ -30,7 +30,8 @@ Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2
 | Ablation A to D with the negative control ([reports/ablation/](reports/ablation/ABLATION.md)); PostgreSQL path checked | |
 | Group audit on every data mode, with a planted-gap test ([reports/FAIRNESS.md](reports/FAIRNESS.md)) | |
 | One model card per data mode ([docs/model_card_synthetic_bd.md](docs/model_card_synthetic_bd.md) and the others), served by `GET /model/card` | |
-| Lint, 761 tests and CI | |
+| The held-back test period, once per model, with a ledger of every look ([reports/REAL_LABEL_RESULTS.md](reports/REAL_LABEL_RESULTS.md)) | |
+| Lint, 780 tests and CI | |
 
 ### Where the model stands (synthetic data, validation months, seed 42)
 
@@ -67,7 +68,7 @@ No partner data is used. Every screen names its data source.
 | `india_ltfs` | India L&T vehicle loans (Kaggle) | Checks the method on real Indian borrowers, half of them with no credit record |
 | `homecredit` | Kaggle Home Credit (country not stated) | Checks the method at larger scale |
 
-`synthetic_bd` runs end to end today; All five modes train with the same code (`python tasks.py train --all-modes`). Validation AUC on the public sources: Taiwan 0.743, India 0.611, Home Credit 0.746 (0.601 without its outside score), Kiva 0.644. Only Taiwan is evidence that the method works; the others show where it cannot, and why. See [reports/REAL_LABEL_RESULTS.md](reports/REAL_LABEL_RESULTS.md). Results on synthetic data show that the pipeline is sound. They say nothing about real merchants. The public datasets test the method; none of them is ShopUp data. Sources and licences: [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md).
+`synthetic_bd` runs end to end today; All five modes train with the same code (`python tasks.py train --all-modes`). Validation AUC on the public sources: Taiwan 0.743, India 0.611, Home Credit 0.746 (0.601 without its outside score), Kiva 0.644. On the held-back test period, looked at once: Taiwan 0.752, India 0.599, Home Credit 0.723, Kiva 0.435 (the wrong way round). Only Taiwan is evidence that the method works; the others show where it cannot, and why. See [reports/REAL_LABEL_RESULTS.md](reports/REAL_LABEL_RESULTS.md). Results on synthetic data show that the pipeline is sound. They say nothing about real merchants. The public datasets test the method; none of them is ShopUp data. Sources and licences: [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md).
 
 ## Run it
 
@@ -86,7 +87,7 @@ python tasks.py backup    # copy the database with a timestamp
 python tasks.py api       # start the API, then open http://localhost:8000/docs
 ```
 
-`python tasks.py data --all-strengths` generates all three delivery signal strengths. `python tasks.py data --reset-db` wipes the database first, including recorded decisions. `app` exists as a command and says "not implemented yet" until Phase 10.
+`python tasks.py data --all-strengths` generates all three delivery signal strengths. `python tasks.py data --reset-db` wipes the local database first, including recorded decisions; it refuses a shared database (Supabase) unless `python -m src.db.load --reset --reset-shared-database` is run on purpose. `app` exists as a command and says "not implemented yet" until Phase 10.
 
 To use a shared database, copy `.env.example` to `.env` and fill in `DATABASE_URL`. Without it, a local SQLite file is used. Never commit `.env`.
 

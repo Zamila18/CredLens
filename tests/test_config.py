@@ -162,6 +162,11 @@ def test_home_credit_is_never_presented_as_asian_data():
         ("model", "calibration_folds", 1),
         ("model", "calibration_min_brier_gain", -0.1),
         ("model", "calibration_max_auc_gain", 2),
+        ("fairness", "min_group_outcomes", 0),
+        ("fairness", "bootstrap_resamples", "many"),
+        ("fairness", "flag_gap_points", 3),
+        ("fairness", "seeds", []),
+        ("fairness", "group_columns", []),
     ],
 )
 def test_a_wrong_setting_is_named_when_the_config_loads(config, section, key, bad_value):

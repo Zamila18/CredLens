@@ -3,7 +3,7 @@
 Run on Oct 14, 2026 with `python tasks.py train --all-modes`, seed 42. The numbers for each mode are in `reports/<mode>/metrics.json`; this page says what they do and do not show.
 
 **Read this first.**
-- Every number here is from the **validation part** of each data set. The held-back test part has not been looked at; it is used once, in the final report (Phase 11).
+- Every number in the big table is from the **validation part** of each data set. The held-back test part was used once, on Oct 15, for the final report: see "The one look at the held-back test part" below.
 - None of these data sets is ShopUp data, and none holds merchants on a commerce platform. They test the method, not how it would perform for ShopUp.
 - The same code produced all five columns. Only the list of inputs differs per source, because each source has different fields.
 - AUC: how often the model ranks a loan that was repaid above one that was not. 0.50 is a coin toss. About 0.70 is considered useful for this kind of lending (CGAP).
@@ -63,6 +63,24 @@ The band lines are the same everywhere (Strong from a score of 90, coverage from
 
 Where a source records how people actually behaved over time (Taiwan), behaviour inputs rank real outcomes well. Where it records little about the borrower (half of India, all of Kiva), no model can, and the tool answers "Needs more info" or produces a score that should not be trusted. Home Credit sits between: its strength is an outside score, not the applicant's own history. That pattern is the argument of the project: thin-file merchants need behaviour data, and a platform that sees purchases, deliveries and payments has it.
 
+## The one look at the held-back test part (Oct 15)
+
+`python -m src.model.final_test --all-modes`, once per model, each look written to `reports/<mode>/test_set_use.json` before measuring. Nothing was chosen or tuned from these numbers; the models, calibrators and band lines were fixed before. Full results: `reports/<mode>/test_results.json` and the model cards.
+
+| | Synthetic | Taiwan | India | Home Credit | Kiva |
+|---|---|---|---|---|---|
+| Test loans | 6,023 | 5,000 | 98,364 | 8,334 | 17,610 |
+| AUC, test (95% range) | 0.728 (0.707 to 0.749) | 0.752 (0.734 to 0.769) | 0.599 (0.595 to 0.603) | 0.723 (0.702 to 0.743) | 0.435 (0.420 to 0.450) |
+| AUC, validation | 0.710 | 0.743 | 0.611 | 0.746 | 0.644 |
+| Calibration error, test (validation) | 0.008 (0.012) | 0.022 (0.008) | 0.045 (0.005) | 0.005 (0.006) | 0.076 (0.065) |
+| Repaid, test (validation) | 90.2% (90.4%) | 77.9% (77.9%) | 76.5% (80.8%) | 91.9% (92.0%) | 92.0% (94.8%) |
+
+- **Taiwan** holds on loans the model never saw. The average prediction matches what happened (77.3% against 77.9%), but the calibration error rose; a likely reason, not tested, is that the isotonic calibration followed the validation loans too closely.
+- **India** gets weaker: in the test month 76.5% repaid against 80.8% in the validation month, and the calibration fitted on the earlier month expected 81.0%. A lender would have to recalibrate on recent loans. The ranking stays well under the 0.70 benchmark.
+- **Home Credit** holds; the ranking is a little below validation, the calibration unchanged.
+- **Kiva** ranks the later loans the wrong way round (AUC 0.435). It confirms the reading above: this model must not be used.
+- **Synthetic** is not a clean holdout. Its test months were looked at before (ledger entries 1 and 2: several times while the generator's noise was tuned in Phase 1, and once in an audit probe on Oct 13). The result agrees with validation but is no stronger evidence.
+
 ## Two rules that changed the numbers, and why
 
 1. **A calibrator may not improve the ranking.** On Kiva, isotonic calibration lifted the AUC from 0.644 to 0.756. It did so by flattening a stretch of scores that ranked loans the wrong way round, using the validation period's own outcomes. That is not something the model learned, so a calibrator whose AUC is more than 0.005 above the uncalibrated model is no longer eligible (`model.calibration_max_auc_gain`). Kiva's reported AUC is therefore 0.644.
@@ -70,8 +88,9 @@ Where a source records how people actually behaved over time (Taiwan), behaviour
 
 ## Limits that apply to every column
 
-- Validation numbers. The same validation data was used to choose between two models and three calibrators, so they are a little optimistic. The held-back part will tell.
+- Validation numbers. The same validation data was used to choose between two models and three calibrators, so they are a little optimistic. The held-back part, above, is the honest check.
 - The ranges treat loans as independent.
+- The time splits have no gap between periods (audit of Oct 15). The outcome of a loan issued near the end of a period became known only after the next period began, yet training and calibration used it. On the synthetic data that is up to 27.5% of the training loans and 66.9% of the validation loans (upper bounds: the generator dates every outcome 30 days after the due date). A strict forward test would leave a gap; the results are a little optimistic. Not changed now: a retrained model would need a second look at the test period.
 - The inputs were chosen by the rule "behaviour only; how much data exists is context". Sources where "little data" predicts trouble (Taiwan clients known only by a credit limit repay less often) lose that signal on purpose and get "Needs more info" instead.
 - The group audit (sex, age band, state, country and the others) is in `reports/FAIRNESS.md` (Phase 11, Oct 15), and each mode's findings are on its model card (`docs/model_card_<mode>.md`).
 - The thin-file rows above show the tool's design at work: in every source but Home Credit, the model ranks loans under the coverage line worse than the rest (on Kiva, worse than chance). That is why those loans get "Needs more info" instead of a band.

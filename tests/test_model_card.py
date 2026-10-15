@@ -44,9 +44,9 @@ def test_every_mode_has_a_card_the_api_can_serve(cards):
 def test_the_numbers_are_the_reports_numbers(cards):
     for mode, card in cards.items():
         validation = _metrics(mode)["validation"]
-        assert card["metrics"]["roc_auc"] == round(validation["metrics"]["roc_auc"], 4)
+        assert card["metrics"]["roc_auc"] == round(validation["metrics"]["roc_auc"], 6)
         assert card["metrics"]["roc_auc_range"] == [
-            round(value, 4) for value in validation["ranges"]["roc_auc"]
+            round(value, 6) for value in validation["ranges"]["roc_auc"]
         ]
 
 
@@ -172,3 +172,9 @@ def test_the_card_uses_plain_words_and_clean_keys(cards):
         assert "_" not in card["metrics"]["split"] and "_" not in card["metrics"]["calibration"]
         assert card["metrics"]["auc_benchmark"] == load_config()["sanity"]["useful_auc_benchmark"]
 
+
+def test_the_card_says_why_this_model_and_states_the_time_split_gap(cards):
+    for mode, card in cards.items():
+        assert card["metrics"]["model_choice"] == _metrics(mode)["model_choice"]["reason"]
+        time_split = _metrics(mode)["split"]["method"] == "time"
+        assert (model_card.TIME_SPLIT_LIMIT in card["limitations"]) == time_split

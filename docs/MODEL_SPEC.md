@@ -83,6 +83,8 @@ See `docs/FEATURE_DICTIONARY.md`. Feature groups: A purchases, B payments, C del
 - Baselines to beat: always predict the average repayment rate; purchases-only model.
 - If AUC > `suspicious_auc` on synthetic data, treat as leakage until proven otherwise.
 
+As built (Oct 15, `src/model/final_test.py`): each saved model is measured once on its test period; the look is written to `reports/<mode>/test_set_use.json` before measuring; a second look at the same model version needs a written reason (`--again`), which is recorded; the saved model must reproduce its validation AUC first; the result goes to `reports/<mode>/test_results.json` and the model card, next to validation. Nothing is tuned from it.
+
 ## 10. Ablation
 | Run | Features | Gain measured |
 |---|---|---|

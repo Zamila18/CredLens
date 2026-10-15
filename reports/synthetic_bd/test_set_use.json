@@ -10,5 +10,11 @@
     "when": "2026-10-13T13:44:49",
     "purpose": "audit probes (Oct 13)",
     "detail": "During the fault review, a quick logistic regression on the Phase 3 features was scored on the test months once (AUC 0.745) to compare scores of thin-file merchants. No model was selected or tuned from it; later probes used validation months."
+  },
+  {
+    "number": 3,
+    "when": "2026-10-15T11:00:21",
+    "purpose": "final report (Phase 11 part 4)",
+    "detail": "Model synthetic_bd-20261015-005409-9db9d66: AUC, Brier, calibration, bands and coverage groups on the 6,023 test loans. Nothing is chosen or tuned from the result."
   }
 ]

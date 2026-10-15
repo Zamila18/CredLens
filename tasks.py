@@ -97,7 +97,13 @@ DATA_MISSING = 3  # exit code of `src.model.train` when a mode's raw files are n
 
 
 def task_train(args: argparse.Namespace) -> int:
-    """Build features, train, evaluate on the validation period, save the model and report."""
+    """Build features, train, evaluate on the validation period, save the model and report,
+    then write the model card again.
+
+    The card of a newly trained model leaves out the group audit and the test result of
+    the older model; run `python -m src.model.fairness` again to bring the audit back. The
+    test period is not looked at again by training.
+    """
     if args.all_modes:
         skipped = []
         for mode in ("synthetic_bd", *PUBLIC_MODES):
@@ -108,11 +114,17 @@ def task_train(args: argparse.Namespace) -> int:
                 return code
         if skipped:
             print(f"Skipped, because their files are not on this machine: {', '.join(skipped)}")
-        return 0
+        # A mode without its files gets no card on this machine; that is not an error.
+        code = run_in_venv(["-m", "src.model.model_card", "--all-modes"])
+        return 0 if code in (0, DATA_MISSING) else code
     command = ["-m", "src.model.train"]
     if args.mode:
         command += ["--mode", args.mode]
-    return run_in_venv(command)
+    code = run_in_venv(command)
+    if code != 0:
+        return code
+    card = ["-m", "src.model.model_card"] + (["--mode", args.mode] if args.mode else [])
+    return run_in_venv(card)
 
 
 def task_api(_: argparse.Namespace) -> int:

@@ -1,0 +1,8 @@
+[
+  {
+    "number": 1,
+    "when": "2026-10-15T11:00:27",
+    "purpose": "final report (Phase 11 part 4)",
+    "detail": "Model kiva_asia-20261014-135932-4198b26: AUC, Brier, calibration, bands and coverage groups on the 17,610 test loans. Nothing is chosen or tuned from the result."
+  }
+]
