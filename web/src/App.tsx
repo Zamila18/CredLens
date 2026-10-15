@@ -8,6 +8,8 @@ import { AppShell } from '@/app/AppShell'
 import { RequireRole } from '@/app/RequireRole'
 import { SessionProvider } from '@/app/SessionProvider'
 import { AuditPage } from '@/pages/AuditPage'
+import { ConsentDemoPage } from '@/pages/ConsentDemoPage'
+import { ConsentPage } from '@/pages/ConsentPage'
 import { DecisionsPage } from '@/pages/DecisionsPage'
 import { DevStates } from '@/pages/DevStates'
 import { MerchantPage } from '@/pages/merchant/MerchantPage'
@@ -25,8 +27,8 @@ export default function App() {
           <Route path="decisions" element={<DecisionsPage />} />
           <Route path="portfolio" element={<Placeholder title="Portfolio" part="Part 4" mockup="Portfolio.dc.html" />} />
           <Route path="model" element={<ModelCardPage />} />
-          <Route path="consent" element={<Placeholder title="Consent" part="Part 4" mockup="Consent.dc.html" />} />
-          <Route path="demo/consent" element={<Placeholder title="Mock consent page" part="Part 4" mockup="ConsentMobile.dc.html" />} />
+          <Route path="consent" element={<ConsentPage />} />
+          <Route path="demo/consent" element={<ConsentDemoPage />} />
           <Route
             path="audit"
             element={
