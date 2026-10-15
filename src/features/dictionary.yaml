@@ -247,7 +247,7 @@ features:
     detail: {label: "Returns", format: share}
     definition: >-
       Merchant-attributable returns (refused, wrong item) / total, 90 days;
-      address/rider returns excluded when return_reason is known
+      address and rider returns left out when the reason is recorded
     higher_means: worse
     positive:
       en: "Delivery returns are lower than similar shops."
