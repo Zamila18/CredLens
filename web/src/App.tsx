@@ -9,13 +9,14 @@ import { RequireRole } from '@/app/RequireRole'
 import { SessionProvider } from '@/app/SessionProvider'
 import { DevStates } from '@/pages/DevStates'
 import { NotFound, Placeholder } from '@/pages/Placeholder'
+import { QueuePage } from '@/pages/QueuePage'
 
 export default function App() {
   return (
     <SessionProvider>
       <Routes>
         <Route element={<AppShell />}>
-          <Route index element={<Placeholder title="Review queue" part="Part 2" mockup="Main.dc.html" />} />
+          <Route index element={<QueuePage />} />
           <Route path="merchants/:merchantId" element={<Placeholder title="Merchant" part="Part 3" mockup="Merchant.dc.html" />} />
           <Route path="decisions" element={<Placeholder title="Decision log" part="Part 4" mockup="Decisions.dc.html" />} />
           <Route path="portfolio" element={<Placeholder title="Portfolio" part="Part 4" mockup="Portfolio.dc.html" />} />
