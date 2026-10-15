@@ -2,6 +2,7 @@
  * All the pages and their addresses (DESIGN_SPEC.md section 1).
  * Every page sits inside the app shell (sidebar + banner).
  */
+import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router'
 
 import { AppShell } from '@/app/AppShell'
@@ -15,8 +16,11 @@ import { DevStates } from '@/pages/DevStates'
 import { ImportPage } from '@/pages/ImportPage'
 import { MerchantPage } from '@/pages/merchant/MerchantPage'
 import { ModelCardPage } from '@/pages/model/ModelCardPage'
-import { NotFound, Placeholder } from '@/pages/Placeholder'
+import { NotFound } from '@/pages/NotFound'
 import { QueuePage } from '@/pages/QueuePage'
+
+// The portfolio is the only page with a chart library (Recharts); load it only when opened.
+const PortfolioPage = lazy(() => import('@/pages/PortfolioPage').then((m) => ({ default: m.PortfolioPage })))
 
 export default function App() {
   return (
@@ -26,7 +30,14 @@ export default function App() {
           <Route index element={<QueuePage />} />
           <Route path="merchants/:merchantId" element={<MerchantPage />} />
           <Route path="decisions" element={<DecisionsPage />} />
-          <Route path="portfolio" element={<Placeholder title="Portfolio" part="Part 4" mockup="Portfolio.dc.html" />} />
+          <Route
+            path="portfolio"
+            element={
+              <Suspense fallback={<div className="p-8 text-sm text-muted">Loading the portfolio…</div>}>
+                <PortfolioPage />
+              </Suspense>
+            }
+          />
           <Route path="model" element={<ModelCardPage />} />
           <Route path="consent" element={<ConsentPage />} />
           <Route path="demo/consent" element={<ConsentDemoPage />} />
