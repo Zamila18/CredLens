@@ -8,6 +8,7 @@ import { AppShell } from '@/app/AppShell'
 import { RequireRole } from '@/app/RequireRole'
 import { SessionProvider } from '@/app/SessionProvider'
 import { DevStates } from '@/pages/DevStates'
+import { MerchantPage } from '@/pages/merchant/MerchantPage'
 import { NotFound, Placeholder } from '@/pages/Placeholder'
 import { QueuePage } from '@/pages/QueuePage'
 
@@ -17,7 +18,7 @@ export default function App() {
       <Routes>
         <Route element={<AppShell />}>
           <Route index element={<QueuePage />} />
-          <Route path="merchants/:merchantId" element={<Placeholder title="Merchant" part="Part 3" mockup="Merchant.dc.html" />} />
+          <Route path="merchants/:merchantId" element={<MerchantPage />} />
           <Route path="decisions" element={<Placeholder title="Decision log" part="Part 4" mockup="Decisions.dc.html" />} />
           <Route path="portfolio" element={<Placeholder title="Portfolio" part="Part 4" mockup="Portfolio.dc.html" />} />
           <Route path="model" element={<Placeholder title="Model card" part="Part 4" mockup="ModelCard.dc.html" />} />

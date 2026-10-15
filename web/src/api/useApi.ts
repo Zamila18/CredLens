@@ -8,6 +8,8 @@
  * - While the API is starting (no answer yet, or 503 "scorer_not_ready"), the call
  *   is retried every few seconds on its own, as the error callout promises.
  * - Pass `null` as the path to skip the call (for example before an id is known).
+ * - `{ noCache: true }` asks the API again on every visit. Used for merchant reads:
+ *   each profile or score read writes an audit entry, so a saved copy would hide a view.
  */
 import { useCallback, useEffect, useState } from 'react'
 
@@ -45,7 +47,10 @@ function toApiError(err: unknown): ApiError {
   return err instanceof ApiError ? err : new ApiError(0, 'network', String(err))
 }
 
-export function useApi<T>(path: string | null, query?: Query) {
+type Options = { noCache?: boolean }
+
+export function useApi<T>(path: string | null, query?: Query, options: Options = {}) {
+  const { noCache = false } = options
   const { user } = useSession()
   const url = path ? withQuery(path, query) : null
   // Results are cached per demo user: an admin and a viewer may get different answers.
@@ -54,7 +59,7 @@ export function useApi<T>(path: string | null, query?: Query) {
   const [state, setState] = useState<{ key: string | null; data?: T; error?: ApiError }>({ key: null })
 
   // Already downloaded (by this or another component)? Use it straight away.
-  const cached = key ? (cache.get(key)?.data as T | undefined) : undefined
+  const cached = key && !noCache ? (cache.get(key)?.data as T | undefined) : undefined
 
   useEffect(() => {
     if (!key || !url) return
@@ -67,7 +72,9 @@ export function useApi<T>(path: string | null, query?: Query) {
       const fresh: Entry = {}
       fresh.promise = api<T>(url).then(
         (data) => {
-          fresh.data = data
+          // noCache: share only the call in flight (React may mount twice), keep nothing after.
+          if (noCache) cache.delete(key)
+          else fresh.data = data
           fresh.promise = undefined
           return data
         },
@@ -95,7 +102,7 @@ export function useApi<T>(path: string | null, query?: Query) {
       alive = false
       if (timer) clearTimeout(timer)
     }
-  }, [key, url, tick])
+  }, [key, url, tick, noCache])
 
   const reload = useCallback(() => {
     if (key) cache.delete(key)
