@@ -1,0 +1,180 @@
+{
+  "data_mode": "kiva_asia",
+  "model_version": "kiva_asia-20261014-135932-4198b26",
+  "measured_on": "test period (held back until now)",
+  "ledger_look_number": 1,
+  "split": {
+    "method": "time",
+    "boundaries": {
+      "train_from": "2009-07-01",
+      "validation_from": "2012-01-01",
+      "test_from": "2012-10-01",
+      "test_until": "2013-07-01"
+    },
+    "sizes": {
+      "train": 32581,
+      "validation": 15113,
+      "test": 17610
+    }
+  },
+  "test": {
+    "loans": 17610,
+    "not_repaid_loans": 1404,
+    "share_repaid": 0.9202725724020443,
+    "metrics": {
+      "roc_auc": 0.43541915202874104,
+      "pr_auc_not_repaid": 0.07862465794831791,
+      "brier": 0.07451676297102217,
+      "calibration_error": 0.07586245750094638,
+      "not_repaid_rate_in_lowest_k": 0.0,
+      "not_repaid_caught_in_lowest": 0.02564102564102564,
+      "precision_at_top_k": 1.0,
+      "share_at_or_above_strong_line": 1.0
+    },
+    "ranges": {
+      "roc_auc": [
+        0.42006205326592877,
+        0.449542314747509
+      ],
+      "pr_auc_not_repaid": [
+        0.07351514279809132,
+        0.08303933796769716
+      ],
+      "brier": [
+        0.0708995398740022,
+        0.07771747210658264
+      ],
+      "calibration_error": [
+        0.07156920240927936,
+        0.07921085605687206
+      ],
+      "resamples_used": 500
+    },
+    "range_level": 0.95,
+    "calibration": [
+      {
+        "lowest": 0.9023,
+        "highest": 0.9408,
+        "loans": 1761,
+        "mean_predicted": 0.925,
+        "share_repaid": 0.983
+      },
+      {
+        "lowest": 0.9408,
+        "highest": 0.9408,
+        "loans": 1761,
+        "mean_predicted": 0.9408,
+        "share_repaid": 0.9977
+      },
+      {
+        "lowest": 0.9408,
+        "highest": 0.9433,
+        "loans": 1761,
+        "mean_predicted": 0.9418,
+        "share_repaid": 0.8859
+      },
+      {
+        "lowest": 0.9433,
+        "highest": 0.9479,
+        "loans": 1761,
+        "mean_predicted": 0.9466,
+        "share_repaid": 0.7036
+      },
+      {
+        "lowest": 0.9479,
+        "highest": 0.9543,
+        "loans": 1761,
+        "mean_predicted": 0.9501,
+        "share_repaid": 0.9466
+      },
+      {
+        "lowest": 0.9543,
+        "highest": 0.9543,
+        "loans": 1761,
+        "mean_predicted": 0.9543,
+        "share_repaid": 0.9972
+      },
+      {
+        "lowest": 0.9543,
+        "highest": 0.9543,
+        "loans": 1761,
+        "mean_predicted": 0.9543,
+        "share_repaid": 0.9966
+      },
+      {
+        "lowest": 0.9543,
+        "highest": 0.9543,
+        "loans": 1761,
+        "mean_predicted": 0.9543,
+        "share_repaid": 0.9943
+      },
+      {
+        "lowest": 0.9543,
+        "highest": 0.9562,
+        "loans": 1761,
+        "mean_predicted": 0.9559,
+        "share_repaid": 0.7871
+      },
+      {
+        "lowest": 0.9562,
+        "highest": 0.9598,
+        "loans": 1761,
+        "mean_predicted": 0.9579,
+        "share_repaid": 0.9108
+      }
+    ],
+    "benchmark": {
+      "useful_auc": 0.7,
+      "point_estimate_reaches_it": false,
+      "whole_range_reaches_it": false
+    },
+    "warnings": [
+      "AUC 0.435 is below 0.5: the scores rank loans the wrong way round."
+    ]
+  },
+  "test_bands": {
+    "Strong": {
+      "loans": 15404,
+      "share": 0.8747302668938103,
+      "share_repaid": 0.9092443521163334
+    },
+    "Review": {
+      "loans": 0,
+      "share": 0.0,
+      "share_repaid": null
+    },
+    "Needs more info": {
+      "loans": 2206,
+      "share": 0.12526973310618966,
+      "share_repaid": 0.9972801450589301
+    }
+  },
+  "test_by_coverage": {
+    "coverage_below_the_line": {
+      "loans": 2206,
+      "roc_auc": 0.6764772727272728
+    },
+    "coverage_at_or_above_the_line": {
+      "loans": 15404,
+      "roc_auc": 0.48295174232502447
+    }
+  },
+  "always_average_rate": {
+    "predicted_rate": 0.9903317884656702,
+    "roc_auc": 0.5,
+    "pr_auc_not_repaid": 0.0797274275979557,
+    "brier": 0.07827925864201826,
+    "calibration_error": 0.07005921606362586
+  },
+  "validation_for_comparison": {
+    "roc_auc": 0.6441375125927282,
+    "roc_auc_range": [
+      0.6339152205619482,
+      0.6549902382814624
+    ],
+    "brier": 0.04969608389315049,
+    "calibration_error": 0.06526643740739212
+  },
+  "test_minus_validation_auc": -0.20871836056398718,
+  "note": "Reported as it came out. The model, calibrator and band lines were fixed before this look and were not changed after it."
+}

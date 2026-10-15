@@ -1,0 +1,8 @@
+[
+  {
+    "number": 1,
+    "when": "2026-10-15T11:00:35",
+    "purpose": "final report (Phase 11 part 4)",
+    "detail": "Model taiwan_cc-20261014-135411-4198b26: AUC, Brier, calibration, bands and coverage groups on the 5,000 test loans. Nothing is chosen or tuned from the result."
+  }
+]

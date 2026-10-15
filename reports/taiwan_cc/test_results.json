@@ -1,0 +1,173 @@
+{
+  "data_mode": "taiwan_cc",
+  "model_version": "taiwan_cc-20261014-135411-4198b26",
+  "measured_on": "test period (held back until now)",
+  "ledger_look_number": 1,
+  "split": {
+    "method": "stratified_random",
+    "boundaries": {},
+    "sizes": {
+      "train": 20000,
+      "validation": 5000,
+      "test": 5000
+    }
+  },
+  "test": {
+    "loans": 5000,
+    "not_repaid_loans": 1106,
+    "share_repaid": 0.7788,
+    "metrics": {
+      "roc_auc": 0.7518524349140097,
+      "pr_auc_not_repaid": 0.5035955478470485,
+      "brier": 0.13792584089079202,
+      "calibration_error": 0.022187049554071164,
+      "not_repaid_rate_in_lowest_k": 0.9,
+      "not_repaid_caught_in_lowest": 0.49276672694394213,
+      "precision_at_top_k": 0.85,
+      "share_at_or_above_strong_line": 0.3046
+    },
+    "ranges": {
+      "roc_auc": [
+        0.733517359237876,
+        0.7688089211562515
+      ],
+      "pr_auc_not_repaid": [
+        0.47349170667147306,
+        0.5347687509069786
+      ],
+      "brier": [
+        0.13171991083851028,
+        0.14459257329860986
+      ],
+      "calibration_error": [
+        0.014559827031017842,
+        0.031083485766286036
+      ],
+      "resamples_used": 500
+    },
+    "range_level": 0.95,
+    "calibration": [
+      {
+        "lowest": 0.2453,
+        "highest": 0.4137,
+        "loans": 500,
+        "mean_predicted": 0.2887,
+        "share_repaid": 0.288
+      },
+      {
+        "lowest": 0.4333,
+        "highest": 0.6667,
+        "loans": 500,
+        "mean_predicted": 0.5539,
+        "share_repaid": 0.624
+      },
+      {
+        "lowest": 0.6667,
+        "highest": 0.7335,
+        "loans": 500,
+        "mean_predicted": 0.728,
+        "share_repaid": 0.748
+      },
+      {
+        "lowest": 0.7335,
+        "highest": 0.8789,
+        "loans": 500,
+        "mean_predicted": 0.8199,
+        "share_repaid": 0.8
+      },
+      {
+        "lowest": 0.8789,
+        "highest": 0.8789,
+        "loans": 500,
+        "mean_predicted": 0.8789,
+        "share_repaid": 0.856
+      },
+      {
+        "lowest": 0.8789,
+        "highest": 0.8789,
+        "loans": 500,
+        "mean_predicted": 0.8789,
+        "share_repaid": 0.88
+      },
+      {
+        "lowest": 0.8789,
+        "highest": 0.8991,
+        "loans": 500,
+        "mean_predicted": 0.8843,
+        "share_repaid": 0.856
+      },
+      {
+        "lowest": 0.8991,
+        "highest": 0.8991,
+        "loans": 500,
+        "mean_predicted": 0.8991,
+        "share_repaid": 0.888
+      },
+      {
+        "lowest": 0.8991,
+        "highest": 0.8991,
+        "loans": 500,
+        "mean_predicted": 0.8991,
+        "share_repaid": 0.914
+      },
+      {
+        "lowest": 0.8991,
+        "highest": 1.0,
+        "loans": 500,
+        "mean_predicted": 0.9011,
+        "share_repaid": 0.934
+      }
+    ],
+    "benchmark": {
+      "useful_auc": 0.7,
+      "point_estimate_reaches_it": true,
+      "whole_range_reaches_it": true
+    },
+    "warnings": []
+  },
+  "test_bands": {
+    "Strong": {
+      "loans": 1432,
+      "share": 0.2864,
+      "share_repaid": 0.9120111731843575
+    },
+    "Review": {
+      "loans": 3110,
+      "share": 0.622,
+      "share_repaid": 0.719935691318328
+    },
+    "Needs more info": {
+      "loans": 458,
+      "share": 0.0916,
+      "share_repaid": 0.7620087336244541
+    }
+  },
+  "test_by_coverage": {
+    "coverage_below_the_line": {
+      "loans": 458,
+      "roc_auc": 0.6548066559764465
+    },
+    "coverage_at_or_above_the_line": {
+      "loans": 4542,
+      "roc_auc": 0.758487875474095
+    }
+  },
+  "always_average_rate": {
+    "predicted_rate": 0.7788,
+    "roc_auc": 0.5,
+    "pr_auc_not_repaid": 0.2212,
+    "brier": 0.17227056,
+    "calibration_error": 0.0
+  },
+  "validation_for_comparison": {
+    "roc_auc": 0.7428298834113037,
+    "roc_auc_range": [
+      0.7252024513424858,
+      0.7609980749853018
+    ],
+    "brier": 0.13805425303370508,
+    "calibration_error": 0.007970768349568152
+  },
+  "test_minus_validation_auc": 0.009022551502705922,
+  "note": "Reported as it came out. The model, calibrator and band lines were fixed before this look and were not changed after it."
+}
