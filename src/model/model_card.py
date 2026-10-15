@@ -10,6 +10,8 @@ Every number comes from a report file written by an earlier step, never typed in
     reports/<mode>/metrics.json      training run (validation months)
     reports/<mode>/fairness.json     group audit (validation months)
     reports/ablation/ablation.json   ablation (synthetic data only)
+    reports/<mode>/test_results.json the one look at the held-back test period
+    reports/<mode>/test_set_use.json the ledger of every look at the test period
 The words about each data source (what it is, its terms, what it shows and does not)
 are written once below, from docs/DATA_SOURCES.md and reports/REAL_LABEL_RESULTS.md.
 
@@ -32,6 +34,8 @@ from src.api.schemas import ModelCard
 from src.config import PROJECT_ROOT, VALID_MODES, banner_text, load_config
 from src.features.dictionary import SYNTHETIC_MODE, features_for_mode, load_dictionary
 from src.model.fairness import CANDIDATE, FLAGGED, REPORT_FILE, TOO_FEW
+from src.model.final_test import RESULTS_FILE
+from src.model.holdout_ledger import read_ledger
 from src.model.train import DATA_MISSING, METRICS_FILE
 
 REPORTS_DIR = PROJECT_ROOT / "reports"
@@ -158,19 +162,48 @@ READING: dict[str, dict[str, str]] = {
     },
 }
 
+# What the one look at the test period says, per mode (written after the look of Oct 15;
+# the numbers are in the table above it, from test_results.json).
+TEST_READING: dict[str, str] = {
+    "synthetic_bd": "Not a clean holdout: while the generator's noise was tuned in Phase 1, "
+    "and once in a later audit probe, a rough model was scored on these test months (see "
+    "the earlier uses below). The result agrees with validation, but it is no stronger "
+    "evidence than the validation result.",
+    "taiwan_cc": "The ranking holds on loans the model never saw. On average the predictions "
+    "match what happened, but the calibration error is higher than on validation; a likely "
+    "reason, not tested, is that the isotonic calibration followed the validation loans a "
+    "little too closely.",
+    "india_ltfs": "Repayment in the test month was lower than in the validation month, and "
+    "the calibration fitted on the earlier month expects too much repayment: even loans in "
+    "the Strong band repaid fewer than 9 in 10. The ranking stays weak. A lender would have "
+    "to recalibrate on recent loans before any use.",
+    "homecredit": "The calibration holds on loans the model never saw, and the ranking is a "
+    "little below the validation result.",
+    "kiva_asia": "On the later test months the model ranks loans the wrong way round (AUC "
+    "below 0.5). This confirms that it must not be used.",
+}
+
 COMMON_LIMITS = [
     "Labels exist only for people who received credit before. The model may not work for "
     "applicants who would have been turned down under earlier policy.",
     "Scores are less certain when coverage is low. A thin file is never treated as a bad "
     "file: below the coverage line the band is 'Needs more info', whatever the score.",
-    "The numbers above are from the validation period. It was also used to choose the model "
-    "and the calibration, so they are a little optimistic.",
+    "The validation numbers are a little optimistic: that period was also used to choose "
+    "the model and the calibration. The held-back test period gives the honest check.",
     "Group columns are used only to audit results, never as model inputs. The group audit "
     "shows where the model works measurably differently on these data; it does not show "
     "that the model is fair.",
     "The tool supports a human decision. It must not be used for automatic approval or "
     "decline.",
 ]
+
+# A time split here has no gap between periods (found in the audit of Oct 15).
+TIME_SPLIT_LIMIT = (
+    "The periods follow each other with no gap. The outcome of a loan issued near the end "
+    "of one period became known only after the next period began, but training (and the "
+    "calibration) used it as if it had been known. A strict forward test would leave a gap; "
+    "without it the results are a little optimistic."
+)
 
 MODE_LIMITS: dict[str, list[str]] = {
     "synthetic_bd": [
@@ -219,8 +252,48 @@ def current_audit(reports_dir: Path, mode: str, model_version: str) -> dict[str,
     return fairness
 
 
-def _round(value: Any, digits: int = 4) -> Any:
-    """Round a number (or each number of a range) for the card."""
+def current_test(reports_dir: Path, mode: str, model_version: str) -> dict[str, Any] | None:
+    """The test-period result of this model version, or None."""
+    results = _read_json(reports_dir / mode / RESULTS_FILE)
+    if results is None or results["model_version"] != model_version:
+        return None
+    return results
+
+
+def card_test(results: dict[str, Any] | None, looks: list[dict[str, Any]]) -> dict[str, Any]:
+    """The test-period numbers for the card, and how often the test period was used."""
+    numbers: dict[str, Any] = {"test_period_looks": float(len(looks))}
+    if results is None:
+        numbers["test_result"] = (
+            "The held-back test period has not been used for this model yet."
+        )
+        return numbers
+    test = results["test"]
+    numbers.update(
+        test_loans=float(test["loans"]),
+        test_share_repaid=_round(test["share_repaid"]),
+        test_roc_auc=_round(test["metrics"]["roc_auc"]),
+        test_roc_auc_range=_round(test["ranges"]["roc_auc"]),
+        test_brier=_round(test["metrics"]["brier"]),
+        test_brier_range=_round(test["ranges"]["brier"]),
+        test_brier_always_average_rate=_round(results["always_average_rate"]["brier"]),
+        test_calibration_error=_round(test["metrics"]["calibration_error"]),
+        test_calibration_error_range=_round(test["ranges"]["calibration_error"]),
+        test_minus_validation_auc=_round(results["test_minus_validation_auc"]),
+    )
+    for band, part in results["test_bands"].items():
+        key = band.lower().replace(" ", "_")
+        numbers[f"test_band_{key}_share"] = _round(part["share"])
+        numbers[f"test_band_{key}_share_repaid"] = _round(part["share_repaid"])
+    return numbers
+
+
+def _round(value: Any, digits: int = 6) -> Any:
+    """Round a number (or each number of a range) for the card.
+
+    Six decimals: the page shows three, and rounding twice (to four, then to three) can
+    change the last digit shown.
+    """
     if isinstance(value, float):
         return round(value, digits)
     if isinstance(value, list):
@@ -243,12 +316,14 @@ def card_metrics(metrics: dict[str, Any], config: dict[str, Any]) -> dict[str, A
     gain = metrics["gain_over_simpler_model"]
     bands = metrics["validation_bands"]["bands"]
     result: dict[str, Any] = {
-        "measured_on": "validation period (the held-back test period is not used here)",
+        "measured_on": "validation period; the test_ numbers are from the held-back test "
+        "period, used once",
         "split": PLAIN.get(metrics["split"]["method"], metrics["split"]["method"]),
         "split_note": metrics["split"]["note"],
         "train_loans": float(metrics["split"]["sizes"]["train"]),
         "validation_loans": float(metrics["split"]["sizes"]["validation"]),
         "model": PLAIN.get(metrics["model"], metrics["model"]),
+        "model_choice": metrics["model_choice"]["reason"],
         "calibration": PLAIN.get(
             metrics["calibration"]["method"], metrics["calibration"]["method"]
         ),
@@ -362,6 +437,10 @@ def build_card(mode: str, config: dict[str, Any], reports_dir: Path = REPORTS_DI
     ablation = _read_json(reports_dir / "ablation" / "ablation.json")
     findings = group_findings(fairness)
     numbers = card_metrics(metrics, config)
+    test = current_test(reports_dir, mode, metrics["model_version"])
+    numbers.update(card_test(test, read_ledger(mode, reports_dir)))
+    if test is not None:
+        numbers["test_reading"] = TEST_READING[mode]
     numbers.update(
         data_source=SOURCES[mode]["source"],
         terms=SOURCES[mode]["terms"],
@@ -380,7 +459,9 @@ def build_card(mode: str, config: dict[str, Any], reports_dir: Path = REPORTS_DI
         "metrics": numbers,
         "ablation": card_ablation(ablation) if mode == SYNTHETIC_MODE else [],
         "group_results": card_groups(fairness),
-        "limitations": MODE_LIMITS[mode] + COMMON_LIMITS,
+        "limitations": MODE_LIMITS[mode]
+        + ([TIME_SPLIT_LIMIT] if metrics["split"]["method"] == "time" else [])
+        + COMMON_LIMITS,
     }
     ModelCard.model_validate(card)  # the API must be able to serve it
     return card
@@ -397,7 +478,52 @@ def _cell(value: Any) -> str:
     return str(value)
 
 
-def card_markdown(card: dict[str, Any], fairness: dict[str, Any] | None) -> str:
+def _test_section(m: dict[str, Any], looks: list[dict[str, Any]]) -> list[str]:
+    """The held-back test period next to the validation period, and the ledger."""
+    lines = ["## Results on the held-back test period", ""]
+    if "test_roc_auc" not in m:
+        return lines + [m["test_result"], ""]
+    lines += [
+        "| Measure | Validation | Test | Test 95% range |",
+        "|---|---|---|---|",
+        f"| AUC | {_cell(m['roc_auc'])} | {_cell(m['test_roc_auc'])} "
+        f"| {_cell(m['test_roc_auc_range'])} |",
+        f"| Brier score | {_cell(m['brier'])} | {_cell(m['test_brier'])} "
+        f"| {_cell(m['test_brier_range'])} |",
+        f"| Calibration error | {_cell(m['calibration_error'])} "
+        f"| {_cell(m['test_calibration_error'])} | {_cell(m['test_calibration_error_range'])} |",
+        "",
+        f"{m['test_loans']:,.0f} test loans, {m['test_share_repaid']:.1%} repaid. Brier score "
+        f"of always predicting the training average on them: "
+        f"{_cell(m['test_brier_always_average_rate'])}. Test bands: "
+        + ", ".join(
+            f"{band.replace('_', ' ')} {m[f'test_band_{band}_share']:.0%}"
+            for band in ("strong", "review", "needs_more_info")
+            if f"test_band_{band}_share" in m
+        )
+        + ". The model, its calibration and the band lines were fixed before this look and "
+        "were not changed after it.",
+        "",
+        f"**Reading.** {m['test_reading']}",
+        "",
+    ]
+    earlier = [entry for entry in looks if not entry["purpose"].startswith("final report")]
+    lines.append(
+        f"The ledger `reports/<mode>/test_set_use.json` has {len(looks)} "
+        f"entr{'y' if len(looks) == 1 else 'ies'} for this test period (one entry can cover "
+        "several looks; its detail says)."
+        + (
+            " Earlier uses: " + "; ".join(entry["purpose"] for entry in earlier) + "."
+            if earlier
+            else ""
+        )
+    )
+    return lines + [""]
+
+
+def card_markdown(
+    card: dict[str, Any], fairness: dict[str, Any] | None, looks: list[dict[str, Any]]
+) -> str:
     """The card as a page for people to read."""
     m = card["metrics"]
     lines = [
@@ -424,6 +550,8 @@ def card_markdown(card: dict[str, Any], fairness: dict[str, Any] | None) -> str:
         "## Model",
         "",
         f"- **Model in use:** {m['model']}, calibration: {m['calibration']}.",
+        f"- **Why this model:** {m['model_choice']} (The simpler model stays unless the "
+        "other is clearly better.)",
         "- **Inputs** (each can only push the score the way its meaning says; how much "
         "data exists about a borrower is never an input):",
         *[f"  - {meaning}" for meaning in m["inputs"].split(INPUT_SEPARATOR)],
@@ -461,6 +589,7 @@ def card_markdown(card: dict[str, Any], fairness: dict[str, Any] | None) -> str:
         f"**What this does not show.** {m['what_this_does_not_show']}",
         "",
     ]
+    lines += _test_section(m, looks)
     if card["ablation"]:
         lines += [
             "## Ablation (synthetic data; does each data source add anything?)",
@@ -527,7 +656,8 @@ def write_card(
     json_path = reports_dir / mode / CARD_FILE
     json_path.write_text(json.dumps(card, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     page_path = docs_dir / f"model_card_{mode}.md"
-    page_path.write_text(card_markdown(card, fairness), encoding="utf-8")
+    looks = read_ledger(mode, reports_dir)
+    page_path.write_text(card_markdown(card, fairness, looks), encoding="utf-8")
     return json_path, page_path
 
 
