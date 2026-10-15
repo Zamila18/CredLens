@@ -201,6 +201,19 @@ def validate_config(config: dict[str, Any]) -> None:
     for extra in sorted(set(by_mode) - set(VALID_MODES)):
         problems.append(f"coverage_weights_by_mode.{extra} is not a known data mode")
 
+    fairness = config.get("fairness") or {}
+    if not isinstance(fairness.get("group_columns"), list) or not fairness["group_columns"]:
+        problems.append("fairness.group_columns must be a non-empty list")
+    audit_only = fairness.get("audit_only_columns") or {}
+    for public_mode in VALID_MODES:
+        if public_mode != "synthetic_bd" and not audit_only.get(public_mode):
+            problems.append(f"fairness.audit_only_columns.{public_mode} must be a non-empty list")
+    fairness_seeds = fairness.get("seeds")
+    if not isinstance(fairness_seeds, list) or not fairness_seeds or not all(
+        isinstance(s, int) and not isinstance(s, bool) for s in fairness_seeds
+    ):
+        problems.append("fairness.seeds must be a list of whole numbers")
+
     database = config.get("database") or {}
     if not database.get("url_env") or not database.get("default_url"):
         problems.append("database.url_env and database.default_url are required")
@@ -312,6 +325,8 @@ POSITIVE_WHOLE_NUMBERS = (
     "generator.loans.term_days",
     "generator.loans.max_loans",
     "sanity.min_not_repaid_for_stable_metrics",
+    "fairness.min_group_outcomes",
+    "fairness.bootstrap_resamples",
 )
 SHARES = (
     "evaluation.lowest_share",
@@ -328,6 +343,7 @@ SHARES = (
     "sanity.useful_auc_benchmark",
     "sanity.suspicious_auc",
     "sanity.zero_signal_max_auc_gain",
+    "fairness.flag_gap_points",
 )
 
 

@@ -22,7 +22,14 @@ from sqlalchemy.orm import Session
 
 from src.config import load_config
 from src.db.backup import backup_database
-from src.db.load import DEMO_USERS, DataAlreadyLoaded, DataMismatch, data_fingerprint, load_tables
+from src.db.load import (
+    DEMO_USERS,
+    DataAlreadyLoaded,
+    DataMismatch,
+    SharedResetRefused,
+    data_fingerprint,
+    load_tables,
+)
 from src.db.mifos_adapter import export_mifos
 from src.db.models import (
     APPEND_ONLY_TABLES,
@@ -396,3 +403,17 @@ def test_mifos_style_export_has_clients_loans_schedule_and_transactions(
         assert field in loans.columns, field
     assert len(transactions) == int(tables["payments"]["paid_date"].notna().sum())
     assert "SYNTHETIC" in paths["readme"].read_text(encoding="utf-8")
+
+
+def test_a_shared_database_is_never_reset_by_accident(tables, monkeypatch):
+    """With Supabase in .env, `python tasks.py data --reset-db` must not erase decisions."""
+    import src.db.load as loader
+
+    dropped = []
+    monkeypatch.setattr(loader, "drop_tables", lambda url: dropped.append(url))
+    shared = "postgresql://user:secret@db.example.supabase.co:5432/postgres"
+    with pytest.raises(SharedResetRefused):
+        load_tables(tables, shared, reset=True)
+    assert dropped == [], "nothing may be dropped before the refusal"
+    assert loader.is_local_database("sqlite:///data/app.db")
+    assert not loader.is_local_database(shared)

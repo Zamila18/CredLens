@@ -9,6 +9,11 @@ Safety rules:
 - The loader never overwrites data silently. If the database already holds merchants,
   it stops and says so. To start again, pass `reset=True` (command line: --reset), which
   removes every table, including recorded decisions and the audit log.
+- A reset of a shared database (anything that is not a local SQLite file, such as
+  Supabase) is refused unless it is asked for by name: `--reset-shared-database`
+  (`allow_shared_reset=True`). The triggers that keep decisions append-only do not stop
+  DROP TABLE, so without this guard one routine command on a laptop whose .env points at
+  Supabase would erase every recorded decision and the audit log.
 - It also notices when the database holds different data from the files (for example
   after the generator settings changed). That is reported as an error, because scores
   computed from the files would not match what the dashboard reads from the database.
@@ -64,6 +69,15 @@ class DataMismatch(RuntimeError):
     """Raised when the database holds different data from the tables being loaded."""
 
 
+class SharedResetRefused(RuntimeError):
+    """Raised when a reset would wipe a shared (non-SQLite) database without being asked by name."""
+
+
+def is_local_database(database_url: str) -> bool:
+    """True for a local SQLite file; False for a shared database such as Supabase."""
+    return database_url.startswith("sqlite")
+
+
 def data_fingerprint(tables: dict[str, pd.DataFrame]) -> str:
     """A short code that changes whenever the data changes.
 
@@ -95,7 +109,10 @@ def _to_records(table: str, frame: pd.DataFrame) -> list[dict[str, Any]]:
 
 
 def load_tables(
-    tables: dict[str, pd.DataFrame], database_url: str, reset: bool = False
+    tables: dict[str, pd.DataFrame],
+    database_url: str,
+    reset: bool = False,
+    allow_shared_reset: bool = False,
 ) -> dict[str, int]:
     """Write each table to the database and return the row count per table.
 
@@ -103,7 +120,14 @@ def load_tables(
         tables: the seven contract tables, as returned by an adapter's `load_all()`.
         database_url: SQLite or Postgres connection string.
         reset: remove every existing table first, including decisions and the audit log.
+        allow_shared_reset: needed as well when the database is shared (not SQLite).
     """
+    if reset and not is_local_database(database_url) and not allow_shared_reset:
+        raise SharedResetRefused(
+            "This would erase the SHARED database (decisions and audit log included). "
+            "Nothing was changed. If that is really meant, run: "
+            "python -m src.db.load --reset --reset-shared-database"
+        )
     if reset:
         drop_tables(database_url)
     engine = make_engine(database_url)
@@ -163,6 +187,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="remove every table first, including decisions and the audit log",
     )
+    parser.add_argument(
+        "--reset-shared-database",
+        action="store_true",
+        help="also needed to reset a shared database such as Supabase",
+    )
     args = parser.parse_args(argv)
 
     config = load_config()
@@ -175,7 +204,15 @@ def main(argv: list[str] | None = None) -> int:
     kind = "SQLite (local file)" if database_url.startswith("sqlite") else "PostgreSQL (shared)"
     print(f"Loading '{mode}' into the database: {kind}")
     try:
-        counts = load_tables(get_adapter(config).load_all(), database_url, reset=args.reset)
+        counts = load_tables(
+            get_adapter(config).load_all(),
+            database_url,
+            reset=args.reset,
+            allow_shared_reset=args.reset_shared_database,
+        )
+    except SharedResetRefused as error:
+        print(f"STOP: {error}")
+        return 1
     except DataAlreadyLoaded as error:
         print(error)
         return 0
