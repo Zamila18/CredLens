@@ -36,6 +36,15 @@ export const ITEMS: Item[] = [
   { key: 'borrow2', group: 'Borrow', en: 'The owner knows what the credit the shop uses costs.', bn: '', ...AGREE },
   { key: 'plan1', group: 'Plan', en: "The owner plans ahead for the shop's money.", bn: '', ...AGREE },
   { key: 'plan2', group: 'Plan', en: 'The shop has a backup plan if sales drop.', bn: '', ...AGREE },
-  { key: 'stress', group: 'Context', en: "Money worries about the shop cause the owner stress.", bn: '', ...AGREE },
+  // 1 = no stress, 5 = a lot of stress (src/synth/generate.py reverse-codes it: a reliable
+  // merchant reports low stress). Keep this direction when the wording is replaced.
+  {
+    key: 'stress',
+    group: 'Context',
+    en: 'How much stress do money worries about the shop cause the owner?',
+    bn: '',
+    low: 'No stress',
+    high: 'A lot of stress',
+  },
   { key: 'confidence', group: 'Context', en: "The owner feels confident about the shop's finances for the coming year.", bn: '', ...AGREE },
 ]

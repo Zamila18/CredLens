@@ -167,7 +167,7 @@ export function HabitsPanel({
       <div className="flex flex-wrap items-center justify-between gap-2.5 text-[13px] text-muted">
         <span>
           {q
-            ? `Stress ${q.stress} / 5 · Confidence ${q.confidence} / 5 · answered ${fmtDate(q.answered_at)}`
+            ? `Stress ${q.stress} / 5 (5 = a lot) · Confidence ${q.confidence} / 5 · answered ${fmtDate(q.answered_at)}`
             : 'The ten questions are optional and never change the score.'}
         </span>
         {action}
