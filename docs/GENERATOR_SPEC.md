@@ -43,7 +43,7 @@ Row counts; no duplicate merchant_id; foreign keys resolve; thin-file share near
 
 ## Calibration to Bangladesh (v2)
 Set these from public sources and cite them in docs/DATA_SOURCES.md; never invent figures. Leave a TODO naming the source until a human supplies the number.
-- Share of merchants using mobile money / digital payments: Global Findex 2025 Bangladesh microdata.
+- Share of merchants using mobile money / digital payments: Global Findex 2025 Bangladesh microdata. (Not built: the generator uses no Findex figure; see v3 below. Do not say the synthetic data is calibrated to Findex.)
 - Month-by-month seasonality of merchant payments: Bangladesh Bank MFS monthly statistics.
 - Share of small retailers selling on credit (73%) and formal-finance access (27.5%): ShopUp Series B press release (context for the deck; optional prior for questionnaire answers).
 
