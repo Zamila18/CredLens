@@ -1,0 +1,43 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-10-14T17:55:00Z"},
+  "title": "CredLens Dashboard",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 1040, "title": "Review queue", "expand": "fill", "is_interactive": true},
+    "Merchant.dc.html": {"x": 1520, "y": 0, "w": 1440, "h": 2000, "title": "Merchant detail · FIX-M001", "expand": "fill", "is_interactive": true},
+    "States.dc.html": {"x": 3040, "y": 0, "w": 1200, "h": 2000, "title": "System: tokens, lens states, errors"},
+    "Lens.dc.html": {"x": 4320, "y": 0, "w": 220, "h": 270, "title": "Component · Lens dial"},
+    "Sidebar.dc.html": {"x": 4620, "y": 0, "w": 248, "h": 900, "title": "Component · Sidebar", "is_interactive": true},
+    "ModelCard.dc.html": {"x": 0, "y": 2400, "w": 1440, "h": 2100, "title": "Model card (per data mode)", "expand": "fill", "is_interactive": true},
+    "Portfolio.dc.html": {"x": 1520, "y": 2400, "w": 1440, "h": 1300, "title": "Portfolio view", "expand": "fill"},
+    "Decisions.dc.html": {"x": 0, "y": 4900, "w": 1440, "h": 980, "title": "Decision log", "expand": "fill"},
+    "Audit.dc.html": {"x": 1520, "y": 4900, "w": 1440, "h": 860, "title": "Audit log (admin)", "expand": "fill"},
+    "Consent.dc.html": {"x": 0, "y": 6280, "w": 1440, "h": 1000, "title": "Consent view", "expand": "fill"},
+    "ConsentMobile.dc.html": {"x": 1520, "y": 6280, "w": 390, "h": 844, "title": "Mock consent page (merchant, demo only)", "is_interactive": true},
+    "Import.dc.html": {"x": 1990, "y": 6280, "w": 1440, "h": 1060, "title": "Data import (admin)", "expand": "fill", "is_interactive": true}
+  },
+  "order": [
+    "Main.dc.html",
+    "Merchant.dc.html",
+    "States.dc.html",
+    "Lens.dc.html",
+    "Sidebar.dc.html",
+    "ModelCard.dc.html",
+    "Portfolio.dc.html",
+    "Decisions.dc.html",
+    "Audit.dc.html",
+    "Consent.dc.html",
+    "ConsentMobile.dc.html",
+    "Import.dc.html"
+  ],
+  "notes": {
+    "rowOfficer": {"x": 0, "y": -300, "text": "Officer flow: queue → merchant → decision", "kind": "title1", "maxW": 2960},
+    "rowSystem": {"x": 3040, "y": -300, "text": "System", "kind": "title1", "maxW": 1828},
+    "rowHonesty": {"x": 0, "y": 2100, "text": "Model honesty and portfolio", "kind": "title1", "maxW": 2960},
+    "rowRecords": {"x": 0, "y": 4600, "text": "Records: append-only", "kind": "title1", "maxW": 2960},
+    "rowData": {"x": 0, "y": 5980, "text": "Data in and consent", "kind": "title1", "maxW": 3430}
+  },
+  "designSystems": []
+}

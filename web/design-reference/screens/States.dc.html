@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CredLens · System</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=Noto+Sans+Bengali:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.h2{margin:0;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#4C5853}
+.sw{display:flex;flex-direction:column;gap:8px}
+.sw i{display:block;height:64px;border-radius:12px}
+.sw b{font-size:13px;font-weight:600}
+.sw span{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4C5853}
+</style>
+</helmet>
+<div style="width: 1200px; height: 2000px; box-sizing: border-box; padding: 56px; background: #F4F5F1; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #13201C; display: flex; flex-direction: column; gap: 44px">
+  <header style="display: flex; justify-content: space-between; align-items: flex-end; gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <h1 style="margin: 0; font-size: 44px; line-height: 48px; font-weight: 600; letter-spacing: -0.02em">CredLens system</h1>
+      <p style="margin: 0; font-size: 16px; color: #3C4843; max-width: 640px">One idea runs through every screen: a score is never alone. It sits inside a coverage ring, wears its band, and shows its reasons.</p>
+    </div>
+    <svg width="72" height="72" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+      <circle cx="15" cy="15" r="13" stroke="#0E5A4A" stroke-width="1.6" stroke-dasharray="3 3"></circle>
+      <circle cx="15" cy="15" r="8.5" stroke="#13201C" stroke-width="3"></circle>
+      <circle cx="15" cy="15" r="2.5" fill="#E0A44A"></circle>
+    </svg>
+  </header>
+
+  <section style="display: flex; flex-direction: column; gap: 16px">
+    <h2 class="h2">Colour</h2>
+    <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px">
+      <div class="sw"><i style="background: #13201C"></i><b>Ink</b><span>#13201C · text</span></div>
+      <div class="sw"><i style="background: #0F1D19"></i><b>Night</b><span>#0F1D19 · sidebar</span></div>
+      <div class="sw"><i style="background: #F4F5F1; box-shadow: inset 0 0 0 1px #D5D9D0"></i><b>Ground</b><span>#F4F5F1 · page</span></div>
+      <div class="sw"><i style="background: #0E5A4A"></i><b>Lens green</b><span>#0E5A4A · Strong, primary</span></div>
+      <div class="sw"><i style="background: #E0A44A"></i><b>Marigold</b><span>#E0A44A · focus mark only</span></div>
+      <div class="sw"><i style="background: #B5650D"></i><b>Amber</b><span>#B5650D · Review, holds back</span></div>
+      <div class="sw"><i style="background: #8A97BF"></i><b>Periwinkle</b><span>#8A97BF · Needs more info</span></div>
+      <div class="sw"><i style="background: #4A5A8C"></i><b>Slate blue</b><span>#4A5A8C · deliveries, habits</span></div>
+      <div class="sw"><i style="background: #8A3A10"></i><b>Rust</b><span>#8A3A10 · low-score warning</span></div>
+      <div class="sw"><i style="background: #2D4F45"></i><b>Coverage</b><span>#2D4F45 · outer ring</span></div>
+    </div>
+    <p style="margin: 0; font-size: 14px; color: #3C4843">No red anywhere. A thin file is uncertain, not bad, so Needs more info is a cool periwinkle with a dashed edge, never an alarm colour. Bands differ in lightness as well as hue.</p>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 16px">
+    <h2 class="h2">Type</h2>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+      <div style="background: #FFFFFF; border: 1px solid #E1E4DD; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 34px; font-weight: 600; letter-spacing: -0.01em">Aa Review queue</span>
+        <span class="mono" style="font-size: 12px; color: #4C5853">IBM Plex Sans · UI and copy</span>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E1E4DD; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 8px">
+        <span class="mono" style="font-size: 34px; font-weight: 600; letter-spacing: -0.02em">94 · ৳1,48,000</span>
+        <span class="mono" style="font-size: 12px; color: #4C5853">IBM Plex Mono · scores, ids, money</span>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E1E4DD; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 8px">
+        <span style="font-family: 'Noto Sans Bengali', sans-serif; font-size: 30px; font-weight: 500">মাল কেনা বাড়ছে</span>
+        <span class="mono" style="font-size: 12px; color: #4C5853">Noto Sans Bengali · Bangla reasons</span>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 16px">
+    <h2 class="h2">The lens: four states</h2>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+      <div style="background: #FFFFFF; border: 1px solid #E1E4DD; border-radius: 16px; padding: 20px 10px; display: flex; flex-direction: column; align-items: center; gap: 12px">
+        <dc-import name="Lens" score="94" coverage="0.85" band="Strong" warn="false" hint-size="220px,270px"></dc-import>
+        <span style="font-size: 13px; color: #3C4843; text-align: center; padding: 0 10px">FIX-M001. Proceed with normal checks.</span>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E1E4DD; border-radius: 16px; padding: 20px 10px; display: flex; flex-direction: column; align-items: center; gap: 12px">
+        <dc-import name="Lens" score="48" coverage="0.75" band="Review" warn="true" hint-size="220px,270px"></dc-import>
+        <span style="font-size: 13px; color: #3C4843; text-align: center; padding: 0 10px">FIX-M003. Below 70: read every reason.</span>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E1E4DD; border-radius: 16px; padding: 20px 10px; display: flex; flex-direction: column; align-items: center; gap: 12px">
+        <dc-import name="Lens" score="66" coverage="0.35" band="Needs more info" warn="true" hint-size="220px,270px"></dc-import>
+        <span style="font-size: 13px; color: #3C4843; text-align: center; padding: 0 10px">FIX-M004. Coverage under 45%: the number is greyed, the ask is evidence.</span>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E1E4DD; border-radius: 16px; padding: 20px 10px; display: flex; flex-direction: column; align-items: center; gap: 12px">
+        <dc-import name="Lens" band="none" hint-size="220px,270px"></dc-import>
+        <span style="font-size: 13px; color: #3C4843; text-align: center; padding: 0 10px">FIX-M005. Consent revoked: no score, no decision.</span>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 16px">
+      <h2 class="h2">Decision actions</h2>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+        <button type="button" style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px; border: 1.5px solid #0E5A4A; background: #EEF6F2; box-shadow: inset 0 0 0 1px #0E5A4A; font: inherit; color: #13201C; padding: 12px 14px; border-radius: 12px; text-align: left"><span style="font-weight: 600; font-size: 14px">Accept suggestion</span><span style="font-size: 12px; color: #4C5853">Selected state</span></button>
+        <button type="button" style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px; border: 1.5px solid #D5D9D0; background: #FFFFFF; font: inherit; color: #13201C; padding: 12px 14px; border-radius: 12px; text-align: left"><span style="font-weight: 600; font-size: 14px">Override: raise</span><span style="font-size: 12px; color: #4C5853">Reason required</span></button>
+        <button type="button" style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px; border: 1.5px solid #D5D9D0; background: #FFFFFF; font: inherit; color: #13201C; padding: 12px 14px; border-radius: 12px; text-align: left"><span style="font-weight: 600; font-size: 14px">Override: lower</span><span style="font-size: 12px; color: #4C5853">Reason required</span></button>
+        <button type="button" style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px; border: 1.5px solid #D5D9D0; background: #FFFFFF; font: inherit; color: #13201C; padding: 12px 14px; border-radius: 12px; text-align: left"><span style="font-weight: 600; font-size: 14px">Needs more info</span><span style="font-size: 12px; color: #4C5853">Note optional</span></button>
+      </div>
+      <p style="margin: 0; font-size: 14px; color: #3C4843">There is no Approve or Decline button anywhere, and the API refuses those words. Record decision stays disabled until an override has a written reason.</p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 16px">
+      <h2 class="h2">Reason card</h2>
+      <div style="display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: 12px; background: #FCF4E7">
+        <div style="display: flex; justify-content: space-between; gap: 10px"><span style="font-size: 14px; line-height: 20px">Returns are higher than similar shops; this may reflect delivery conditions.</span><span class="mono" style="font-size: 13px; font-weight: 600; color: #7A4304; white-space: nowrap">−1.5 pts</span></div>
+        <div style="height: 8px; border-radius: 4px; background: #EEF0EA; overflow: hidden"><span style="display: block; height: 8px; width: 50%; background: #B5650D"></span></div>
+        <span class="mono" style="font-size: 12px; color: #55625C">Returns 7.5% vs average 4.0%</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: 12px; background: #F2F8F5">
+        <div style="display: flex; justify-content: space-between; gap: 10px"><span style="font-family: 'Noto Sans Bengali', sans-serif; font-size: 14px; line-height: 22px">আগের তিন মাসের তুলনায় মাল কেনা বাড়ছে।</span><span class="mono" style="font-size: 13px; font-weight: 600; color: #0B4A3D; white-space: nowrap">+3.0 pts</span></div>
+        <div style="height: 8px; border-radius: 4px; background: #EEF0EA; overflow: hidden"><span style="display: block; height: 8px; width: 100%; background: #0E5A4A"></span></div>
+      </div>
+      <p style="margin: 0; font-size: 14px; color: #3C4843">Officers read sentences, never feature codes. Delivery reasons stay neutral observations.</p>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 16px">
+    <h2 class="h2">When the API says no</h2>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+      <div style="background: #FFFFFF; border: 1px solid #E1E4DD; border-radius: 16px; padding: 18px; display: flex; gap: 14px">
+        <span class="mono" style="font-size: 12px; font-weight: 600; color: #4A524E; background: #ECEDE9; border-radius: 6px; padding: 3px 8px; align-self: flex-start">403</span>
+        <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 600">Consent needed</span><span style="font-size: 14px; color: #3C4843">This merchant has no valid consent, so there is no score and no decision. Ask the merchant to grant access.</span><span class="mono" style="font-size: 12px; color: #55625C">consent_required</span></div>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E1E4DD; border-radius: 16px; padding: 18px; display: flex; gap: 14px">
+        <span class="mono" style="font-size: 12px; font-weight: 600; color: #4A524E; background: #ECEDE9; border-radius: 6px; padding: 3px 8px; align-self: flex-start">403</span>
+        <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 600">Totals only for this source</span><span style="font-size: 14px; color: #3C4843">Home Credit rows may not be shown. Open the model card for this source's results.</span><span class="mono" style="font-size: 12px; color: #55625C">rows_not_shown</span></div>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E1E4DD; border-radius: 16px; padding: 18px; display: flex; gap: 14px">
+        <span class="mono" style="font-size: 12px; font-weight: 600; color: #4A524E; background: #ECEDE9; border-radius: 6px; padding: 3px 8px; align-self: flex-start">503</span>
+        <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 600">The scorer is starting</span><span style="font-size: 14px; color: #3C4843">The API builds the scorer at start-up, about half a minute. This page retries on its own.</span><span class="mono" style="font-size: 12px; color: #55625C">scorer_not_ready</span></div>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E1E4DD; border-radius: 16px; padding: 18px; display: flex; gap: 14px">
+        <span class="mono" style="font-size: 12px; font-weight: 600; color: #4A524E; background: #ECEDE9; border-radius: 6px; padding: 3px 8px; align-self: flex-start">409</span>
+        <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 600">Import is off for public data</span><span style="font-size: 14px; color: #3C4843">Switch the data source to synthetic_bd to import files.</span><span class="mono" style="font-size: 12px; color: #55625C">import_not_available</span></div>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":2000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

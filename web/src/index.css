@@ -1,0 +1,172 @@
+/*
+ * CredLens design tokens (web/design-reference/DESIGN_SPEC.md, section 2).
+ *
+ * Tailwind v4 reads its theme from CSS: every --color-* below becomes a class,
+ * for example --color-lens gives bg-lens, text-lens and border-lens.
+ * shadcn/ui components use the generic names (--primary, --border, ...); those
+ * point at our tokens too, so no component keeps the shadcn default look.
+ *
+ * Rule from the design: no red anywhere. "Needs more info" is periwinkle, never
+ * an alarm colour.
+ */
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@theme {
+  /* Fonts */
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-bn: 'Noto Sans Bengali', 'IBM Plex Sans', sans-serif;
+
+  /* Text */
+  --color-ink: #13201c;
+  --color-ink-2: #2e3934;
+  --color-ink-3: #3c4843; /* body copy on cards */
+  --color-muted: #4c5853;
+  --color-muted-2: #55625c;
+
+  /* Sidebar */
+  --color-night: #0f1d19;
+  --color-night-2: #182b25;
+  --color-night-line: #2f453e;
+  --color-night-active: #1f3b33;
+  --color-night-text: #c9d6d0;
+  --color-night-soft: #9db2aa;
+  --color-night-label: #8fa59c;
+  --color-night-hi: #e7ece8;
+
+  /* Surfaces */
+  --color-ground: #f4f5f1;
+  --color-banner: #e9ece4;
+  --color-banner-line: #daded5;
+  --color-banner-text: #2b3631;
+  --color-card: #ffffff;
+  --color-card-line: #e1e4dd;
+  --color-line: #e6e8e2;
+  --color-line-soft: #eef0ea;
+  --color-control-line: #d5d9d0;
+  --color-button-line: #cfd6cc;
+  --color-seg: #eceee8;
+  --color-track: #e3e6df;
+  --color-row-hover: #fafbf8;
+
+  /* Strong / primary */
+  --color-lens: #0e5a4a;
+  --color-lens-dark: #0b4a3d;
+  --color-lens-hover: #08392f;
+  --color-strong-chip: #dcefe6;
+  --color-strong-panel: #f2f8f5;
+  --color-strong-selected: #eef6f2;
+  --color-open-hover: #eef5f1;
+
+  /* Review */
+  --color-amber: #b5650d;
+  --color-amber-text: #7a4304;
+  --color-amber-chip: #fbebd2;
+  --color-amber-panel: #fcf4e7;
+  --color-amber-deep: #5e3403;
+  --color-marigold: #e0a44a;
+
+  /* Needs more info */
+  --color-peri: #8a97bf;
+  --color-peri-text: #33406a;
+  --color-peri-chip: #e8ecf6;
+  --color-peri-panel: #eef0f7;
+  --color-peri-head: #262f52;
+  --color-peri-body: #2b3352;
+  --color-peri-number: #6d79a0;
+  --color-slate: #4a5a8c;
+  --color-slate-2: #5a6894;
+
+  /* Others */
+  --color-rust: #8a3a10;
+  --color-coverage: #2d4f45;
+  --color-neutral-chip: #ecede9;
+  --color-neutral-text: #4a524e;
+  --color-disabled: #b9c2bd;
+
+  /* Radii */
+  --radius-card: 16px;
+  --radius-panel: 12px;
+}
+
+/* shadcn/ui names, mapped onto the CredLens tokens. */
+:root {
+  --radius: 0.625rem;
+  --background: #f4f5f1;
+  --foreground: #13201c;
+  --card: #ffffff;
+  --card-foreground: #13201c;
+  --popover: #ffffff;
+  --popover-foreground: #13201c;
+  --primary: #0e5a4a;
+  --primary-foreground: #ffffff;
+  --secondary: #eceee8;
+  --secondary-foreground: #13201c;
+  --muted: #eceee8;
+  --muted-foreground: #4c5853;
+  --accent: #eef6f2;
+  --accent-foreground: #0b4a3d;
+  /* "destructive" is rust, never red. */
+  --destructive: #8a3a10;
+  --border: #e1e4dd;
+  --input: #d5d9d0;
+  --ring: #0e5a4a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html,
+  body {
+    margin: 0;
+    background: var(--color-ground);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  a {
+    color: var(--color-lens);
+  }
+  a:hover {
+    color: var(--color-lens-hover);
+  }
+  /* Visible keyboard focus, in lens green. */
+  :focus-visible {
+    outline: 2px solid var(--color-lens);
+    outline-offset: 2px;
+  }
+}
+
+/* Numbers line up in columns. Use with font-mono for scores, ids, money, dates. */
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The dashed periwinkle fill used for thin files (Needs more info). */
+@utility stripes-nmi {
+  background: repeating-linear-gradient(90deg, #5a6894 0 4px, #e3e6df 4px 6px);
+}

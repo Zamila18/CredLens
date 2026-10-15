@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CredLens · Review queue</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=Noto+Sans+Bengali:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F1}
+a{color:#0E5A4A}a:hover{color:#08392F}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;line-height:18px;white-space:nowrap}
+.b-strong{background:#DCEFE6;color:#0B4A3D}
+.b-review{background:#FBEBD2;color:#7A4304}
+.b-nmi{background:#E8ECF6;color:#33406A;box-shadow:inset 0 0 0 1.5px #8A97BF}
+.b-none{background:#ECEDE9;color:#4A524E}
+.seg{display:inline-flex;background:#ECEEE8;border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;font:inherit;font-size:13px;font-weight:500;color:#45514C;padding:8px 14px;border-radius:8px;cursor:pointer;min-height:36px}
+.seg button.on{background:#FFFFFF;color:#13201C;box-shadow:0 1px 2px rgba(19,32,28,.12)}
+.fchip{border:1px solid #D5D9D0;background:#FFFFFF;font:inherit;font-size:13px;color:#2E3934;padding:8px 12px;border-radius:999px;cursor:pointer;min-height:36px}
+.fchip.on{background:#13201C;border-color:#13201C;color:#FFFFFF}
+.row{border-top:1px solid #E6E8E2}
+.row:hover{background:#FAFBF8}
+.open{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:13px;text-decoration:none;padding:10px 14px;border-radius:8px;border:1px solid #CFD6CC;color:#0E5A4A;min-height:20px}
+.open:hover{background:#EEF5F1;color:#08392F}
+.bar{height:6px;border-radius:3px;background:#E3E6DF;overflow:hidden;width:96px}
+.bar span{display:block;height:6px;background:#2D4F45}
+.thin span{background:repeating-linear-gradient(90deg,#5A6894 0 4px,#E3E6DF 4px 6px)}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 100vh; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #13201C; background: #F4F5F1">
+  <div style="flex: 1 1 240px; background: #0F1D19">
+    <dc-import name="Sidebar" active="queue" hint-size="100%,900px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 10px 32px; background: #E9ECE4; border-bottom: 1px solid #DADED5; font-size: 13px">
+      <div style="display: flex; align-items: center; gap: 10px; color: #2B3631">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#2B3631" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6.5"></circle><path d="M8 7.2v4"></path><circle cx="8" cy="4.9" r=".6" fill="#2B3631"></circle></svg>
+        <span style="font-weight: 600">Synthetic demo data.</span>
+        <span>Decision support only.</span>
+      </div>
+      <div class="mono" style="color: #55625C; font-size: 12px">data_mode synthetic_bd · model fixture-0</div>
+    </div>
+
+    <div style="padding: 32px; display: flex; flex-direction: column; gap: 24px; max-width: 1240px; width: 100%; box-sizing: border-box">
+      <header style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <h1 style="margin: 0; font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.01em">Review queue</h1>
+          <p style="margin: 0; color: #4C5853; font-size: 15px; max-width: 640px">Pending merchants first, oldest first. Every score travels with its coverage and band. Open a merchant to read why.</p>
+        </div>
+        <label style="display: flex; align-items: center; gap: 8px; background: #FFFFFF; border: 1px solid #D5D9D0; border-radius: 10px; padding: 0 12px; min-height: 44px; min-width: 260px">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#55625C" stroke-width="1.5" aria-hidden="true"><circle cx="7" cy="7" r="4.5"></circle><path d="M10.5 10.5 14 14"></path></svg>
+          <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Search merchant ID</span>
+          <input type="search" placeholder="Search merchant ID" style="border: 0; outline: none; font: inherit; font-size: 14px; flex: 1; background: transparent; color: #13201C">
+        </label>
+      </header>
+
+      <section aria-label="Queue summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px">
+        <div style="background: #FFFFFF; border: 1px solid #E1E4DD; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 4px">
+          <span style="font-size: 13px; color: #4C5853">Pending</span>
+          <span class="mono" style="font-size: 28px; font-weight: 600">{{counts.pending}}</span>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #E1E4DD; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 4px">
+          <span style="font-size: 13px; color: #4C5853">Needs more info</span>
+          <span class="mono" style="font-size: 28px; font-weight: 600; color: #33406A">{{counts.nmi}}</span>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #E1E4DD; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 4px">
+          <span style="font-size: 13px; color: #4C5853">Consent missing · no score</span>
+          <span class="mono" style="font-size: 28px; font-weight: 600">{{counts.noConsent}}</span>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #E1E4DD; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 4px">
+          <span style="font-size: 13px; color: #4C5853">Decided</span>
+          <span class="mono" style="font-size: 28px; font-weight: 600">{{counts.decided}}</span>
+        </div>
+      </section>
+
+      <section aria-label="Filters" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px">
+        <div class="seg" role="group" aria-label="Status">
+          <sc-for list="{{statusTabs}}" as="t" hint-placeholder-count="3">
+            <button type="button" class="{{t.cls}}" aria-pressed="{{t.on}}" onClick="{{t.pick}}">{{t.label}}</button>
+          </sc-for>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px" role="group" aria-label="Band">
+          <span style="font-size: 13px; color: #4C5853">Band</span>
+          <sc-for list="{{bandTabs}}" as="b" hint-placeholder-count="4">
+            <button type="button" class="{{b.cls}}" aria-pressed="{{b.on}}" onClick="{{b.pick}}">{{b.label}}</button>
+          </sc-for>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto">
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #4C5853">Town tier
+            <select style="font: inherit; font-size: 13px; padding: 8px 10px; border-radius: 8px; border: 1px solid #D5D9D0; background: #FFFFFF; min-height: 36px"><option>All</option><option>metro</option><option>city</option><option>small_town</option></select>
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #4C5853">Shop type
+            <select style="font: inherit; font-size: 13px; padding: 8px 10px; border-radius: 8px; border: 1px solid #D5D9D0; background: #FFFFFF; min-height: 36px"><option>All</option><option>grocery</option><option>electronics</option><option>apparel</option><option>pharmacy</option><option>other</option></select>
+          </label>
+        </div>
+      </section>
+
+      <section style="background: #FFFFFF; border: 1px solid #E1E4DD; border-radius: 16px; overflow: hidden">
+        <div style="overflow-x: auto">
+          <table style="width: 100%; min-width: 880px; border-collapse: collapse; font-size: 14px">
+            <thead>
+              <tr style="text-align: left; color: #4C5853; font-size: 12px; text-transform: uppercase; letter-spacing: .04em">
+                <th scope="col" style="padding: 14px 20px; font-weight: 600">Merchant</th>
+                <th scope="col" style="padding: 14px 12px; font-weight: 600">Readiness</th>
+                <th scope="col" style="padding: 14px 12px; font-weight: 600">Shop</th>
+                <th scope="col" style="padding: 14px 12px; font-weight: 600">Onboarded</th>
+                <th scope="col" style="padding: 14px 12px; font-weight: 600">Waiting since</th>
+                <th scope="col" style="padding: 14px 12px; font-weight: 600">Status</th>
+                <th scope="col" style="padding: 14px 20px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Open</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+                <tr class="row">
+                  <td style="padding: 16px 20px; vertical-align: middle">
+                    <div class="mono" style="font-weight: 600; font-size: 14px">{{r.merchant_id}}</div>
+                    <div style="font-size: 13px; color: #4C5853">{{r.district}} · {{r.town_tier}}</div>
+                  </td>
+                  <td style="padding: 12px; vertical-align: middle">
+                    <sc-if value="{{r.consent_valid}}" hint-placeholder-val="{{ true }}">
+                      <div style="display: flex; align-items: center; gap: 14px">
+                        <span class="mono" style="{{r.scoreStyle}}">{{r.score}}</span>
+                        <div style="display: flex; flex-direction: column; gap: 6px">
+                          <span class="{{r.chipCls}}" style="align-self: flex-start">{{r.band}}</span>
+                          <div style="display: flex; align-items: center; gap: 8px">
+                            <div class="{{r.barCls}}" aria-hidden="true"><span style="width: {{r.covPct}}%"></span></div>
+                            <span class="mono" style="font-size: 12px; color: #4C5853">{{r.covPct}}% coverage</span>
+                          </div>
+                        </div>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{r.noConsent}}" hint-placeholder-val="{{ false }}">
+                      <div style="display: flex; align-items: center; gap: 10px; color: #4A524E">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#4A524E" stroke-width="1.5" aria-hidden="true"><rect x="3.5" y="8" width="11" height="7.5" rx="1.5"></rect><path d="M6 8V5.8a3 3 0 0 1 6 0V8"></path></svg>
+                        <div style="display: flex; flex-direction: column">
+                          <span style="font-weight: 600; font-size: 13px">Consent needed</span>
+                          <span style="font-size: 12px">No score until the merchant consents</span>
+                        </div>
+                      </div>
+                    </sc-if>
+                  </td>
+                  <td style="padding: 12px; vertical-align: middle; color: #2E3934">{{r.shop_type}}</td>
+                  <td class="mono" style="padding: 12px; vertical-align: middle; font-size: 13px; color: #2E3934">{{r.onboarded}}</td>
+                  <td class="mono" style="padding: 12px; vertical-align: middle; font-size: 13px; color: #2E3934">{{r.waiting}}</td>
+                  <td style="padding: 12px; vertical-align: middle"><span class="{{r.statusCls}}">{{r.statusLabel}}</span></td>
+                  <td style="padding: 12px 20px; vertical-align: middle; text-align: right">
+                    <a class="open" href="Merchant.dc.html" aria-label="Open {{r.merchant_id}}">Open
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 3l4 4-4 4"></path></svg>
+                    </a>
+                  </td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        <sc-if value="{{empty}}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 40px 20px; text-align: center; color: #4C5853; font-size: 14px">No merchants match these filters.</div>
+        </sc-if>
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 14px 20px; border-top: 1px solid #E6E8E2; font-size: 13px; color: #4C5853">
+          <span>Showing {{shown}} of {{total}} merchants</span>
+          <span>A thin file shows as Needs more info, never as a low band.</span>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { status: 'all', band: 'all' };
+  }
+  renderVals() {
+    var raw = [
+      { merchant_id: 'FIX-M004', district: 'Dhaka', town_tier: 'metro', shop_type: 'electronics', onboarded_at: '2026-04-20', status: 'pending', pending_since: '2026-06-05', score: 66, coverage: 0.35, band: 'Needs more info', consent_valid: true },
+      { merchant_id: 'FIX-M001', district: 'Dhaka', town_tier: 'metro', shop_type: 'grocery', onboarded_at: '2025-01-10', status: 'pending', pending_since: '2026-06-10', score: 94, coverage: 0.85, band: 'Strong', consent_valid: true },
+      { merchant_id: 'FIX-M005', district: 'Sylhet', town_tier: 'city', shop_type: 'other', onboarded_at: '2025-05-05', status: 'pending', pending_since: '2026-06-12', score: null, coverage: null, band: null, consent_valid: false },
+      { merchant_id: 'FIX-M003', district: 'Bogura', town_tier: 'small_town', shop_type: 'apparel', onboarded_at: '2025-03-01', status: 'decided', pending_since: null, score: 48, coverage: 0.75, band: 'Review', consent_valid: true }
+    ];
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var fmt = function (d) { if (!d) return '—'; var p = d.split('-'); return Number(p[2]) + ' ' + months[Number(p[1]) - 1] + ' ' + p[0]; };
+    var chip = { 'Strong': 'chip b-strong', 'Review': 'chip b-review', 'Needs more info': 'chip b-nmi' };
+    var self = this;
+    var st = this.state;
+    var filtered = raw.filter(function (r) {
+      if (st.status !== 'all' && r.status !== st.status) return false;
+      if (st.band !== 'all') {
+        if (st.band === 'none') return !r.consent_valid;
+        if (r.band !== st.band) return false;
+      }
+      return true;
+    });
+    var rows = filtered.map(function (r) {
+      var nmi = r.band === 'Needs more info';
+      return Object.assign({}, r, {
+        noConsent: !r.consent_valid,
+        covPct: r.coverage == null ? 0 : Math.round(r.coverage * 100),
+        chipCls: chip[r.band] || 'chip b-none',
+        barCls: nmi ? 'bar thin' : 'bar',
+        scoreStyle: nmi ? 'font-size: 28px; font-weight: 600; min-width: 44px; color: #6D79A0' : (r.score < 70 ? 'font-size: 28px; font-weight: 600; min-width: 44px; color: #8A3A10' : 'font-size: 28px; font-weight: 600; min-width: 44px; color: #13201C'),
+        onboarded: fmt(r.onboarded_at),
+        waiting: fmt(r.pending_since),
+        statusLabel: r.status === 'pending' ? 'Pending' : 'Decided',
+        statusCls: r.status === 'pending' ? 'chip b-none' : 'chip b-strong'
+      });
+    });
+    var mk = function (key, label, field, current) {
+      return { label: label, on: current === key, cls: '', pick: function () { var s = {}; s[field] = key; self.setState(s); } };
+    };
+    var statusTabs = [mk('all', 'All', 'status', st.status), mk('pending', 'Pending', 'status', st.status), mk('decided', 'Decided', 'status', st.status)]
+      .map(function (t) { t.cls = t.on ? 'on' : ''; return t; });
+    var bandTabs = [mk('all', 'All', 'band', st.band), mk('Strong', 'Strong', 'band', st.band), mk('Review', 'Review', 'band', st.band), mk('Needs more info', 'Needs more info', 'band', st.band), mk('none', 'No consent', 'band', st.band)]
+      .map(function (t) { t.cls = t.on ? 'fchip on' : 'fchip'; return t; });
+    return {
+      rows: rows,
+      empty: rows.length === 0,
+      shown: rows.length,
+      total: raw.length,
+      statusTabs: statusTabs,
+      bandTabs: bandTabs,
+      counts: {
+        pending: raw.filter(function (r) { return r.status === 'pending'; }).length,
+        decided: raw.filter(function (r) { return r.status === 'decided'; }).length,
+        nmi: raw.filter(function (r) { return r.band === 'Needs more info'; }).length,
+        noConsent: raw.filter(function (r) { return !r.consent_valid; }).length
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>
