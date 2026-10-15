@@ -1,60 +1,47 @@
 /**
- * Part 0 placeholder: checks that the browser can reach the API through the
- * /api proxy and shows the banner from GET /health. Part 1 replaces this with
- * the app shell (sidebar, banner, role switch) and the real pages.
+ * All the pages and their addresses (DESIGN_SPEC.md section 1).
+ * Every page sits inside the app shell (sidebar + banner).
  */
-import { useEffect, useState } from 'react'
 import { Route, Routes } from 'react-router'
 
-import { ApiError, api } from '@/api/client'
-import type { Health } from '@/api/types'
-import { Button } from '@/components/ui/button'
-
-function SetupCheck() {
-  const [health, setHealth] = useState<Health | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [attempt, setAttempt] = useState(0)
-
-  useEffect(() => {
-    const controller = new AbortController()
-    api<Health>('/health', { signal: controller.signal })
-      .then((h) => {
-        setHealth(h)
-        setError(null)
-      })
-      .catch((err: unknown) => {
-        if (err instanceof ApiError) setError(`${err.message} (${err.code})`)
-      })
-    return () => controller.abort()
-  }, [attempt])
-
-  return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-6 p-8">
-      <h1 className="m-0 text-[30px] leading-9 font-semibold tracking-[-0.01em]">CredLens setup check</h1>
-      <section className="flex flex-col gap-3 rounded-card border border-card-line bg-card p-5">
-        <span className="text-xs font-semibold tracking-[.06em] text-muted uppercase">GET /health</span>
-        {health && (
-          <>
-            <p className="m-0 text-[15px]">{health.banner}</p>
-            <p className="m-0 font-mono text-xs text-muted-2 tabular">data_mode {health.data_mode}</p>
-          </>
-        )}
-        {error && <p className="m-0 text-sm text-rust">{error}</p>}
-        {!health && !error && <p className="m-0 text-sm text-muted">Asking the API…</p>}
-        <div>
-          <Button variant="outline" size="sm" onClick={() => setAttempt((n) => n + 1)}>
-            Ask again
-          </Button>
-        </div>
-      </section>
-    </main>
-  )
-}
+import { AppShell } from '@/app/AppShell'
+import { RequireRole } from '@/app/RequireRole'
+import { SessionProvider } from '@/app/SessionProvider'
+import { DevStates } from '@/pages/DevStates'
+import { NotFound, Placeholder } from '@/pages/Placeholder'
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="*" element={<SetupCheck />} />
-    </Routes>
+    <SessionProvider>
+      <Routes>
+        <Route element={<AppShell />}>
+          <Route index element={<Placeholder title="Review queue" part="Part 2" mockup="Main.dc.html" />} />
+          <Route path="merchants/:merchantId" element={<Placeholder title="Merchant" part="Part 3" mockup="Merchant.dc.html" />} />
+          <Route path="decisions" element={<Placeholder title="Decision log" part="Part 4" mockup="Decisions.dc.html" />} />
+          <Route path="portfolio" element={<Placeholder title="Portfolio" part="Part 4" mockup="Portfolio.dc.html" />} />
+          <Route path="model" element={<Placeholder title="Model card" part="Part 4" mockup="ModelCard.dc.html" />} />
+          <Route path="consent" element={<Placeholder title="Consent" part="Part 4" mockup="Consent.dc.html" />} />
+          <Route path="demo/consent" element={<Placeholder title="Mock consent page" part="Part 4" mockup="ConsentMobile.dc.html" />} />
+          <Route
+            path="audit"
+            element={
+              <RequireRole roles={['admin']}>
+                <Placeholder title="Audit log" part="Part 4" mockup="Audit.dc.html" />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="admin/import"
+            element={
+              <RequireRole roles={['admin']}>
+                <Placeholder title="Data import" part="Part 4" mockup="Import.dc.html" />
+              </RequireRole>
+            }
+          />
+          <Route path="dev/states" element={<DevStates />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Routes>
+    </SessionProvider>
   )
 }

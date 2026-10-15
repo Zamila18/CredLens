@@ -29,7 +29,15 @@ The browser calls `/api/...`; Vite forwards those calls to http://localhost:8000
 - `src/api/client.ts`: the only code that calls the API. Adds `X-Demo-Token`, turns errors
   into `ApiError` with the API's `code`.
 - `src/api/types.ts`: short names for the generated API types.
+- `src/api/useApi.ts`: load data in a component; shared cache per demo user; retries on its
+  own while the API is starting.
+- `src/api/errors.ts`: the message for every error code in `docs/API_NOTES.md`.
+- `src/app/`: the shell (sidebar, banner, demo session: role and language).
+- `src/components/`: shared pieces from the design: LensDial, BandChip, CoverageBar,
+  ReasonCard, StatTile, ErrorCallout, ActionCard, Segmented, Page.
 - `src/components/ui/`: shadcn/ui components, restyled to the CredLens tokens.
+- `src/pages/`: one file per page. `/dev/states` (not in the menu) is the React copy of
+  `States.dc.html`, for comparing components with the design.
 - `design-reference/`: the mockups the pages follow (read them as pictures; their runtime is
   not part of the app).
 
