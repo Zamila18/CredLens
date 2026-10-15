@@ -1,0 +1,518 @@
+{
+  "data_mode": "synthetic_bd",
+  "model_version": "synthetic_bd-20261015-005409-9db9d66",
+  "measured_on": "validation months (the test months are not used)",
+  "validation_loans": 5853,
+  "seeds": [
+    42,
+    7,
+    123
+  ],
+  "columns": [
+    "town_tier",
+    "shop_type",
+    "has_trade_license"
+  ],
+  "rules": {
+    "gap_line": 0.05,
+    "flagged_when": "the gap is above the line and the ranges of the group and the rest do not overlap, or it is above the line in every seed",
+    "min_group_outcomes": 30,
+    "range_level": 0.95,
+    "calibration_gap_meaning": "positive: the model expects more repayment from this group than it shows, compared with the rest"
+  },
+  "flagged": [],
+  "groups": [
+    {
+      "column": "town_tier",
+      "group": "city",
+      "loans": 2651,
+      "not_repaid": 260,
+      "share_repaid": 0.9019238023387401,
+      "mean_predicted": 0.8997920813577911,
+      "mean_score": 89.98868351565447,
+      "share_strong": 0.5654470011316485,
+      "share_needs_more_info": 0.14447378347793285,
+      "mean_score_range": [
+        89.66508864579404,
+        90.3214070162203
+      ],
+      "share_strong_range": [
+        0.5492078460958129,
+        0.5862127499056959
+      ],
+      "share_needs_more_info_range": [
+        0.1304696341003395,
+        0.1569407770652584
+      ],
+      "roc_auc": 0.7301877231927419,
+      "roc_auc_range": [
+        0.6973456528019001,
+        0.7615649668083341
+      ],
+      "rest_roc_auc": 0.6920380661799426,
+      "rest_roc_auc_range": [
+        0.6578579674820597,
+        0.7172488976833847
+      ],
+      "predicted_minus_actual": -0.002131720980949048,
+      "predicted_minus_actual_range": [
+        -0.011596442980042171,
+        0.009326285368383315
+      ],
+      "rest_predicted_minus_actual": -0.007148985110476458,
+      "rest_predicted_minus_actual_range": [
+        -0.017014338071601402,
+        0.002810217652201672
+      ],
+      "ranking_gap": 0.038149657012799376,
+      "ranking": "no gap",
+      "calibration_gap": 0.00501726412952741,
+      "calibration": "no gap",
+      "ranking_seeds_with_gap": "0 of 3",
+      "calibration_seeds_with_gap": "0 of 3"
+    },
+    {
+      "column": "town_tier",
+      "group": "small_town",
+      "loans": 1750,
+      "not_repaid": 166,
+      "share_repaid": 0.9051428571428571,
+      "mean_predicted": 0.8974703256595654,
+      "mean_score": 89.752,
+      "share_strong": 0.5554285714285714,
+      "share_needs_more_info": 0.168,
+      "mean_score_range": [
+        89.36688571428571,
+        90.11831428571429
+      ],
+      "share_strong_range": [
+        0.5331285714285714,
+        0.5765857142857144
+      ],
+      "share_needs_more_info_range": [
+        0.15255714285714286,
+        0.1823142857142857
+      ],
+      "roc_auc": 0.6897305129609348,
+      "roc_auc_range": [
+        0.6531843979868583,
+        0.7386669566035989
+      ],
+      "rest_roc_auc": 0.7178547935358304,
+      "rest_roc_auc_range": [
+        0.6967097292479986,
+        0.7451714861420126
+      ],
+      "predicted_minus_actual": -0.007672531483291722,
+      "predicted_minus_actual_range": [
+        -0.021381456543051763,
+        0.00732696013845581
+      ],
+      "rest_predicted_minus_actual": -0.0036839660123034745,
+      "rest_predicted_minus_actual_range": [
+        -0.012441149302540947,
+        0.004406081015034475
+      ],
+      "ranking_gap": -0.028124280574895577,
+      "ranking": "no gap",
+      "calibration_gap": -0.003988565470988248,
+      "calibration": "no gap",
+      "ranking_seeds_with_gap": "0 of 3",
+      "calibration_seeds_with_gap": "0 of 3"
+    },
+    {
+      "column": "town_tier",
+      "group": "metro",
+      "loans": 1452,
+      "not_repaid": 138,
+      "share_repaid": 0.9049586776859504,
+      "mean_predicted": 0.8984406885482195,
+      "mean_score": 89.84297520661157,
+      "share_strong": 0.553030303030303,
+      "share_needs_more_info": 0.15289256198347106,
+      "mean_score_range": [
+        89.37183195592286,
+        90.30330578512397
+      ],
+      "share_strong_range": [
+        0.5302513774104683,
+        0.5792699724517907
+      ],
+      "share_needs_more_info_range": [
+        0.1356749311294766,
+        0.17011019283746556
+      ],
+      "roc_auc": 0.6949711027286966,
+      "roc_auc_range": [
+        0.6545952573395458,
+        0.7347845501330049
+      ],
+      "rest_roc_auc": 0.7143390320961408,
+      "rest_roc_auc_range": [
+        0.6904446374177609,
+        0.7352173789593669
+      ],
+      "predicted_minus_actual": -0.00651798913773094,
+      "predicted_minus_actual_range": [
+        -0.019931935015118744,
+        0.007436394232211533
+      ],
+      "rest_predicted_minus_actual": -0.004334951696491007,
+      "rest_predicted_minus_actual_range": [
+        -0.013080299468617418,
+        0.004277684167441262
+      ],
+      "ranking_gap": -0.019367929367444248,
+      "ranking": "no gap",
+      "calibration_gap": -0.0021830374412399323,
+      "calibration": "no gap",
+      "ranking_seeds_with_gap": "0 of 3",
+      "calibration_seeds_with_gap": "0 of 3"
+    },
+    {
+      "column": "shop_type",
+      "group": "grocery",
+      "loans": 2062,
+      "not_repaid": 207,
+      "share_repaid": 0.899612027158099,
+      "mean_predicted": 0.8963642819191875,
+      "mean_score": 89.64403491755577,
+      "share_strong": 0.5572259941804074,
+      "share_needs_more_info": 0.15518913676042678,
+      "mean_score_range": [
+        89.27156886517945,
+        90.03786372453929
+      ],
+      "share_strong_range": [
+        0.5373181377303589,
+        0.5780795344325897
+      ],
+      "share_needs_more_info_range": [
+        0.13965809893307468,
+        0.17070805043646944
+      ],
+      "roc_auc": 0.7026902092529657,
+      "roc_auc_range": [
+        0.6656204426212474,
+        0.735032605920622
+      ],
+      "rest_roc_auc": 0.7135307821439584,
+      "rest_roc_auc_range": [
+        0.6843610479648143,
+        0.7405727754240807
+      ],
+      "predicted_minus_actual": -0.0032477452389114703,
+      "predicted_minus_actual_range": [
+        -0.01752750225213567,
+        0.008765951825476279
+      ],
+      "rest_predicted_minus_actual": -0.0057624352312336535,
+      "rest_predicted_minus_actual_range": [
+        -0.013124425883566986,
+        0.002256209559688784
+      ],
+      "ranking_gap": -0.010840572890992717,
+      "ranking": "no gap",
+      "calibration_gap": 0.0025146899923221833,
+      "calibration": "no gap",
+      "ranking_seeds_with_gap": "0 of 3",
+      "calibration_seeds_with_gap": "0 of 3"
+    },
+    {
+      "column": "shop_type",
+      "group": "apparel",
+      "loans": 1134,
+      "not_repaid": 110,
+      "share_repaid": 0.9029982363315696,
+      "mean_predicted": 0.9016499385143888,
+      "mean_score": 90.17724867724868,
+      "share_strong": 0.5696649029982364,
+      "share_needs_more_info": 0.13756613756613756,
+      "mean_score_range": [
+        89.71203703703704,
+        90.66377865961199
+      ],
+      "share_strong_range": [
+        0.5396384479717813,
+        0.5961860670194004
+      ],
+      "share_needs_more_info_range": [
+        0.11809964726631393,
+        0.15784832451499117
+      ],
+      "roc_auc": 0.7369495738636364,
+      "roc_auc_range": [
+        0.6822780323850994,
+        0.7843235404424805
+      ],
+      "rest_roc_auc": 0.7029579457834748,
+      "rest_roc_auc_range": [
+        0.6789195396565102,
+        0.7304732406231301
+      ],
+      "predicted_minus_actual": -0.0013482978171808213,
+      "predicted_minus_actual_range": [
+        -0.015216256343857025,
+        0.013432521168146661
+      ],
+      "rest_predicted_minus_actual": -0.005724363831226542,
+      "rest_predicted_minus_actual_range": [
+        -0.015086932464281064,
+        0.002500606172073611
+      ],
+      "ranking_gap": 0.03399162808016154,
+      "ranking": "no gap",
+      "calibration_gap": 0.004376066014045721,
+      "calibration": "no gap",
+      "ranking_seeds_with_gap": "0 of 3",
+      "calibration_seeds_with_gap": "0 of 3"
+    },
+    {
+      "column": "shop_type",
+      "group": "other",
+      "loans": 917,
+      "not_repaid": 97,
+      "share_repaid": 0.8942202835332607,
+      "mean_predicted": 0.9013388026775411,
+      "mean_score": 90.14503816793894,
+      "share_strong": 0.5736095965103599,
+      "share_needs_more_info": 0.1515812431842966,
+      "mean_score_range": [
+        89.6550981461287,
+        90.68942202835333
+      ],
+      "share_strong_range": [
+        0.5452017448200654,
+        0.6031079607415486
+      ],
+      "share_needs_more_info_range": [
+        0.128680479825518,
+        0.17344601962922573
+      ],
+      "roc_auc": 0.6909668091526276,
+      "roc_auc_range": [
+        0.6260085552048383,
+        0.7442273724377116
+      ],
+      "rest_roc_auc": 0.7134212224781423,
+      "rest_roc_auc_range": [
+        0.6913962397916344,
+        0.7359873325625454
+      ],
+      "predicted_minus_actual": 0.007118519144280411,
+      "predicted_minus_actual_range": [
+        -0.008630902577714449,
+        0.02677025605347482
+      ],
+      "rest_predicted_minus_actual": -0.007104928018546786,
+      "rest_predicted_minus_actual_range": [
+        -0.01468232988572336,
+        0.0006118118731923896
+      ],
+      "ranking_gap": -0.022454413325514677,
+      "ranking": "no gap",
+      "calibration_gap": 0.014223447162827196,
+      "calibration": "no gap",
+      "ranking_seeds_with_gap": "0 of 3",
+      "calibration_seeds_with_gap": "0 of 3"
+    },
+    {
+      "column": "shop_type",
+      "group": "electronics",
+      "loans": 907,
+      "not_repaid": 69,
+      "share_repaid": 0.9239250275633958,
+      "mean_predicted": 0.90148632815954,
+      "mean_score": 90.14884233737597,
+      "share_strong": 0.5523704520396913,
+      "share_needs_more_info": 0.1609702315325248,
+      "mean_score_range": [
+        89.67133406835723,
+        90.68464718853363
+      ],
+      "share_strong_range": [
+        0.522574421168688,
+        0.5832690187431091
+      ],
+      "share_needs_more_info_range": [
+        0.14002205071664828,
+        0.1863561190738699
+      ],
+      "roc_auc": 0.694415620352115,
+      "roc_auc_range": [
+        0.6203387623560619,
+        0.7581945642224891
+      ],
+      "rest_roc_auc": 0.7117574305172597,
+      "rest_roc_auc_range": [
+        0.6874902968078441,
+        0.7337090045383711
+      ],
+      "predicted_minus_actual": -0.02243869940385579,
+      "predicted_minus_actual_range": [
+        -0.03604403063789563,
+        -0.0048972016418445145
+      ],
+      "rest_predicted_minus_actual": -0.0016559527466527557,
+      "rest_predicted_minus_actual_range": [
+        -0.010977624783815462,
+        0.006417357113310105
+      ],
+      "ranking_gap": -0.01734181016514469,
+      "ranking": "no gap",
+      "calibration_gap": -0.020782746657203033,
+      "calibration": "no gap",
+      "ranking_seeds_with_gap": "0 of 3",
+      "calibration_seeds_with_gap": "0 of 3"
+    },
+    {
+      "column": "shop_type",
+      "group": "pharmacy",
+      "loans": 833,
+      "not_repaid": 81,
+      "share_repaid": 0.9027611044417767,
+      "mean_predicted": 0.8949673422173694,
+      "mean_score": 89.4873949579832,
+      "share_strong": 0.5426170468187275,
+      "share_needs_more_info": 0.16566626650660263,
+      "mean_score_range": [
+        88.91449579831934,
+        90.03250300120048
+      ],
+      "share_strong_range": [
+        0.5090036014405762,
+        0.5775510204081633
+      ],
+      "share_needs_more_info_range": [
+        0.14282713085234094,
+        0.18973589435774313
+      ],
+      "roc_auc": 0.7256041502495403,
+      "roc_auc_range": [
+        0.6648700840595243,
+        0.7875903644777967
+      ],
+      "rest_roc_auc": 0.7067561814042442,
+      "rest_roc_auc_range": [
+        0.6871015687493311,
+        0.727914379583957
+      ],
+      "predicted_minus_actual": -0.007793762224407308,
+      "predicted_minus_actual_range": [
+        -0.03000586784473104,
+        0.009987160054240291
+      ],
+      "rest_predicted_minus_actual": -0.004392437990300757,
+      "rest_predicted_minus_actual_range": [
+        -0.01270683744046882,
+        0.003976707996667865
+      ],
+      "ranking_gap": 0.018847968845296048,
+      "ranking": "no gap",
+      "calibration_gap": -0.003401324234106551,
+      "calibration": "no gap",
+      "ranking_seeds_with_gap": "0 of 3",
+      "calibration_seeds_with_gap": "0 of 3"
+    },
+    {
+      "column": "has_trade_license",
+      "group": "False",
+      "loans": 3517,
+      "not_repaid": 344,
+      "share_repaid": 0.902189365936878,
+      "mean_predicted": 0.8985546143119355,
+      "mean_score": 89.86096104634632,
+      "share_strong": 0.5615581461472846,
+      "share_needs_more_info": 0.15154961615012796,
+      "mean_score_range": [
+        89.5416548194484,
+        90.15989479670174
+      ],
+      "share_strong_range": [
+        0.5455786181404606,
+        0.5760662496445834
+      ],
+      "share_needs_more_info_range": [
+        0.13960051179982938,
+        0.16409582030139325
+      ],
+      "roc_auc": 0.7252297730121153,
+      "roc_auc_range": [
+        0.7015741843510583,
+        0.7535828601784852
+      ],
+      "rest_roc_auc": 0.6847493125966662,
+      "rest_roc_auc_range": [
+        0.6486662126157843,
+        0.727616799080354
+      ],
+      "predicted_minus_actual": -0.003634751624942534,
+      "predicted_minus_actual_range": [
+        -0.014004383646029147,
+        0.004616336476604476
+      ],
+      "rest_predicted_minus_actual": -0.006746070710324736,
+      "rest_predicted_minus_actual_range": [
+        -0.017597377137674203,
+        0.005261543823602654
+      ],
+      "ranking_gap": 0.04048046041544917,
+      "ranking": "no gap",
+      "calibration_gap": 0.0031113190853822026,
+      "calibration": "no gap",
+      "ranking_seeds_with_gap": "0 of 3",
+      "calibration_seeds_with_gap": "0 of 3"
+    },
+    {
+      "column": "has_trade_license",
+      "group": "True",
+      "loans": 2336,
+      "not_repaid": 220,
+      "share_repaid": 0.9058219178082192,
+      "mean_predicted": 0.8990758470978945,
+      "mean_score": 89.9130993150685,
+      "share_strong": 0.5560787671232876,
+      "share_needs_more_info": 0.1566780821917808,
+      "mean_score_range": [
+        89.5513377568493,
+        90.2402397260274
+      ],
+      "share_strong_range": [
+        0.5346532534246575,
+        0.5736515410958904
+      ],
+      "share_needs_more_info_range": [
+        0.1404109589041096,
+        0.17252782534246577
+      ],
+      "roc_auc": 0.6847493125966662,
+      "roc_auc_range": [
+        0.6486152636325986,
+        0.7245630752244197
+      ],
+      "rest_roc_auc": 0.7252297730121153,
+      "rest_roc_auc_range": [
+        0.6994957719694183,
+        0.754772466068449
+      ],
+      "predicted_minus_actual": -0.006746070710324736,
+      "predicted_minus_actual_range": [
+        -0.016734488362301327,
+        0.002152945500539462
+      ],
+      "rest_predicted_minus_actual": -0.003634751624942534,
+      "rest_predicted_minus_actual_range": [
+        -0.01216654011011473,
+        0.005707503231911948
+      ],
+      "ranking_gap": -0.04048046041544917,
+      "ranking": "no gap",
+      "calibration_gap": -0.0031113190853822026,
+      "calibration": "no gap",
+      "ranking_seeds_with_gap": "0 of 3",
+      "calibration_seeds_with_gap": "0 of 3"
+    }
+  ],
+  "seconds": 192.9,
+  "note": "Audit columns are never model inputs. This shows where the model measurably works differently on these data; it does not show that the model is fair."
+}

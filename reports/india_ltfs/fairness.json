@@ -1,0 +1,1321 @@
+{
+  "data_mode": "india_ltfs",
+  "model_version": "india_ltfs-20261014-135734-4198b26",
+  "measured_on": "validation months (the test months are not used)",
+  "validation_loans": 66788,
+  "seeds": [
+    42
+  ],
+  "columns": [
+    "age_band",
+    "State_ID",
+    "Employment.Type"
+  ],
+  "rules": {
+    "gap_line": 0.05,
+    "flagged_when": "the gap is above the line and the ranges of the group and the rest do not overlap",
+    "min_group_outcomes": 30,
+    "range_level": 0.95,
+    "calibration_gap_meaning": "positive: the model expects more repayment from this group than it shows, compared with the rest"
+  },
+  "flagged": [
+    "State_ID = 13: calibration",
+    "State_ID = 12: ranking",
+    "State_ID = 12: calibration",
+    "State_ID = 19: calibration"
+  ],
+  "groups": [
+    {
+      "column": "age_band",
+      "group": "25 to 34",
+      "loans": 26144,
+      "not_repaid": 5144,
+      "share_repaid": 0.8032435740514076,
+      "mean_predicted": 0.8111590121641267,
+      "mean_score": 81.10660189718482,
+      "share_strong": 0.05775703794369645,
+      "share_needs_more_info": 0.507420440636475,
+      "mean_score_range": [
+        81.04858571756425,
+        81.17862607099143
+      ],
+      "share_strong_range": [
+        0.05465498776009792,
+        0.060589427784577723
+      ],
+      "share_needs_more_info_range": [
+        0.5021027769277846,
+        0.5131263387392901
+      ],
+      "roc_auc": 0.6116985484707103,
+      "roc_auc_range": [
+        0.6031112955210601,
+        0.6206306412948659
+      ],
+      "rest_roc_auc": 0.6107799955769818,
+      "rest_roc_auc_range": [
+        0.6039194959421149,
+        0.6164429610552974
+      ],
+      "predicted_minus_actual": 0.007915438112719109,
+      "predicted_minus_actual_range": [
+        0.003880390644398834,
+        0.012856602246310848
+      ],
+      "rest_predicted_minus_actual": -0.005061663824572293,
+      "rest_predicted_minus_actual_range": [
+        -0.008346297877687129,
+        -0.0016600687773273685
+      ],
+      "ranking_gap": 0.0009185528937284415,
+      "ranking": "no gap",
+      "calibration_gap": 0.012977101937291402,
+      "calibration": "no gap"
+    },
+    {
+      "column": "age_band",
+      "group": "35 to 44",
+      "loans": 16681,
+      "not_repaid": 2982,
+      "share_repaid": 0.8212337389844734,
+      "mean_predicted": 0.8067565406164762,
+      "mean_score": 80.66338948504286,
+      "share_strong": 0.058329836340746954,
+      "share_needs_more_info": 0.40093519573167075,
+      "mean_score_range": [
+        80.58705113602302,
+        80.73662250464601
+      ],
+      "share_strong_range": [
+        0.05527096696840717,
+        0.06145315029074996
+      ],
+      "share_needs_more_info_range": [
+        0.39313890054553086,
+        0.407850248786044
+      ],
+      "roc_auc": 0.6129771915675379,
+      "roc_auc_range": [
+        0.6015310906200255,
+        0.6223836821030716
+      ],
+      "rest_roc_auc": 0.6103957531406156,
+      "rest_roc_auc_range": [
+        0.6042773322168716,
+        0.6164504870247429
+      ],
+      "predicted_minus_actual": -0.014477198367997213,
+      "predicted_minus_actual_range": [
+        -0.02066370686580421,
+        -0.008499094612438206
+      ],
+      "rest_predicted_minus_actual": 0.004843816143644153,
+      "rest_predicted_minus_actual_range": [
+        0.0013963458872032135,
+        0.009045242949545583
+      ],
+      "ranking_gap": 0.002581438426922378,
+      "ranking": "no gap",
+      "calibration_gap": -0.019321014511641366,
+      "calibration": "no gap"
+    },
+    {
+      "column": "age_band",
+      "group": "under 25",
+      "loans": 13108,
+      "not_repaid": 2799,
+      "share_repaid": 0.7864662801342691,
+      "mean_predicted": 0.8043712606411114,
+      "mean_score": 80.42203234665853,
+      "share_strong": 0.030286847726579188,
+      "share_needs_more_info": 0.7215440952090326,
+      "mean_score_range": [
+        80.33257743362833,
+        80.51053364357645
+      ],
+      "share_strong_range": [
+        0.02776739395788831,
+        0.03311145865120537
+      ],
+      "share_needs_more_info_range": [
+        0.7149755874275252,
+        0.7282003356728716
+      ],
+      "roc_auc": 0.590526056743725,
+      "roc_auc_range": [
+        0.5799864239664301,
+        0.6010942241310789
+      ],
+      "rest_roc_auc": 0.6153106522784506,
+      "rest_roc_auc_range": [
+        0.6094274891966047,
+        0.6205315223170328
+      ],
+      "predicted_minus_actual": 0.017904980506842305,
+      "predicted_minus_actual_range": [
+        0.011423640451737419,
+        0.025256661774072143
+      ],
+      "rest_predicted_minus_actual": -0.004349544242747361,
+      "rest_predicted_minus_actual_range": [
+        -0.007505993739605493,
+        -0.0015218497952949653
+      ],
+      "ranking_gap": -0.024784595534725562,
+      "ranking": "no gap",
+      "calibration_gap": 0.022254524749589666,
+      "calibration": "no gap"
+    },
+    {
+      "column": "age_band",
+      "group": "45 to 54",
+      "loans": 8711,
+      "not_repaid": 1563,
+      "share_repaid": 0.820571690965446,
+      "mean_predicted": 0.8069990197534487,
+      "mean_score": 80.68855470095282,
+      "share_strong": 0.06681207668465158,
+      "share_needs_more_info": 0.3996096888990931,
+      "mean_score_range": [
+        80.54818333142005,
+        80.8167001492366
+      ],
+      "share_strong_range": [
+        0.0609574101710481,
+        0.07186890138904832
+      ],
+      "share_needs_more_info_range": [
+        0.3898346917690277,
+        0.4112157042819424
+      ],
+      "roc_auc": 0.6306446626503133,
+      "roc_auc_range": [
+        0.6150104427836461,
+        0.6458378987129525
+      ],
+      "rest_roc_auc": 0.607916061288932,
+      "rest_roc_auc_range": [
+        0.6022448062842394,
+        0.6139208512281147
+      ],
+      "predicted_minus_actual": -0.013572671211997345,
+      "predicted_minus_actual_range": [
+        -0.021169409371813903,
+        -0.004228501119439044
+      ],
+      "rest_predicted_minus_actual": 0.002056691779202202,
+      "rest_predicted_minus_actual_range": [
+        -0.0006022934596685425,
+        0.005247394733181086
+      ],
+      "ranking_gap": 0.022728601361381218,
+      "ranking": "no gap",
+      "calibration_gap": -0.015629362991199547,
+      "calibration": "no gap"
+    },
+    {
+      "column": "age_band",
+      "group": "55 and over",
+      "loans": 2144,
+      "not_repaid": 327,
+      "share_repaid": 0.847481343283582,
+      "mean_predicted": 0.8098418544471386,
+      "mean_score": 80.9776119402985,
+      "share_strong": 0.08675373134328358,
+      "share_needs_more_info": 0.3787313432835821,
+      "mean_score_range": [
+        80.68494636194029,
+        81.26897154850747
+      ],
+      "share_strong_range": [
+        0.0746035447761194,
+        0.0984491604477612
+      ],
+      "share_needs_more_info_range": [
+        0.35911847014925374,
+        0.398798973880597
+      ],
+      "roc_auc": 0.6355546242672416,
+      "roc_auc_range": [
+        0.6040526673383723,
+        0.6620411447149075
+      ],
+      "rest_roc_auc": 0.6099771456647158,
+      "rest_roc_auc_range": [
+        0.6054501851350571,
+        0.6168199475512189
+      ],
+      "predicted_minus_actual": -0.03763948883644341,
+      "predicted_minus_actual_range": [
+        -0.050613024663503384,
+        -0.02296764499826614
+      ],
+      "rest_predicted_minus_actual": 0.0012671557081609386,
+      "rest_predicted_minus_actual_range": [
+        -0.0017609503484345447,
+        0.0039368224329680195
+      ],
+      "ranking_gap": 0.025577478602525794,
+      "ranking": "no gap",
+      "calibration_gap": -0.03890664454460435,
+      "calibration": "no gap"
+    },
+    {
+      "column": "State_ID",
+      "group": "4",
+      "loans": 12448,
+      "not_repaid": 2200,
+      "share_repaid": 0.8232647814910026,
+      "mean_predicted": 0.7954651611273605,
+      "mean_score": 79.53671272493574,
+      "share_strong": 0.04386246786632391,
+      "share_needs_more_info": 0.4468991002570694,
+      "mean_score_range": [
+        79.42362226863753,
+        79.65332784383034
+      ],
+      "share_strong_range": [
+        0.04040608933161954,
+        0.047718508997429306
+      ],
+      "share_needs_more_info_range": [
+        0.4393436696658098,
+        0.4559889138817481
+      ],
+      "roc_auc": 0.6179629949968065,
+      "roc_auc_range": [
+        0.6067274025653281,
+        0.6314772239713701
+      ],
+      "rest_roc_auc": 0.6116519203356093,
+      "rest_roc_auc_range": [
+        0.6059703514123898,
+        0.6167873884646641
+      ],
+      "predicted_minus_actual": -0.02779962036364203,
+      "predicted_minus_actual_range": [
+        -0.03405336203313425,
+        -0.02195637057545251
+      ],
+      "rest_predicted_minus_actual": 0.006390589323143736,
+      "rest_predicted_minus_actual_range": [
+        0.003069598456793699,
+        0.009324915466412979
+      ],
+      "ranking_gap": 0.00631107466119718,
+      "ranking": "no gap",
+      "calibration_gap": -0.034190209686785766,
+      "calibration": "no gap"
+    },
+    {
+      "column": "State_ID",
+      "group": "3",
+      "loans": 10355,
+      "not_repaid": 1817,
+      "share_repaid": 0.8245292129406084,
+      "mean_predicted": 0.8289445277626089,
+      "mean_score": 82.88536938676968,
+      "share_strong": 0.07291163689039111,
+      "share_needs_more_info": 0.6695316272332207,
+      "mean_score_range": [
+        82.78368903911155,
+        82.9873829068083
+      ],
+      "share_strong_range": [
+        0.0689497827136649,
+        0.07803235152100434
+      ],
+      "share_needs_more_info_range": [
+        0.6596788990825688,
+        0.6771801062288749
+      ],
+      "roc_auc": 0.600092074371649,
+      "roc_auc_range": [
+        0.5823008282486449,
+        0.6160357605599807
+      ],
+      "rest_roc_auc": 0.6115115790933947,
+      "rest_roc_auc_range": [
+        0.6065708555108095,
+        0.6158566203736942
+      ],
+      "predicted_minus_actual": 0.004415314822000416,
+      "predicted_minus_actual_range": [
+        -0.0029864648021075157,
+        0.011021680266490775
+      ],
+      "rest_predicted_minus_actual": -0.0007886455699465111,
+      "rest_predicted_minus_actual_range": [
+        -0.0035895718363722676,
+        0.0025153870906581446
+      ],
+      "ranking_gap": -0.011419504721745688,
+      "ranking": "no gap",
+      "calibration_gap": 0.005203960391946927,
+      "calibration": "no gap"
+    },
+    {
+      "column": "State_ID",
+      "group": "6",
+      "loans": 8882,
+      "not_repaid": 1561,
+      "share_repaid": 0.824251294753434,
+      "mean_predicted": 0.8027331161908738,
+      "mean_score": 80.26289124071155,
+      "share_strong": 0.0615852285521279,
+      "share_needs_more_info": 0.4225399684755686,
+      "mean_score_range": [
+        80.13243920288222,
+        80.39584553028597
+      ],
+      "share_strong_range": [
+        0.056397770772348574,
+        0.06631389326728214
+      ],
+      "share_needs_more_info_range": [
+        0.41047061472641294,
+        0.43368892141409593
+      ],
+      "roc_auc": 0.6441326413419717,
+      "roc_auc_range": [
+        0.6266190268173295,
+        0.6567310490694631
+      ],
+      "rest_roc_auc": 0.6065548448817367,
+      "rest_roc_auc_range": [
+        0.6014492747223891,
+        0.6117841985345557
+      ],
+      "predicted_minus_actual": -0.02151817856256011,
+      "predicted_minus_actual_range": [
+        -0.027734055168412364,
+        -0.013190291218771726
+      ],
+      "rest_predicted_minus_actual": 0.0033215800007887486,
+      "rest_predicted_minus_actual_range": [
+        0.0003366787772717961,
+        0.006204854002915857
+      ],
+      "ranking_gap": 0.03757779646023496,
+      "ranking": "no gap",
+      "calibration_gap": -0.024839758563348857,
+      "calibration": "no gap"
+    },
+    {
+      "column": "State_ID",
+      "group": "13",
+      "loans": 5403,
+      "not_repaid": 1564,
+      "share_repaid": 0.7105311863779382,
+      "mean_predicted": 0.820453309188423,
+      "mean_score": 82.02535628354617,
+      "share_strong": 0.04775124930594114,
+      "share_needs_more_info": 0.6675920784749213,
+      "mean_score_range": [
+        81.88893670183231,
+        82.15241995187858
+      ],
+      "share_strong_range": [
+        0.04311956320562651,
+        0.053146400148065896
+      ],
+      "share_needs_more_info_range": [
+        0.655501573200074,
+        0.6801869331852674
+      ],
+      "roc_auc": 0.5954096102125914,
+      "roc_auc_range": [
+        0.5811128276526835,
+        0.6092899261973629
+      ],
+      "rest_roc_auc": 0.6173510267569573,
+      "rest_roc_auc_range": [
+        0.6117374673145183,
+        0.6226714665954286
+      ],
+      "predicted_minus_actual": 0.10992212281048475,
+      "predicted_minus_actual_range": [
+        0.09724521096155216,
+        0.1234487160300018
+      ],
+      "rest_predicted_minus_actual": -0.009655360104456112,
+      "rest_predicted_minus_actual_range": [
+        -0.012386419525286515,
+        -0.006530864434166944
+      ],
+      "ranking_gap": -0.021941416544365877,
+      "ranking": "no gap",
+      "calibration_gap": 0.11957748291494086,
+      "calibration": "flagged"
+    },
+    {
+      "column": "State_ID",
+      "group": "9",
+      "loans": 4751,
+      "not_repaid": 902,
+      "share_repaid": 0.8101452325826142,
+      "mean_predicted": 0.7959698108452591,
+      "mean_score": 79.58324563249842,
+      "share_strong": 0.04314881077667859,
+      "share_needs_more_info": 0.39465375710376766,
+      "mean_score_range": [
+        79.3853715007367,
+        79.74765312565775
+      ],
+      "share_strong_range": [
+        0.03807619448537151,
+        0.04884234897916229
+      ],
+      "share_needs_more_info_range": [
+        0.3811565986108188,
+        0.40900336771206064
+      ],
+      "roc_auc": 0.5993892789845493,
+      "roc_auc_range": [
+        0.5805239174095194,
+        0.6191136272740038
+      ],
+      "rest_roc_auc": 0.6119724468360017,
+      "rest_roc_auc_range": [
+        0.6067137589578661,
+        0.6162398415734309
+      ],
+      "predicted_minus_actual": -0.014175421737355087,
+      "predicted_minus_actual_range": [
+        -0.02400410143060027,
+        -0.004364740164125334
+      ],
+      "rest_predicted_minus_actual": 0.001105185263748809,
+      "rest_predicted_minus_actual_range": [
+        -0.002178499373672326,
+        0.0036450301130578817
+      ],
+      "ranking_gap": -0.012583167851452415,
+      "ranking": "no gap",
+      "calibration_gap": -0.015280607001103896,
+      "calibration": "no gap"
+    },
+    {
+      "column": "State_ID",
+      "group": "8",
+      "loans": 4165,
+      "not_repaid": 815,
+      "share_repaid": 0.8043217286914766,
+      "mean_predicted": 0.8017262140423886,
+      "mean_score": 80.16998799519808,
+      "share_strong": 0.048499399759903965,
+      "share_needs_more_info": 0.3378151260504202,
+      "mean_score_range": [
+        79.97437575030013,
+        80.3566206482593
+      ],
+      "share_strong_range": [
+        0.04321128451380553,
+        0.055222088835534214
+      ],
+      "share_needs_more_info_range": [
+        0.32578031212485,
+        0.3524669867947179
+      ],
+      "roc_auc": 0.6277544180935812,
+      "roc_auc_range": [
+        0.6065304430214691,
+        0.6489315560884544
+      ],
+      "rest_roc_auc": 0.6095471672954981,
+      "rest_roc_auc_range": [
+        0.6042492084990084,
+        0.6148133977366245
+      ],
+      "predicted_minus_actual": -0.0025955146490879155,
+      "predicted_minus_actual_range": [
+        -0.013770668680888625,
+        0.009164824195290086
+      ],
+      "rest_predicted_minus_actual": 0.00019202638082593815,
+      "rest_predicted_minus_actual_range": [
+        -0.0026735411026500315,
+        0.003880493492731172
+      ],
+      "ranking_gap": 0.018207250798083163,
+      "ranking": "no gap",
+      "calibration_gap": -0.0027875410299138537,
+      "calibration": "no gap"
+    },
+    {
+      "column": "State_ID",
+      "group": "5",
+      "loans": 2761,
+      "not_repaid": 490,
+      "share_repaid": 0.8225280695400218,
+      "mean_predicted": 0.8193598236860982,
+      "mean_score": 81.91886997464687,
+      "share_strong": 0.07316189786309309,
+      "share_needs_more_info": 0.5686345526982978,
+      "mean_score_range": [
+        81.71805505251722,
+        82.12543462513581
+      ],
+      "share_strong_range": [
+        0.06446939514668598,
+        0.08225280695400218
+      ],
+      "share_needs_more_info_range": [
+        0.5512495472654835,
+        0.585666425208258
+      ],
+      "roc_auc": 0.636673136890159,
+      "roc_auc_range": [
+        0.6085428373825379,
+        0.6633446847009339
+      ],
+      "rest_roc_auc": 0.6096653885510057,
+      "rest_roc_auc_range": [
+        0.6041950910636087,
+        0.6152032666398382
+      ],
+      "predicted_minus_actual": -0.0031682458539236125,
+      "predicted_minus_actual_range": [
+        -0.01722785061718383,
+        0.01214827239700157
+      ],
+      "rest_predicted_minus_actual": 0.00015559804981801761,
+      "rest_predicted_minus_actual_range": [
+        -0.0029003719669935773,
+        0.003141397003507785
+      ],
+      "ranking_gap": 0.027007748339153315,
+      "ranking": "no gap",
+      "calibration_gap": -0.00332384390374163,
+      "calibration": "no gap"
+    },
+    {
+      "column": "State_ID",
+      "group": "1",
+      "loans": 2654,
+      "not_repaid": 424,
+      "share_repaid": 0.840241145440844,
+      "mean_predicted": 0.8087088979991994,
+      "mean_score": 80.86510926902788,
+      "share_strong": 0.06480783722682742,
+      "share_needs_more_info": 0.3161266013564431,
+      "mean_score_range": [
+        80.62857008289375,
+        81.11860399397136
+      ],
+      "share_strong_range": [
+        0.056885832705350414,
+        0.07386021100226074
+      ],
+      "share_needs_more_info_range": [
+        0.3006782215523738,
+        0.3319517709118312
+      ],
+      "roc_auc": 0.638864328623403,
+      "roc_auc_range": [
+        0.6137030054763595,
+        0.669571689686661
+      ],
+      "rest_roc_auc": 0.6098164136526877,
+      "rest_roc_auc_range": [
+        0.6047550808275267,
+        0.6152648458231845
+      ],
+      "predicted_minus_actual": -0.03153224744164462,
+      "predicted_minus_actual_range": [
+        -0.04511308726206354,
+        -0.019172180892658125
+      ],
+      "rest_predicted_minus_actual": 0.0013238147354468488,
+      "rest_predicted_minus_actual_range": [
+        -0.001698845555343345,
+        0.004289238718410194
+      ],
+      "ranking_gap": 0.02904791497071535,
+      "ranking": "no gap",
+      "calibration_gap": -0.03285606217709147,
+      "calibration": "no gap"
+    },
+    {
+      "column": "State_ID",
+      "group": "14",
+      "loans": 2622,
+      "not_repaid": 641,
+      "share_repaid": 0.7555301296720061,
+      "mean_predicted": 0.7914635110306213,
+      "mean_score": 79.13081617086193,
+      "share_strong": 0.02745995423340961,
+      "share_needs_more_info": 0.6052631578947368,
+      "mean_score_range": [
+        78.93846300533943,
+        79.344469870328
+      ],
+      "share_strong_range": [
+        0.021348207475209765,
+        0.033571700991609464
+      ],
+      "share_needs_more_info_range": [
+        0.5857742181540808,
+        0.6231884057971014
+      ],
+      "roc_auc": 0.6169089974098712,
+      "roc_auc_range": [
+        0.5915436915239113,
+        0.6409859053724428
+      ],
+      "rest_roc_auc": 0.6093498262347826,
+      "rest_roc_auc_range": [
+        0.6037937701143771,
+        0.614754756188975
+      ],
+      "predicted_minus_actual": 0.035933381358615235,
+      "predicted_minus_actual_range": [
+        0.014656987088764532,
+        0.052627958497061346
+      ],
+      "rest_predicted_minus_actual": -0.0014494027427183198,
+      "rest_predicted_minus_actual_range": [
+        -0.004317944621537505,
+        0.0011879869189163734
+      ],
+      "ranking_gap": 0.00755917117508853,
+      "ranking": "no gap",
+      "calibration_gap": 0.037382784101333555,
+      "calibration": "no gap"
+    },
+    {
+      "column": "State_ID",
+      "group": "7",
+      "loans": 2216,
+      "not_repaid": 386,
+      "share_repaid": 0.825812274368231,
+      "mean_predicted": 0.8195518096779096,
+      "mean_score": 81.93095667870035,
+      "share_strong": 0.05685920577617329,
+      "share_needs_more_info": 0.5753610108303249,
+      "mean_score_range": [
+        81.73238944043321,
+        82.1228452166065
+      ],
+      "share_strong_range": [
+        0.047360108303249104,
+        0.06770081227436824
+      ],
+      "share_needs_more_info_range": [
+        0.5572879061371842,
+        0.5970216606498195
+      ],
+      "roc_auc": 0.5963178459186274,
+      "roc_auc_range": [
+        0.5657972104129692,
+        0.6256451937460429
+      ],
+      "rest_roc_auc": 0.6110669494892931,
+      "rest_roc_auc_range": [
+        0.6063448216170244,
+        0.6163949824516379
+      ],
+      "predicted_minus_actual": -0.006260464690321377,
+      "predicted_minus_actual_range": [
+        -0.02393495725807506,
+        0.009357393449893347
+      ],
+      "rest_predicted_minus_actual": 0.00023366380608880188,
+      "rest_predicted_minus_actual_range": [
+        -0.002931314027912418,
+        0.0032774343521062344
+      ],
+      "ranking_gap": -0.014749103570665723,
+      "ranking": "no gap",
+      "calibration_gap": -0.006494128496410179,
+      "calibration": "no gap"
+    },
+    {
+      "column": "State_ID",
+      "group": "11",
+      "loans": 1858,
+      "not_repaid": 359,
+      "share_repaid": 0.8067814854682455,
+      "mean_predicted": 0.7898679972155509,
+      "mean_score": 78.98923573735199,
+      "share_strong": 0.052206673842841764,
+      "share_needs_more_info": 0.4047362755651238,
+      "mean_score_range": [
+        78.71789558665232,
+        79.27785252960173
+      ],
+      "share_strong_range": [
+        0.04142895586652315,
+        0.06298439181916039
+      ],
+      "share_needs_more_info_range": [
+        0.3761571582346609,
+        0.422497308934338
+      ],
+      "roc_auc": 0.6382704532826898,
+      "roc_auc_range": [
+        0.6111496969596089,
+        0.6694608195840412
+      ],
+      "rest_roc_auc": 0.6101225507673507,
+      "rest_roc_auc_range": [
+        0.6054937734919971,
+        0.6149927169041719
+      ],
+      "predicted_minus_actual": -0.016913488252694564,
+      "predicted_minus_actual_range": [
+        -0.03134008361684415,
+        -0.001430728404320317
+      ],
+      "rest_predicted_minus_actual": 0.0005026984553599956,
+      "rest_predicted_minus_actual_range": [
+        -0.002111399821163598,
+        0.003435441421754449
+      ],
+      "ranking_gap": 0.028147902515339163,
+      "ranking": "no gap",
+      "calibration_gap": -0.01741618670805456,
+      "calibration": "no gap"
+    },
+    {
+      "column": "State_ID",
+      "group": "18",
+      "loans": 1583,
+      "not_repaid": 322,
+      "share_repaid": 0.7965887555274794,
+      "mean_predicted": 0.7990412277081201,
+      "mean_score": 79.88692356285534,
+      "share_strong": 0.04421983575489577,
+      "share_needs_more_info": 0.5578016424510424,
+      "mean_score_range": [
+        79.59767845862287,
+        80.21869867340493
+      ],
+      "share_strong_range": [
+        0.035360075805432725,
+        0.05560644346178143
+      ],
+      "share_needs_more_info_range": [
+        0.5299905243209098,
+        0.5761212886923562
+      ],
+      "roc_auc": 0.6009193630215593,
+      "roc_auc_range": [
+        0.5656108349198716,
+        0.6320685726822389
+      ],
+      "rest_roc_auc": 0.6109815456285206,
+      "rest_roc_auc_range": [
+        0.6056118214978873,
+        0.6156781482795254
+      ],
+      "predicted_minus_actual": 0.002452472180640708,
+      "predicted_minus_actual_range": [
+        -0.01604326076491404,
+        0.02205699227142718
+      ],
+      "rest_predicted_minus_actual": -4.0906585828337505e-05,
+      "rest_predicted_minus_actual_range": [
+        -0.003318028372595699,
+        0.0030840990830926125
+      ],
+      "ranking_gap": -0.010062182606961234,
+      "ranking": "no gap",
+      "calibration_gap": 0.0024933787664690454,
+      "calibration": "no gap"
+    },
+    {
+      "column": "State_ID",
+      "group": "12",
+      "loans": 1339,
+      "not_repaid": 276,
+      "share_repaid": 0.7938760268857357,
+      "mean_predicted": 0.8437367838719614,
+      "mean_score": 84.35997012696042,
+      "share_strong": 0.05974607916355489,
+      "share_needs_more_info": 0.765496639283047,
+      "mean_score_range": [
+        84.16499253174011,
+        84.539357729649
+      ],
+      "share_strong_range": [
+        0.04703136669156087,
+        0.07320761762509335
+      ],
+      "share_needs_more_info_range": [
+        0.7393390589992532,
+        0.7893950709484691
+      ],
+      "roc_auc": 0.5400919601347023,
+      "roc_auc_range": [
+        0.5100250235843002,
+        0.5769782051437033
+      ],
+      "rest_roc_auc": 0.6126803526277168,
+      "rest_roc_auc_range": [
+        0.6074687804695712,
+        0.6180282819717812
+      ],
+      "predicted_minus_actual": 0.04986075698622572,
+      "predicted_minus_actual_range": [
+        0.027756401012771503,
+        0.07223096812053252
+      ],
+      "rest_predicted_minus_actual": -0.001001521857805887,
+      "rest_predicted_minus_actual_range": [
+        -0.0036252961975024147,
+        0.0022131786723655574
+      ],
+      "ranking_gap": -0.07258839249301452,
+      "ranking": "flagged",
+      "calibration_gap": 0.050862278844031605,
+      "calibration": "flagged"
+    },
+    {
+      "column": "State_ID",
+      "group": "15",
+      "loans": 1232,
+      "not_repaid": 222,
+      "share_repaid": 0.8198051948051948,
+      "mean_predicted": 0.8146342145484488,
+      "mean_score": 81.45048701298701,
+      "share_strong": 0.05925324675324675,
+      "share_needs_more_info": 0.44155844155844154,
+      "mean_score_range": [
+        81.09880275974027,
+        81.77950487012987
+      ],
+      "share_strong_range": [
+        0.04301948051948052,
+        0.07388392857142859
+      ],
+      "share_needs_more_info_range": [
+        0.4115056818181818,
+        0.4732548701298701
+      ],
+      "roc_auc": 0.6121800017839621,
+      "roc_auc_range": [
+        0.5717680131941362,
+        0.6506436080889871
+      ],
+      "rest_roc_auc": 0.6106786650383286,
+      "rest_roc_auc_range": [
+        0.6052608565931727,
+        0.6163756001269284
+      ],
+      "predicted_minus_actual": -0.005170980256746005,
+      "predicted_minus_actual_range": [
+        -0.02535666932120043,
+        0.020836133815820102
+      ],
+      "rest_predicted_minus_actual": 0.00011571171531710167,
+      "rest_predicted_minus_actual_range": [
+        -0.0031589012393823685,
+        0.00317657468529098
+      ],
+      "ranking_gap": 0.0015013367456335747,
+      "ranking": "no gap",
+      "calibration_gap": -0.005286691972063107,
+      "calibration": "no gap"
+    },
+    {
+      "column": "State_ID",
+      "group": "2",
+      "loans": 1196,
+      "not_repaid": 255,
+      "share_repaid": 0.7867892976588629,
+      "mean_predicted": 0.8021815635937056,
+      "mean_score": 80.19648829431438,
+      "share_strong": 0.048494983277591976,
+      "share_needs_more_info": 0.43478260869565216,
+      "mean_score_range": [
+        79.8551839464883,
+        80.51943979933111
+      ],
+      "share_strong_range": [
+        0.03676839464882944,
+        0.061036789297658864
+      ],
+      "share_needs_more_info_range": [
+        0.40798494983277594,
+        0.46492474916387966
+      ],
+      "roc_auc": 0.6311266695838804,
+      "roc_auc_range": [
+        0.5970860124528792,
+        0.6666686566514815
+      ],
+      "rest_roc_auc": 0.6103145841280304,
+      "rest_roc_auc_range": [
+        0.605305343356228,
+        0.6158439395029812
+      ],
+      "predicted_minus_actual": 0.015392265934842775,
+      "predicted_minus_actual_range": [
+        -0.0069740432154956405,
+        0.04215363077733034
+      ],
+      "rest_predicted_minus_actual": -0.0002621386834531503,
+      "rest_predicted_minus_actual_range": [
+        -0.0033663630644073937,
+        0.002354728086552109
+      ],
+      "ranking_gap": 0.020812085455850005,
+      "ranking": "no gap",
+      "calibration_gap": 0.015654404618295925,
+      "calibration": "no gap"
+    },
+    {
+      "column": "State_ID",
+      "group": "10",
+      "loans": 1066,
+      "not_repaid": 166,
+      "share_repaid": 0.8442776735459663,
+      "mean_predicted": 0.8154593968738829,
+      "mean_score": 81.546904315197,
+      "share_strong": 0.07410881801125703,
+      "share_needs_more_info": 0.4634146341463415,
+      "mean_score_range": [
+        81.19000938086305,
+        81.9296435272045
+      ],
+      "share_strong_range": [
+        0.05626172607879925,
+        0.09195590994371483
+      ],
+      "share_needs_more_info_range": [
+        0.4324343339587242,
+        0.4906191369606004
+      ],
+      "roc_auc": 0.635033467202142,
+      "roc_auc_range": [
+        0.5902035979223269,
+        0.6696153153338357
+      ],
+      "rest_roc_auc": 0.6103246453369611,
+      "rest_roc_auc_range": [
+        0.6053709126158389,
+        0.6161624352310441
+      ],
+      "predicted_minus_actual": -0.028818276672083365,
+      "predicted_minus_actual_range": [
+        -0.05091846767920385,
+        -0.010791084170120225
+      ],
+      "rest_predicted_minus_actual": 0.0004859138867572277,
+      "rest_predicted_minus_actual_range": [
+        -0.0027635268430897084,
+        0.0034076663501685367
+      ],
+      "ranking_gap": 0.024708821865180974,
+      "ranking": "no gap",
+      "calibration_gap": -0.029304190558840593,
+      "calibration": "no gap"
+    },
+    {
+      "column": "State_ID",
+      "group": "17",
+      "loans": 973,
+      "not_repaid": 229,
+      "share_repaid": 0.7646454265159301,
+      "mean_predicted": 0.8000678642907549,
+      "mean_score": 79.98458376156218,
+      "share_strong": 0.03905447070914697,
+      "share_needs_more_info": 0.5704008221993834,
+      "mean_score_range": [
+        79.6790596094553,
+        80.35603802672148
+      ],
+      "share_strong_range": [
+        0.02672147995889003,
+        0.05244090441932169
+      ],
+      "share_needs_more_info_range": [
+        0.5374871531346351,
+        0.591983556012333
+      ],
+      "roc_auc": 0.6354885664647603,
+      "roc_auc_range": [
+        0.6002443550066389,
+        0.6747970456599194
+      ],
+      "rest_roc_auc": 0.6102017951172519,
+      "rest_roc_auc_range": [
+        0.6055996896209521,
+        0.6164839812320794
+      ],
+      "predicted_minus_actual": 0.03542243777482479,
+      "predicted_minus_actual_range": [
+        0.00879002597299026,
+        0.06022809860470381
+      ],
+      "rest_predicted_minus_actual": -0.0005052204272869565,
+      "rest_predicted_minus_actual_range": [
+        -0.002994560263036189,
+        0.002485234277036556
+      ],
+      "ranking_gap": 0.02528677134750834,
+      "ranking": "no gap",
+      "calibration_gap": 0.035927658202111745,
+      "calibration": "no gap"
+    },
+    {
+      "column": "State_ID",
+      "group": "16",
+      "loans": 761,
+      "not_repaid": 123,
+      "share_repaid": 0.8383705650459922,
+      "mean_predicted": 0.8041575495195725,
+      "mean_score": 80.41524310118265,
+      "share_strong": 0.051248357424441525,
+      "share_needs_more_info": 0.3718791064388962,
+      "mean_score_range": [
+        79.9995729303548,
+        80.89898160315374
+      ],
+      "share_strong_range": [
+        0.03676084099868594,
+        0.06704993429697767
+      ],
+      "share_needs_more_info_range": [
+        0.3363666228646518,
+        0.4021681997371879
+      ],
+      "roc_auc": 0.640715396182175,
+      "roc_auc_range": [
+        0.5837072441718032,
+        0.6919517463724143
+      ],
+      "rest_roc_auc": 0.6105134702544801,
+      "rest_roc_auc_range": [
+        0.6056349836869143,
+        0.6149559978494084
+      ],
+      "predicted_minus_actual": -0.03421301552641964,
+      "predicted_minus_actual_range": [
+        -0.05844479256596865,
+        -0.010746743020496044
+      ],
+      "rest_predicted_minus_actual": 0.00041272592043584133,
+      "rest_predicted_minus_actual_range": [
+        -0.0032633070259892195,
+        0.0032424554845276537
+      ],
+      "ranking_gap": 0.030201925927694884,
+      "ranking": "no gap",
+      "calibration_gap": -0.034625741446855485,
+      "calibration": "no gap"
+    },
+    {
+      "column": "State_ID",
+      "group": "19",
+      "loans": 406,
+      "not_repaid": 46,
+      "share_repaid": 0.8866995073891626,
+      "mean_predicted": 0.8007797275265338,
+      "mean_score": 80.06403940886699,
+      "share_strong": 0.046798029556650245,
+      "share_needs_more_info": 0.43596059113300495,
+      "mean_score_range": [
+        79.38910098522167,
+        80.71927339901478
+      ],
+      "share_strong_range": [
+        0.027093596059113302,
+        0.06902709359605913
+      ],
+      "share_needs_more_info_range": [
+        0.39402709359605914,
+        0.47783251231527096
+      ],
+      "roc_auc": 0.6029891304347826,
+      "roc_auc_range": [
+        0.5108483120221088,
+        0.6873745194686309
+      ],
+      "rest_roc_auc": 0.6109802769869439,
+      "rest_roc_auc_range": [
+        0.605552842157867,
+        0.6158220495067416
+      ],
+      "predicted_minus_actual": -0.08591977986262878,
+      "predicted_minus_actual_range": [
+        -0.11655693848357701,
+        -0.05537963072201244
+      ],
+      "rest_predicted_minus_actual": 0.0005437977186171228,
+      "rest_predicted_minus_actual_range": [
+        -0.002588492530268429,
+        0.003511574099597839
+      ],
+      "ranking_gap": -0.007991146552161266,
+      "ranking": "no gap",
+      "calibration_gap": -0.0864635775812459,
+      "calibration": "flagged"
+    },
+    {
+      "column": "State_ID",
+      "group": "20",
+      "loans": 60,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "State_ID",
+      "group": "21",
+      "loans": 35,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "State_ID",
+      "group": "22",
+      "loans": 22,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "Employment.Type",
+      "group": "Self employed",
+      "loans": 37370,
+      "not_repaid": 7689,
+      "share_repaid": 0.7942467219694942,
+      "mean_predicted": 0.8108398413156506,
+      "mean_score": 81.07091249665507,
+      "share_strong": 0.051806261707251805,
+      "share_needs_more_info": 0.5153063955044153,
+      "mean_score_range": [
+        80.99992440460262,
+        81.12755953973776
+      ],
+      "share_strong_range": [
+        0.049824725715814824,
+        0.05384332352154134
+      ],
+      "share_needs_more_info_range": [
+        0.510514450093658,
+        0.5201806261707251
+      ],
+      "roc_auc": 0.6034306225346924,
+      "roc_auc_range": [
+        0.5965841001285367,
+        0.6096787782449813
+      ],
+      "rest_roc_auc": 0.6256371425906126,
+      "rest_roc_auc_range": [
+        0.6164375361697082,
+        0.632887552534168
+      ],
+      "predicted_minus_actual": 0.01659311934615637,
+      "predicted_minus_actual_range": [
+        0.012438627629680869,
+        0.02064628485010521
+      ],
+      "rest_predicted_minus_actual": -0.02103711742582237,
+      "rest_predicted_minus_actual_range": [
+        -0.025611098901413557,
+        -0.017281852965215342
+      ],
+      "ranking_gap": -0.022206520055920276,
+      "ranking": "no gap",
+      "calibration_gap": 0.03763023677197874,
+      "calibration": "no gap"
+    },
+    {
+      "column": "Employment.Type",
+      "group": "Salaried",
+      "loans": 27271,
+      "not_repaid": 4721,
+      "share_repaid": 0.8268857027611749,
+      "mean_predicted": 0.8042461806834469,
+      "mean_score": 80.4150929558872,
+      "share_strong": 0.0592570862821312,
+      "share_needs_more_info": 0.4752667668952367,
+      "mean_score_range": [
+        80.34214366909904,
+        80.48103388214587
+      ],
+      "share_strong_range": [
+        0.056793846943639766,
+        0.06211910087638884
+      ],
+      "share_needs_more_info_range": [
+        0.4699442631366653,
+        0.4808138682116534
+      ],
+      "roc_auc": 0.6283101451222095,
+      "roc_auc_range": [
+        0.619332993298708,
+        0.6368531472393629
+      ],
+      "rest_roc_auc": 0.6029944149622579,
+      "rest_roc_auc_range": [
+        0.5965084376536786,
+        0.6090704257856839
+      ],
+      "predicted_minus_actual": -0.022639522077728014,
+      "predicted_minus_actual_range": [
+        -0.02680297929859076,
+        -0.01846305037561276
+      ],
+      "rest_predicted_minus_actual": 0.015654461525792307,
+      "rest_predicted_minus_actual_range": [
+        0.012438978631419751,
+        0.019409401326978416
+      ],
+      "ranking_gap": 0.025315730159951588,
+      "ranking": "no gap",
+      "calibration_gap": -0.03829398360352032,
+      "calibration": "no gap"
+    },
+    {
+      "column": "Employment.Type",
+      "group": "not stated",
+      "loans": 2147,
+      "not_repaid": 405,
+      "share_repaid": 0.8113646949231486,
+      "mean_predicted": 0.8106811765947257,
+      "mean_score": 81.063344201211,
+      "share_strong": 0.04471355379599441,
+      "share_needs_more_info": 0.6925943176525384,
+      "mean_score_range": [
+        80.80883791336748,
+        81.3018281322776
+      ],
+      "share_strong_range": [
+        0.03724965067536097,
+        0.05263157894736842
+      ],
+      "share_needs_more_info_range": [
+        0.6715882626921286,
+        0.7126455519329297
+      ],
+      "roc_auc": 0.5965478873439073,
+      "roc_auc_range": [
+        0.5699059482787877,
+        0.6245261763963498
+      ],
+      "rest_roc_auc": 0.6112343162666819,
+      "rest_roc_auc_range": [
+        0.6052844237433627,
+        0.6163456153145968
+      ],
+      "predicted_minus_actual": -0.0006835183284228386,
+      "predicted_minus_actual_range": [
+        -0.016754838156971954,
+        0.014145818657390494
+      ],
+      "rest_predicted_minus_actual": 4.1497863339734486e-05,
+      "rest_predicted_minus_actual_range": [
+        -0.0033755486191346883,
+        0.0030628238550428127
+      ],
+      "ranking_gap": -0.014686428922774608,
+      "ranking": "no gap",
+      "calibration_gap": -0.000725016191762573,
+      "calibration": "no gap"
+    }
+  ],
+  "seconds": 71.7,
+  "note": "Audit columns are never model inputs. This shows where the model measurably works differently on these data; it does not show that the model is fair."
+}

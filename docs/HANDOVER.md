@@ -25,8 +25,9 @@ Last updated: Phase 9 reviewed and fixed, Phase 10 ready to start (Oct 15, 2026)
 | 9. API (Humayra) | Queue, profile, score, consent, decisions, model card, audit, questionnaire and import endpoints; demo roles from the `X-Demo-Token` header; consent check; an audit entry on every read of a merchant; decisions append-only, with the score and model version taken from the server. Contract and role table: `docs/API_NOTES.md` | `python tasks.py api`, then http://localhost:8000/docs |
 | Plain summary | Every score card carries `summary_en` and `summary_bn`: a short paragraph built from the card itself (no language model, no internet), which never recommends lending or not | `python -m src.model.scoring` |
 | Phase 9 review (Oct 15) | Every consent now covers the questionnaire (before, 11,624 consenting merchants could not be asked it); the queue carries `low_score_warning`; `GET /merchants/{id}/consent`; officers can read the model card; the score response carries the summary; `docs/API_NOTES.md` now says plainly that imported rows never reach a score | `python tasks.py test` |
+| 11 (part 2). Group audit | Every audit column of every data mode, on the validation months: ranking and calibration of each group against the rest, with ranges; flagged only when ranges do not overlap or (synthetic) a gap is in all three seeds. A planted gap is caught by a test. Flagged: none in synthetic or Taiwan; regions in India, under-30s in Home Credit (ranking only), countries in Kiva. Details: `reports/FAIRNESS.md`, PROJECT_BRIEF item 40 | `python -m src.model.fairness --all-modes` (about 7 minutes; public modes need their raw files) |
 
-Not built yet: dashboard (10), group audit and model cards (11, parts 2 to 4), deployment (12).
+Not built yet: dashboard (10), model cards and test months (11, parts 3 and 4), deployment (12).
 
 **After pulling the Oct 15 changes, everyone runs once:** `python tasks.py data --reset-db`, then `python tasks.py train` (the consents changed, and the reset also clears test decisions).
 
@@ -55,7 +56,7 @@ Dipto and Humayra meet at the API. If a page needs a field or endpoint that is m
 ### Lead (with Claude Code)
 | Order | Work | Folders |
 |---|---|---|
-| 1 | Phase 11 part 2: group audit (metrics and calibration by group, with ranges; group columns stay audit-only) for every data mode | `src/model/fairness.py`, `reports/` |
+| 1 | Done (Oct 15): Phase 11 part 2, the group audit | `src/model/fairness.py`, `reports/` |
 | 2 | Phase 11 part 3: one model card per data mode (`docs/model_card_<mode>.md` and the JSON that `GET /model/card` serves) | `src/model/model_card.py` |
 | 3 | Phase 11 part 4: the test months, once, with the ledger in `reports/<mode>/test_set_use.json` | `reports/` |
 | 4 | Documents and checks (moved from Dipto): Findex codebook check, CGAP Kaleidofin case, first pass of the Bangla review (a native speaker confirms), `docs/starter_kit.md`, `docs/data_inventory.md`, slides text | `docs/`, `config/calibration/` |

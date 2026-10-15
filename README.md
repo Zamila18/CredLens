@@ -28,7 +28,8 @@ Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2
 | Training runs on all five data modes, with an honest reading of each: [reports/REAL_LABEL_RESULTS.md](reports/REAL_LABEL_RESULTS.md) | |
 | API contract, sample responses, `GET /health` | |
 | Ablation A to D with the negative control ([reports/ablation/](reports/ablation/ABLATION.md)); PostgreSQL path checked | |
-| Lint, 737 tests and CI | |
+| Group audit on every data mode, with a planted-gap test ([reports/FAIRNESS.md](reports/FAIRNESS.md)) | |
+| Lint, 747 tests and CI | |
 
 ### Where the model stands (synthetic data, validation months, seed 42)
 
