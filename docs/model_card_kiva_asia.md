@@ -19,6 +19,7 @@ A check of the method on public data with real outcomes. This model is not for s
 ## Model
 
 - **Model in use:** logistic regression, calibration: Platt scaling.
+- **Why this model:** LightGBM adds -0.2377 AUC over the logistic regression (range -0.2550 to -0.2187; the whole range must reach +0.0100). Not met: whole gain range reaches the threshold, brier is not worse. (The simpler model stays unless the other is clearly better.)
 - **Inputs** (each can only push the score the way its meaning says; how much data exists about a borrower is never an input):
   - The number of months over which the loan is to be repaid
   - 1 when the field partner, not the lender, carries the loss if the borrower does not pay
@@ -43,6 +44,20 @@ A check of the method on public data with real outcomes. This model is not for s
 
 **What this does not show.** Anything about scoring a merchant from behaviour. This model must not be used to pick out risky loans, and its AUC must not be quoted as support.
 
+## Results on the held-back test period
+
+| Measure | Validation | Test | Test 95% range |
+|---|---|---|---|
+| AUC | 0.644 | 0.435 | 0.420 to 0.450 |
+| Brier score | 0.050 | 0.075 | 0.071 to 0.078 |
+| Calibration error | 0.065 | 0.076 | 0.072 to 0.079 |
+
+17,610 test loans, 92.0% repaid. Brier score of always predicting the training average on them: 0.078. Test bands: strong 87%, review 0%, needs more info 13%. The model, its calibration and the band lines were fixed before this look and were not changed after it.
+
+**Reading.** On the later test months the model ranks loans the wrong way round (AUC below 0.5). This confirms that it must not be used.
+
+The ledger `reports/<mode>/test_set_use.json` has 1 entry for this test period (one entry can cover several looks; its detail says).
+
 ## Group audit (validation period)
 
 - Ranking differs for borrower gender 'female' (13,758 loans): AUC 0.66 against 0.51 for everyone else.
@@ -59,8 +74,9 @@ A check of the method on public data with real outcomes. This model is not for s
 ## Limits
 
 - Public data, not ShopUp data. Not usable for scoring: see 'What this does not show'.
+- The periods follow each other with no gap. The outcome of a loan issued near the end of one period became known only after the next period began, but training (and the calibration) used it as if it had been known. A strict forward test would leave a gap; without it the results are a little optimistic.
 - Labels exist only for people who received credit before. The model may not work for applicants who would have been turned down under earlier policy.
 - Scores are less certain when coverage is low. A thin file is never treated as a bad file: below the coverage line the band is 'Needs more info', whatever the score.
-- The numbers above are from the validation period. It was also used to choose the model and the calibration, so they are a little optimistic.
+- The validation numbers are a little optimistic: that period was also used to choose the model and the calibration. The held-back test period gives the honest check.
 - Group columns are used only to audit results, never as model inputs. The group audit shows where the model works measurably differently on these data; it does not show that the model is fair.
 - The tool supports a human decision. It must not be used for automatic approval or decline.

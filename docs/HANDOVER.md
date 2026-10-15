@@ -27,10 +27,11 @@ Last updated: Phase 9 reviewed and fixed, Phase 10 ready to start (Oct 15, 2026)
 | Phase 9 review (Oct 15) | Every consent now covers the questionnaire (before, 11,624 consenting merchants could not be asked it); the queue carries `low_score_warning`; `GET /merchants/{id}/consent`; officers can read the model card; the score response carries the summary; `docs/API_NOTES.md` now says plainly that imported rows never reach a score | `python tasks.py test` |
 | 11 (part 2). Group audit | Every audit column of every data mode, on the validation months: ranking and calibration of each group against the rest, with ranges; flagged only when ranges do not overlap or (synthetic) a gap is in all three seeds. A planted gap is caught by a test. Flagged: none in synthetic or Taiwan; regions in India, under-30s in Home Credit (ranking only), countries in Kiva. Details: `reports/FAIRNESS.md`, PROJECT_BRIEF item 40 | `python -m src.model.fairness --all-modes` (about 7 minutes; public modes need their raw files) |
 | 11 (part 3). Model cards | One card per data mode from the reports: use, data and terms, label, split, inputs in words, results with ranges, bands, what it shows and does not, ablation, group findings, limits. JSON for `GET /model/card` (any mode with `?mode=`), a page in `docs/model_card_<mode>.md`. Public-data cards say the model is a method check, not for scoring | `python -m src.model.model_card --all-modes` (seconds) |
+| 11 (part 4). Test period | Each model measured once on its held-back test period, every look in the ledger first, a second look refused without a written reason. Test AUC: synthetic 0.728 (not a clean holdout: looked at in Phase 1), Taiwan 0.752, India 0.599 (calibration off after a drop in repayment), Home Credit 0.723, Kiva 0.435 (wrong way round). On every model card | `python -m src.model.final_test --mode MODE` (refuses a second look) |
 
-Not built yet: dashboard (10), test months (11, part 4), deployment (12).
+Not built yet: dashboard (10), deployment (12). Phase 11 is complete.
 
-**After pulling the Oct 15 changes, everyone runs once:** `python tasks.py data --reset-db`, then `python tasks.py train` (the consents changed, and the reset also clears test decisions).
+**After pulling the Oct 15 changes, everyone runs once:** `python tasks.py data --reset-db`, then `python tasks.py train` (the consents changed, and the reset also clears test decisions). This resets the LOCAL SQLite database only: if your `.env` points at Supabase, the command refuses, on purpose. Resetting the shared database is a team decision (`python -m src.db.load --reset --reset-shared-database`).
 
 Data on the lead's laptop only (never in git): Taiwan, India L&T, Home Credit, the Kiva archive, Findex, World Bank informal-sector indicators. Details: `docs/DATA_SOURCES.md`.
 
@@ -59,7 +60,7 @@ Dipto and Humayra meet at the API. If a page needs a field or endpoint that is m
 |---|---|---|
 | 1 | Done (Oct 15): Phase 11 part 2, the group audit | `src/model/fairness.py`, `reports/` |
 | 2 | Done (Oct 15): Phase 11 part 3, the model cards | `src/model/model_card.py` |
-| 3 | Phase 11 part 4: the test months, once, with the ledger in `reports/<mode>/test_set_use.json` | `reports/` |
+| 3 | Done (Oct 15): Phase 11 part 4, the test period, once per model | `src/model/final_test.py`, `reports/` |
 | 4 | Documents and checks (moved from Dipto): Findex codebook check, CGAP Kaleidofin case, first pass of the Bangla review (a native speaker confirms), `docs/starter_kit.md`, `docs/data_inventory.md`, slides text | `docs/`, `config/calibration/` |
 | 5 | Remove the two stale Phase 7 skip placeholders in `tests/test_adapters.py` | `tests/` |
 | 6 | When everything else is done: buy the Hostinger VPS and deploy by following Humayra's `docs/DEPLOY.md` | the server |

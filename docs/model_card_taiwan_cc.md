@@ -19,6 +19,7 @@ A check of the method on public data with real outcomes. This model is not for s
 ## Model
 
 - **Model in use:** logistic regression, calibration: isotonic regression.
+- **Why this model:** LightGBM adds +0.0181 AUC over the logistic regression (range +0.0099 to +0.0265; the whole range must reach +0.0100). Not met: whole gain range reaches the threshold. (The simpler model stays unless the other is clearly better.)
 - **Inputs** (each can only push the score the way its meaning says; how much data exists about a borrower is never an input):
   - Of the last six months in which the card was used, the share with no late payment
   - The longest payment delay, in months, in the last six months
@@ -33,7 +34,7 @@ A check of the method on public data with real outcomes. This model is not for s
 | Measure | Value | 95% range |
 |---|---|---|
 | AUC (0.50 = coin toss; about 0.70 is useful) | 0.743 | 0.725 to 0.761 |
-| Brier score (always-average: 0.172) | 0.138 | 0.132 to 0.145 |
+| Brier score (always-average: 0.172) | 0.138 | 0.131 to 0.145 |
 | Calibration error | 0.008 | 0.009 to 0.023 |
 | Simpler model (only whether the most recent monthly bill was paid late) AUC | 0.697 | |
 | What the full model adds | 0.046 | 0.033 to 0.059 |
@@ -41,12 +42,26 @@ A check of the method on public data with real outcomes. This model is not for s
 | Band | Share of loans | Repaid |
 |---|---|---|
 | Strong | 25% | 89.4% |
-| Review | 65% | 74.0% |
+| Review | 65% | 73.9% |
 | Needs more info | 9% | 74.0% |
 
 **What this shows.** Inputs describing how a client paid over six months rank real outcomes well, and the bands separate repaid from not repaid.
 
 **What this does not show.** Anything about merchants: these are consumer credit cards in Taiwan in 2005. The split is random, not by time, so the result is somewhat easier than a real forward test.
+
+## Results on the held-back test period
+
+| Measure | Validation | Test | Test 95% range |
+|---|---|---|---|
+| AUC | 0.743 | 0.752 | 0.734 to 0.769 |
+| Brier score | 0.138 | 0.138 | 0.132 to 0.145 |
+| Calibration error | 0.008 | 0.022 | 0.015 to 0.031 |
+
+5,000 test loans, 77.9% repaid. Brier score of always predicting the training average on them: 0.172. Test bands: strong 29%, review 62%, needs more info 9%. The model, its calibration and the band lines were fixed before this look and were not changed after it.
+
+**Reading.** The ranking holds on loans the model never saw. On average the predictions match what happened, but the calibration error is higher than on validation; a likely reason, not tested, is that the isotonic calibration followed the validation loans a little too closely.
+
+The ledger `reports/<mode>/test_set_use.json` has 1 entry for this test period (one entry can cover several looks; its detail says).
 
 ## Group audit (validation period)
 
@@ -61,6 +76,6 @@ A check of the method on public data with real outcomes. This model is not for s
 - Public data, not ShopUp data. It tests the method on real payment behaviour, not on merchants.
 - Labels exist only for people who received credit before. The model may not work for applicants who would have been turned down under earlier policy.
 - Scores are less certain when coverage is low. A thin file is never treated as a bad file: below the coverage line the band is 'Needs more info', whatever the score.
-- The numbers above are from the validation period. It was also used to choose the model and the calibration, so they are a little optimistic.
+- The validation numbers are a little optimistic: that period was also used to choose the model and the calibration. The held-back test period gives the honest check.
 - Group columns are used only to audit results, never as model inputs. The group audit shows where the model works measurably differently on these data; it does not show that the model is fair.
 - The tool supports a human decision. It must not be used for automatic approval or decline.

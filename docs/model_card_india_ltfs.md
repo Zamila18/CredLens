@@ -19,6 +19,7 @@ A check of the method on public data with real outcomes. This model is not for s
 ## Model
 
 - **Model in use:** LightGBM (boosted decision trees), calibration: Platt scaling.
+- **Why this model:** LightGBM adds +0.0158 AUC over the logistic regression (range +0.0135 to +0.0181; the whole range must reach +0.0100). Both checks pass. (The simpler model stays unless the other is clearly better.)
 - **Inputs** (each can only push the score the way its meaning says; how much data exists about a borrower is never an input):
   - One minus the loan-to-value, the part of the vehicle's price the borrower paid up front
   - Credit-bureau score at disbursement, for borrowers the bureau could score
@@ -47,6 +48,20 @@ A check of the method on public data with real outcomes. This model is not for s
 
 **What this does not show.** That the method works: the AUC is well under the 0.70 benchmark. Use this source as the problem statement, not as a result.
 
+## Results on the held-back test period
+
+| Measure | Validation | Test | Test 95% range |
+|---|---|---|---|
+| AUC | 0.611 | 0.599 | 0.595 to 0.603 |
+| Brier score | 0.151 | 0.178 | 0.176 to 0.180 |
+| Calibration error | 0.005 | 0.045 | 0.042 to 0.048 |
+
+98,364 test loans, 76.5% repaid. Brier score of always predicting the training average on them: 0.180. Test bands: strong 5%, review 44%, needs more info 51%. The model, its calibration and the band lines were fixed before this look and were not changed after it.
+
+**Reading.** Repayment in the test month was lower than in the validation month, and the calibration fitted on the earlier month expects too much repayment: even loans in the Strong band repaid fewer than 9 in 10. The ranking stays weak. A lender would have to recalibrate on recent loans before any use.
+
+The ledger `reports/<mode>/test_set_use.json` has 1 entry for this test period (one entry can cover several looks; its detail says).
+
 ## Group audit (validation period)
 
 - Calibration differs for state (source code) '13' (5,403 loans, 71% repaid): the model expects 11 points more repayment than happened for this group, against 1 point less repayment than happened for everyone else.
@@ -60,8 +75,9 @@ A check of the method on public data with real outcomes. This model is not for s
 ## Limits
 
 - Public data, not ShopUp data. The outcome is a missed first instalment, not a loan going bad. Each part of the time split is one month long.
+- The periods follow each other with no gap. The outcome of a loan issued near the end of one period became known only after the next period began, but training (and the calibration) used it as if it had been known. A strict forward test would leave a gap; without it the results are a little optimistic.
 - Labels exist only for people who received credit before. The model may not work for applicants who would have been turned down under earlier policy.
 - Scores are less certain when coverage is low. A thin file is never treated as a bad file: below the coverage line the band is 'Needs more info', whatever the score.
-- The numbers above are from the validation period. It was also used to choose the model and the calibration, so they are a little optimistic.
+- The validation numbers are a little optimistic: that period was also used to choose the model and the calibration. The held-back test period gives the honest check.
 - Group columns are used only to audit results, never as model inputs. The group audit shows where the model works measurably differently on these data; it does not show that the model is fair.
 - The tool supports a human decision. It must not be used for automatic approval or decline.
