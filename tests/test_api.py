@@ -615,8 +615,10 @@ def test_the_model_card_is_for_every_role(api):
         assert response.status_code == 200
         card = ModelCard.model_validate(response.json())
         assert card.data_mode == "synthetic_bd"
-        assert card.model_version == "test-version"
         assert card.limitations
+        if card.model_version != "test-version":
+            # The written card belongs to the trained model, not to this test's model.
+            assert card.limitations[0].startswith("This card was written for model version")
 
 
 def test_the_model_card_placeholder_invents_no_numbers(tmp_path, monkeypatch):
@@ -802,7 +804,8 @@ def test_a_missing_scorer_gives_503_and_names_the_fix_but_health_and_audit_still
     ).status_code == 503
     assert api.get("/health").status_code == 200
     assert api.get("/audit", headers=ADMIN).status_code == 200
-    assert api.get("/model/card", headers=ADMIN).json()["model_version"] == "no model loaded"
+    card = api.get("/model/card", headers=ADMIN)
+    assert card.status_code == 200 and card.json()["data_mode"] == "synthetic_bd"
 
 
 def test_an_empty_database_gives_503(api, api_world):
@@ -896,3 +899,11 @@ def test_the_consent_view_is_live_and_audited(api, api_world, merchants):
     assert refused["valid"] is False and refused["data_categories"] == []
     assert api.get("/merchants/NOBODY/consent", headers=OFFICER).status_code == 404
 
+
+
+def test_another_modes_model_card_can_be_read(api):
+    response = api.get("/model/card?mode=taiwan_cc", headers=VIEWER)
+    assert response.status_code == 200
+    card = ModelCard.model_validate(response.json())
+    assert card.data_mode == "taiwan_cc"
+    assert api.get("/model/card?mode=nowhere", headers=VIEWER).status_code == 422
