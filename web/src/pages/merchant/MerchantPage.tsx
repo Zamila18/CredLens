@@ -12,7 +12,7 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 
-import type { ConsentView, Decision, MerchantProfile, QueueItem, Score } from '@/api/types'
+import type { ConsentView, Decision, Health, MerchantProfile, ModelCard, QueueItem, Score } from '@/api/types'
 import { useApi } from '@/api/useApi'
 import { useSession, type Lang } from '@/app/session-context'
 import { Chip } from '@/components/BandChip'
@@ -23,6 +23,8 @@ import { Segmented } from '@/components/Segmented'
 import { Button } from '@/components/ui/button'
 import { humanize } from '@/lib/consent'
 import { fmtDate } from '@/lib/format'
+import { hasQueue } from '@/lib/modes'
+import { text } from '../model/metrics'
 import { ConsentPanel } from './ConsentPanel'
 import { DecisionForm, DecisionHistory, ReadOnlyDecisionNote } from './DecisionPanels'
 import { EvidenceCards, Timeline } from './Evidence'
@@ -113,12 +115,21 @@ function MerchantView({ merchantId }: { merchantId: string }) {
   const id = encodeURIComponent(merchantId)
   const isOfficer = role === 'officer'
 
-  const profile = useApi<MerchantProfile>(`/merchants/${id}`, undefined, { noCache: true })
-  const score = useApi<Score>(`/merchants/${id}/score`, undefined, { noCache: true })
-  const consent = useApi<ConsentView>(`/merchants/${id}/consent`, undefined, { noCache: true })
-  const queue = useApi<QueueItem[]>('/merchants')
+  // Public data modes have no merchant pages (and Home Credit rows may never be shown):
+  // in those modes the page does not ask for any merchant data at all.
+  const health = useApi<Health>('/health')
+  const rowsAllowed = hasQueue(health.data?.data_mode)
+  const ask = (path: string) => (rowsAllowed ? path : null)
+
+  const profile = useApi<MerchantProfile>(ask(`/merchants/${id}`), undefined, { noCache: true })
+  const score = useApi<Score>(ask(`/merchants/${id}/score`), undefined, { noCache: true })
+  const consent = useApi<ConsentView>(ask(`/merchants/${id}/consent`), undefined, { noCache: true })
+  const queue = useApi<QueueItem[]>(ask('/merchants'))
   const queueRow = queue.data?.find((r) => r.merchant_id === merchantId)
-  const decisions = useApi<Decision[]>('/decisions', { merchant_id: merchantId })
+  const decisions = useApi<Decision[]>(ask('/decisions'), { merchant_id: merchantId })
+  // The outcome the score predicts, in the model card's own words (the 30-day rule lives in config).
+  const card = useApi<ModelCard>('/model/card')
+  const outcome = card.data ? text(card.data.metrics, 'label') : undefined
 
   // Questionnaire answers saved on this visit replace the ones in the profile.
   const [savedAnswers, setSavedAnswers] = useState<MerchantProfile['questionnaire'] | undefined>(undefined)
@@ -137,6 +148,20 @@ function MerchantView({ merchantId }: { merchantId: string }) {
     </nav>
   )
 
+  if (health.data && !rowsAllowed) {
+    return (
+      <Page wide>
+        {breadcrumb}
+        <Card className="flex max-w-[720px] flex-col gap-2 p-5 text-sm text-ink-3">
+          <span className="font-semibold text-ink">No merchant pages for public data</span>
+          <span>This data source shows its model card and totals only. Individual rows are not shown.</span>
+          <Link to="/model" className="font-semibold">
+            Open the model card
+          </Link>
+        </Card>
+      </Page>
+    )
+  }
   if (profile.error) {
     return (
       <Page wide>
@@ -196,7 +221,7 @@ function MerchantView({ merchantId }: { merchantId: string }) {
             <Loading what="the score" />
           ) : (
             <>
-              <ScoreCard score={score.data} lang={lang} />
+              <ScoreCard score={score.data} lang={lang} outcome={outcome} />
               <WhyThisScore score={score.data} lang={lang} />
               <HabitsPanel questionnaire={questionnaire} action={habitsAction}>
                 {answering && (

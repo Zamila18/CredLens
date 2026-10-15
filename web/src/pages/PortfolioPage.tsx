@@ -17,7 +17,7 @@ import { isOverride } from '@/lib/actions'
 import { count, fmtDate, pct } from '@/lib/format'
 import { hasQueue, MODE_LABELS } from '@/lib/modes'
 import { cn } from '@/lib/utils'
-import { num } from './model/metrics'
+import { num, text } from './model/metrics'
 import { GroupsCard } from './model/ModelCardParts'
 
 type Segment = { label: string; short: string; share: number; className: string }
@@ -73,7 +73,7 @@ function BandsSection({ card, queue, showQueue }: { card: ModelCard; queue?: Que
   }
 
   const tiles = [
-    { name: 'Strong', repaid: num(m, 'band_strong_share_repaid'), panel: 'bg-strong-panel', head: 'text-lens-dark', note: 'repaid within 30 days of the due date' },
+    { name: 'Strong', repaid: num(m, 'band_strong_share_repaid'), panel: 'bg-strong-panel', head: 'text-lens-dark', note: 'repaid in time' },
     { name: 'Review', repaid: num(m, 'band_review_share_repaid'), panel: 'bg-amber-panel', head: 'text-amber-text', note: 'repaid: the band that needs an officer’s eye' },
     { name: 'Needs more info', repaid: num(m, 'band_needs_more_info_share_repaid'), panel: 'bg-peri-panel', head: 'text-peri-text', note: 'repaid: thin files are not bad files' },
   ]
@@ -87,6 +87,7 @@ function BandsSection({ card, queue, showQueue }: { card: ModelCard; queue?: Que
           {MODE_LABELS[card.data_mode]}
         </span>
       </div>
+      {text(m, 'label') && <span className="-mt-3 text-[13px] text-muted">{text(m, 'label')}.</span>}
       <StackedBar
         ariaLabel={`Validation loans: Strong ${pct(strong)}, Review ${pct(review)}, Needs more info ${pct(nmi)}`}
         segments={[

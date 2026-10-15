@@ -25,7 +25,8 @@ function Mono({ children }: { children: ReactNode }) {
   return <span className="font-mono font-semibold tabular">{children}</span>
 }
 
-export function ScoreCard({ score, lang }: { score: Score; lang: Lang }) {
+/** `outcome` is the model card's label, e.g. "Repaid in time: the loan was paid in full no more than 30 days after its due date". */
+export function ScoreCard({ score, lang, outcome }: { score: Score; lang: Lang; outcome?: string }) {
   const summary = lang === 'bn' ? (score.summary_bn ?? score.summary_en) : score.summary_en
   const summaryIsBn = lang === 'bn' && Boolean(score.summary_bn)
   return (
@@ -43,9 +44,10 @@ export function ScoreCard({ score, lang }: { score: Score; lang: Lang }) {
             <Eyebrow>Readiness score</Eyebrow>
           </h2>
           <p className="m-0 text-[15px] leading-[22px]">
-            Calibrated probability of repaying within 30 days of the due date: <Mono>{score.probability.toFixed(2)}</Mono>,
-            shown as <Mono>{score.score}</Mono>.
+            Calibrated probability of repaying in time: <Mono>{score.probability.toFixed(2)}</Mono>, shown as{' '}
+            <Mono>{score.score}</Mono>.
           </p>
+          {outcome && <p className="m-0 text-[13px] text-muted-2">{outcome}.</p>}
           <p className="m-0 text-sm leading-[21px] text-ink-3">
             <span className="font-semibold">Coverage {pct(score.coverage)}</span> is how much of the expected evidence
             exists. It is not the score. The outer ring fills with it.
