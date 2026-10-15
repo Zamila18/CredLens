@@ -12,6 +12,7 @@ import { ConsentDemoPage } from '@/pages/ConsentDemoPage'
 import { ConsentPage } from '@/pages/ConsentPage'
 import { DecisionsPage } from '@/pages/DecisionsPage'
 import { DevStates } from '@/pages/DevStates'
+import { ImportPage } from '@/pages/ImportPage'
 import { MerchantPage } from '@/pages/merchant/MerchantPage'
 import { ModelCardPage } from '@/pages/model/ModelCardPage'
 import { NotFound, Placeholder } from '@/pages/Placeholder'
@@ -41,7 +42,7 @@ export default function App() {
             path="admin/import"
             element={
               <RequireRole roles={['admin']}>
-                <Placeholder title="Data import" part="Part 4" mockup="Import.dc.html" />
+                <ImportPage />
               </RequireRole>
             }
           />
