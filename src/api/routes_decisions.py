@@ -27,7 +27,7 @@ from sqlalchemy.orm import Session
 from src.api.auth import EVERY_ROLE, CurrentUser, add_audit, require_roles
 from src.api.common import api_error, card_or_error, utc_now
 from src.api.model_card_view import load_model_card
-from src.api.schemas import AuditEntry, Decision, DecisionCreate, ModelCard
+from src.api.schemas import AuditEntry, DataMode, Decision, DecisionCreate, ModelCard
 from src.api.state import Services, get_scorer, get_services, get_session
 from src.db import models as db
 from src.model.scoring import Scorer
@@ -102,11 +102,24 @@ def decision_history(
     response_model=ModelCard,
     dependencies=[Depends(require_roles(*EVERY_ROLE))],
 )
-def model_card(services: Services = Depends(get_services)) -> ModelCard:
+def model_card(
+    mode: DataMode | None = Query(
+        default=None, description="Another data mode's card; default: the mode the API runs"
+    ),
+    services: Services = Depends(get_services),
+) -> ModelCard:
     """Model facts and limits. Every role: officers make the decisions, so they need the
-    limits most."""
-    version = services.scorer.model_version if services.scorer else None
-    return load_model_card(services.config["data"]["mode"], version)
+    limits most.
+
+    `?mode=` serves the card of another data mode, so the dashboard can show the public
+    data results while the API scores the synthetic data. A card holds totals only, never
+    a row, so this is allowed for every mode, Home Credit included.
+    """
+    running = services.config["data"]["mode"]
+    if mode is None or mode == running:
+        version = services.scorer.model_version if services.scorer else None
+        return load_model_card(running, version)
+    return load_model_card(mode, None)
 
 
 @router.get("/audit", response_model=list[AuditEntry])

@@ -73,7 +73,13 @@ A request with a wrong shape is the usual FastAPI 422.
   `python tasks.py train` and the scorer read the generated CSV files in `data/raw/synthetic_bd/`,
   not the database. The import page shows that a lender's file can be checked and stored; scoring
   from the database is a pilot step. Say so on the page.
-- **Model card** is a placeholder (real model version, plain-words limits, no numbers) until
-  `reports/<mode>/model_card.json` exists (Phase 11).
+- **Model card.** Written per data mode by `python -m src.model.model_card --all-modes` into
+  `reports/<mode>/model_card.json` (and `docs/model_card_<mode>.md`). `GET /model/card?mode=taiwan_cc`
+  gives another mode's card, for the public data pages; without `mode`, the running mode's.
+  `metrics` holds numbers and short texts (`data_source`, `label`, `what_this_shows`,
+  `what_this_does_not_show`, `group_findings`, `inputs` with " | " between inputs, and on the
+  synthetic card `ablation_runs`, which explains the `auc_A` to `auc_D` keys of `ablation`); show the
+  texts as sentences. If the card was written for an older model version, its first limitation
+  says so: show it. A mode with no written card gets a placeholder with no numbers.
 - **Queue.** `low_score_warning` is in each row (null when there is no score).
 - **Not built:** a consent revoke endpoint (see Consent).

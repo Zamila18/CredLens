@@ -1,0 +1,194 @@
+{
+  "data_mode": "kiva_asia",
+  "model_version": "kiva_asia-20261014-135932-4198b26",
+  "intended_use": "A check of the method on public data with real outcomes. This model is not for scoring anyone: it shows how the same pipeline does where the outcomes are known.",
+  "metrics": {
+    "measured_on": "validation period (the held-back test period is not used here)",
+    "split": "by time (train on earlier loans, measure on later ones)",
+    "split_note": "Split by loan issue date. Each period ends the day before the next begins.",
+    "train_loans": 32581.0,
+    "validation_loans": 15113.0,
+    "model": "logistic regression",
+    "calibration": "Platt scaling",
+    "inputs": "The number of months over which the loan is to be repaid | 1 when the field partner, not the lender, carries the loss if the borrower does not pay",
+    "share_repaid": 0.9475,
+    "roc_auc": 0.6441,
+    "roc_auc_range": [
+      0.6339,
+      0.655
+    ],
+    "brier": 0.0497,
+    "brier_range": [
+      0.0467,
+      0.0526
+    ],
+    "brier_always_average_rate": 0.0516,
+    "calibration_error": 0.0653,
+    "calibration_error_range": [
+      0.0616,
+      0.0687
+    ],
+    "simpler_model": "the loan's terms only, without the two inputs about the field partner",
+    "simpler_model_roc_auc": 0.6437,
+    "auc_gain_over_simpler_model": 0.0,
+    "auc_gain_over_simpler_model_range": [
+      0.0,
+      0.0
+    ],
+    "auc_benchmark": 0.7,
+    "band_strong_share": 0.9571,
+    "band_strong_share_repaid": 0.9471,
+    "band_review_share": 0.0,
+    "band_review_share_repaid": null,
+    "band_needs_more_info_share": 0.0429,
+    "band_needs_more_info_share_repaid": 0.9568,
+    "data_source": "Kiva loans in Asia from Kiva's snapshot of 2 May 2016 (Internet Archive copy), retail, food and services",
+    "terms": "No data licence stated, only Kiva's general terms of use",
+    "label": "Repaid: the loan was paid back, not defaulted",
+    "banner": "Public data: Kiva (Asia), not ShopUp data. Decision support only.",
+    "what_this_shows": "Where the only information is about the loan and its field partner, a score cannot be trusted.",
+    "what_this_does_not_show": "Anything about scoring a merchant from behaviour. This model must not be used to pick out risky loans, and its AUC must not be quoted as support.",
+    "group_findings": "Ranking differs for borrower gender 'female' (13,758 loans): AUC 0.66 against 0.51 for everyone else. Ranking differs for borrower gender 'male' (1,319 loans): AUC 0.52 against 0.66 for everyone else. Ranking differs for country 'Philippines' (10,857 loans): AUC 0.82 against 0.33 for everyone else. Ranking differs for country 'Pakistan' (605 loans): AUC 0.45 against 0.65 for everyone else. Calibration differs for country 'Pakistan' (605 loans, 79% repaid): the model expects 16 points more repayment than happened for this group, against 1 point less repayment than happened for everyone else. Ranking differs for country 'Indonesia' (253 loans): AUC 0.39 against 0.64 for everyone else. Calibration differs for country 'Indonesia' (253 loans, 84% repaid): the model expects 9 points more repayment than happened for this group, against about as much repayment as happened for everyone else."
+  },
+  "ablation": [],
+  "group_results": [
+    {
+      "column": "borrower_genders",
+      "group": "female",
+      "loans": 13758,
+      "share_repaid": 0.9472,
+      "mean_score": 94.759,
+      "roc_auc": 0.6589,
+      "ranking_gap": 0.1475,
+      "ranking": "flagged",
+      "calibration_gap": 0.0107,
+      "calibration": "no gap"
+    },
+    {
+      "column": "borrower_genders",
+      "group": "male",
+      "loans": 1319,
+      "share_repaid": 0.9538,
+      "mean_score": 94.0099,
+      "roc_auc": 0.5159,
+      "ranking_gap": -0.1423,
+      "ranking": "flagged",
+      "calibration_gap": -0.0143,
+      "calibration": "no gap"
+    },
+    {
+      "column": "borrower_genders",
+      "group": "mixed",
+      "loans": 36,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "country",
+      "group": "Philippines",
+      "loans": 10857,
+      "share_repaid": 0.9443,
+      "mean_score": 95.1483,
+      "roc_auc": 0.8156,
+      "ranking_gap": 0.4885,
+      "ranking": "flagged",
+      "calibration_gap": 0.0274,
+      "calibration": "no gap"
+    },
+    {
+      "column": "country",
+      "group": "Vietnam",
+      "loans": 790,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "country",
+      "group": "Tajikistan",
+      "loans": 724,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "country",
+      "group": "Cambodia",
+      "loans": 698,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "country",
+      "group": "Pakistan",
+      "loans": 605,
+      "share_repaid": 0.7851,
+      "mean_score": 94.1174,
+      "roc_auc": 0.4521,
+      "ranking_gap": -0.193,
+      "ranking": "flagged",
+      "calibration_gap": 0.1646,
+      "calibration": "flagged"
+    },
+    {
+      "column": "country",
+      "group": "Samoa",
+      "loans": 466,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "country",
+      "group": "Mongolia",
+      "loans": 396,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "country",
+      "group": "Indonesia",
+      "loans": 253,
+      "share_repaid": 0.8379,
+      "mean_score": 92.2885,
+      "roc_auc": 0.3903,
+      "ranking_gap": -0.2546,
+      "ranking": "flagged",
+      "calibration_gap": 0.0872,
+      "calibration": "flagged"
+    },
+    {
+      "column": "country",
+      "group": "India",
+      "loans": 111,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "country",
+      "group": "Timor-Leste",
+      "loans": 89,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "country",
+      "group": "Kyrgyzstan",
+      "loans": 76,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    },
+    {
+      "column": "country",
+      "group": "Nepal",
+      "loans": 48,
+      "ranking": "too few loans to measure",
+      "calibration": "too few loans to measure"
+    }
+  ],
+  "limitations": [
+    "Public data, not ShopUp data. Not usable for scoring: see 'What this does not show'.",
+    "Labels exist only for people who received credit before. The model may not work for applicants who would have been turned down under earlier policy.",
+    "Scores are less certain when coverage is low. A thin file is never treated as a bad file: below the coverage line the band is 'Needs more info', whatever the score.",
+    "The numbers above are from the validation period. It was also used to choose the model and the calibration, so they are a little optimistic.",
+    "Group columns are used only to audit results, never as model inputs. The group audit shows where the model works measurably differently on these data; it does not show that the model is fair.",
+    "The tool supports a human decision. It must not be used for automatic approval or decline."
+  ]
+}

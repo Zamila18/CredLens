@@ -73,6 +73,6 @@ Where a source records how people actually behaved over time (Taiwan), behaviour
 - Validation numbers. The same validation data was used to choose between two models and three calibrators, so they are a little optimistic. The held-back part will tell.
 - The ranges treat loans as independent.
 - The inputs were chosen by the rule "behaviour only; how much data exists is context". Sources where "little data" predicts trouble (Taiwan clients known only by a credit limit repay less often) lose that signal on purpose and get "Needs more info" instead.
-- No group audit yet (sex, age band, state, country): Phase 11.
+- The group audit (sex, age band, state, country and the others) is in `reports/FAIRNESS.md` (Phase 11, Oct 15), and each mode's findings are on its model card (`docs/model_card_<mode>.md`).
 - The thin-file rows above show the tool's design at work: in every source but Home Credit, the model ranks loans under the coverage line worse than the rest (on Kiva, worse than chance). That is why those loans get "Needs more info" instead of a band.
 - Home Credit's individual rows are never shown (competition rules): asking for a score card or a review queue in that mode is refused in code (`data.rows_never_shown`). Only totals like these appear.

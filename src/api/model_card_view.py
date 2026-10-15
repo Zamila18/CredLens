@@ -6,7 +6,10 @@ Implements: PROJECT_BRIEF section 8 and docs/HANDOVER.md Part E ("fixture for no
     fills it in Phase 11").
 
 If `reports/<mode>/model_card.json` exists it is served as it is (checked against the
-`ModelCard` shape). Until then a placeholder is served: it carries the real model version,
+`ModelCard` shape). If it was written for another model version than the one the API runs
+(the model was trained again and the card was not), it is still served, with a first
+limitation that says so: its numbers describe the older model. While no card is written, a
+placeholder is served: it carries the real model version,
 the plain-words limitations from the sample file, and a note that no results are shown
 because the model card has not been written. No metric is invented here.
 """
@@ -39,11 +42,23 @@ PLACEHOLDER_LIMITATIONS = [
 ]
 
 
+def stale_card_warning(card_version: str, running_version: str) -> str:
+    """The first limitation of a card written for another model version."""
+    return (
+        f"This card was written for model version {card_version}, but the scores come from "
+        f"version {running_version}. Its numbers may not describe the model in use. Write "
+        "it again: python -m src.model.model_card"
+    )
+
+
 def load_model_card(mode: str, model_version: str | None) -> ModelCard:
     """The written model card for `mode`, or the placeholder."""
     path = PROJECT_ROOT / "reports" / mode / CARD_FILE
     if path.exists():
-        return ModelCard.model_validate(json.loads(path.read_text(encoding="utf-8")))
+        card = ModelCard.model_validate(json.loads(path.read_text(encoding="utf-8")))
+        if model_version and card.model_version != model_version:
+            card.limitations.insert(0, stale_card_warning(card.model_version, model_version))
+        return card
     return ModelCard(
         data_mode=mode,
         model_version=model_version or "no model loaded",
