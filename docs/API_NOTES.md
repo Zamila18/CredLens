@@ -82,4 +82,5 @@ A request with a wrong shape is the usual FastAPI 422.
   texts as sentences. If the card was written for an older model version, its first limitation
   says so: show it. A mode with no written card gets a placeholder with no numbers.
 - **Queue.** `low_score_warning` is in each row (null when there is no score).
+- **Timeline.** Each event has `label` and `label_bn` (Bangla, Oct 16), for the dashboard's English/Bangla switch.
 - **Not built:** a consent revoke endpoint (see Consent).

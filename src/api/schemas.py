@@ -151,6 +151,7 @@ class TimelineEvent(BaseModel):
     date: str
     stream: Literal["purchase", "delivery", "payment", "loan"]
     label: str
+    label_bn: str | None = Field(default=None, description="The same label in Bangla.")
     amount_bdt: float | None = None
 
 
