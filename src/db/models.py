@@ -27,6 +27,7 @@ Rules built into the tables:
 from __future__ import annotations
 
 from datetime import date, datetime
+from functools import lru_cache
 
 from sqlalchemy import (
     DDL,
@@ -352,15 +353,36 @@ for _table in APPEND_ONLY_TABLES:
 # --- engine and table creation -------------------------------------------------------
 
 
-def make_engine(database_url: str) -> Engine:
-    """Create a database engine. On SQLite, switch foreign-key checks on."""
+@lru_cache(maxsize=1)
+def configured_busy_timeout_seconds() -> int:
+    """How long a SQLite call waits for another writer: `api.sqlite_busy_timeout_seconds`."""
+    from src.config import load_config  # not at the top: this module is imported very early
+
+    return int(load_config()["api"]["sqlite_busy_timeout_seconds"])
+
+
+def make_engine(database_url: str, busy_timeout_seconds: int | None = None) -> Engine:
+    """Create a database engine. On SQLite: foreign-key checks on, and a wait for the lock.
+
+    Every audit entry and decision is a write, and SQLite lets one writer in at a time. With
+    SQLite's own default (5 seconds) 24 callers at once got "database is locked" and an HTTP
+    500 (Phase 13 review). The call now waits `api.sqlite_busy_timeout_seconds` (30) for its
+    turn. The journal mode is left alone: write-ahead logging would put recent changes in a
+    second file, and `python tasks.py backup` copies only the database file.
+
+    `busy_timeout_seconds` is for tests; it has no effect on PostgreSQL.
+    """
     engine = create_engine(database_url)
     if engine.dialect.name == "sqlite":
+        wait = busy_timeout_seconds
+        if wait is None:
+            wait = configured_busy_timeout_seconds()
 
         @event.listens_for(engine, "connect")
-        def _enable_foreign_keys(dbapi_connection, _record) -> None:
+        def _prepare_connection(dbapi_connection, _record) -> None:
             cursor = dbapi_connection.cursor()
             cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.execute(f"PRAGMA busy_timeout={int(wait * 1000)}")
             cursor.close()
 
     return engine

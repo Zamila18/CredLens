@@ -167,6 +167,12 @@ def test_home_credit_is_never_presented_as_asian_data():
         ("fairness", "flag_gap_points", 3),
         ("fairness", "seeds", []),
         ("fairness", "group_columns", []),
+        ("api", "sqlite_busy_timeout_seconds", 0),
+        ("api", "sqlite_busy_timeout_seconds", "thirty"),
+        ("api", "reason_max_chars", -1),
+        ("api", "reason_max_chars", True),
+        ("api", "duplicate_decision_seconds", 0),
+        ("api", "duplicate_decision_seconds", 2.5),
     ],
 )
 def test_a_wrong_setting_is_named_when_the_config_loads(config, section, key, bad_value):
@@ -176,7 +182,7 @@ def test_a_wrong_setting_is_named_when_the_config_loads(config, section, key, ba
         validate_config(broken)
 
 
-@pytest.mark.parametrize("section", ["evaluation", "features"])
+@pytest.mark.parametrize("section", ["evaluation", "features", "api"])
 def test_a_missing_section_is_reported(config, section):
     broken = copy.deepcopy(config)
     del broken[section]
