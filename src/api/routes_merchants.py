@@ -25,7 +25,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.api.auth import EVERY_ROLE, CurrentUser, add_audit, require_roles
-from src.api.common import api_error, band_rules_for, card_or_error
+from src.api.common import api_error, band_rules_for, card_or_error, refuse_rows_not_shown
 from src.api.profile import (
     QUESTIONNAIRE_CONSENT_CATEGORY,
     build_profile,
@@ -43,7 +43,7 @@ from src.api.schemas import (
 )
 from src.api.state import Services, get_scorer, get_services, get_session
 from src.db import models as db
-from src.model.explain import RowsNotShown, refuse_hidden_rows
+from src.model.explain import RowsNotShown
 from src.model.scoring import Scorer, UnknownMerchant
 
 router = APIRouter(tags=["merchants"])
@@ -61,10 +61,7 @@ def _known_merchant(session: Session, merchant_id: str) -> db.Merchant:
 
 def _refuse_hidden_rows(services: Services) -> None:
     """A data mode whose rows may never be shown (Home Credit) has no merchant pages."""
-    try:
-        refuse_hidden_rows(services.config, services.config["data"]["mode"])
-    except RowsNotShown as error:
-        raise api_error(403, "rows_not_shown", str(error)) from None
+    refuse_rows_not_shown(services.config)
 
 
 def _optional(value, cast):

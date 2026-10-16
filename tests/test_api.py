@@ -27,6 +27,7 @@ from src.api import model_card_view
 from src.api.main import app
 from src.api.schemas import (
     AuditEntry,
+    ConsentList,
     Decision,
     HealthResponse,
     MerchantProfile,
@@ -128,6 +129,7 @@ def test_openapi_spec_is_published():
         "/merchants/{merchant_id}",
         "/merchants/{merchant_id}/score",
         "/merchants/{merchant_id}/consent",
+        "/consents",
         "/merchants/{merchant_id}/decision",
         "/merchants/{merchant_id}/questionnaire",
         "/decisions",
@@ -160,6 +162,7 @@ def role_cases(merchant_id: str) -> list[tuple]:
         ("GET", "/decisions", {}, everyone),
         ("GET", "/model/card", {}, everyone),
         ("GET", f"/merchants/{merchant_id}/consent", {}, everyone),
+        ("GET", "/consents?limit=5", {}, everyone),
         ("GET", "/audit", {}, {"admin"}),
         (
             "POST",
@@ -645,6 +648,208 @@ def test_a_mode_with_its_own_band_lines_sends_those(api, api_world, merchants):
     # a mode with no lines of its own gets the defaults
     kiva = api.get("/model/card?mode=kiva_asia", headers=OFFICER).json()
     assert kiva["band_rules"]["strong_min_score"] == changed["score"]["band_strong_min_score"]
+
+
+# --- the consent list -------------------------------------------------------------------
+
+
+def get_consents(api, params: str = "", headers=OFFICER) -> ConsentList:
+    response = api.get(f"/consents{params}", headers=headers)
+    assert response.status_code == 200, response.text
+    return ConsentList.model_validate(response.json())
+
+
+def test_the_consent_list_pages_through_every_record_for_every_role(api, api_world):
+    rows = count(api_world, db.Consent)
+    for headers in (OFFICER, ADMIN, VIEWER):
+        first = get_consents(api, "", headers)
+        assert first.total == rows == sum(first.counts.values())
+        assert (first.limit, first.offset) == (100, 0) and len(first.items) == 100
+    seen: list[str] = []
+    offset = 0
+    while offset < rows:
+        page = get_consents(api, f"?limit=500&offset={offset}")
+        assert page.offset == offset and 0 < len(page.items) <= 500
+        seen += [item.consent_id for item in page.items]
+        offset += 500
+    assert len(seen) == len(set(seen)) == rows
+    assert get_consents(api, f"?offset={rows}").items == []
+    ordered = [(i.merchant_id, i.granted_at) for i in get_consents(api, "?limit=500").items]
+    assert ordered == sorted(ordered)
+
+
+def test_each_consent_record_has_what_the_page_needs(api, api_world):
+    consents = api_world.tables["consents"].set_index("consent_id")
+    for item in get_consents(api, "?limit=50").items:
+        row = consents.loc[item.consent_id]
+        assert item.merchant_id == row["merchant_id"] and item.purpose == row["purpose"]
+        assert "|".join(item.data_categories) == row["data_categories"]
+        assert item.data_categories and "questionnaire" in item.data_categories
+        assert item.granted_at == str(row["granted_at"])
+        assert item.expires_at == str(row["expires_at"])
+        revoked = str(row["revoked_at"])
+        assert item.revoked_at == (None if revoked in ("nan", "None", "") else revoked)
+
+
+def test_the_consent_status_is_the_rule_the_scorer_uses(api, api_world, queue):
+    """A merchant with a valid record is exactly a merchant the queue scores."""
+    everything = get_consents(api, "?limit=500").total
+    assert everything > 500
+    valid_merchants: set[str] = set()
+    offset = 0
+    while offset < everything:
+        for item in get_consents(api, f"?limit=500&offset={offset}").items:
+            if item.status == "valid":
+                valid_merchants.add(item.merchant_id)
+        offset += 500
+    in_queue = queue.set_index("merchant_id")["consent_valid"]
+    assert {m for m in in_queue.index if in_queue[m]} == valid_merchants & set(in_queue.index)
+    assert not {m for m in in_queue.index if not in_queue[m]} & valid_merchants
+
+
+def test_the_consent_list_filters_by_status_and_merchant(api, queue):
+    everything = get_consents(api)
+    assert everything.counts["valid"] > 0
+    assert sum(everything.counts[s] > 0 for s in ("expired", "revoked", "not_started")) >= 1, (
+        "the data must hold some consent that is not valid"
+    )
+    for status in ("valid", "expired", "revoked", "not_started"):
+        chosen = get_consents(api, f"?status={status}&limit=500")
+        assert chosen.total == everything.counts[status]
+        assert chosen.counts == everything.counts  # the tiles ignore the status filter
+        assert all(item.status == status for item in chosen.items)
+    merchant_id = queue["merchant_id"].iloc[0]
+    one = get_consents(api, f"?merchant_id={merchant_id}")
+    assert one.items and all(item.merchant_id == merchant_id for item in one.items)
+    assert one.total == len(one.items) == sum(one.counts.values())
+    detail = api.get(f"/merchants/{merchant_id}/consent", headers=OFFICER).json()
+    assert [i.consent_id for i in one.items] == [r["consent_id"] for r in detail["records"]]
+    assert (any(i.status == "valid" for i in one.items)) == detail["valid"]
+    none = get_consents(api, "?merchant_id=NOBODY")
+    assert none.total == 0 and none.items == [] and set(none.counts.values()) == {0}
+
+
+@pytest.mark.parametrize(
+    "bad", ["limit=0", "limit=501", "offset=-1", "status=revoked-ish", "limit=x"]
+)
+def test_the_consent_list_refuses_a_bad_request(api, api_world, bad):
+    before = count(api_world, db.AuditEntry, db.AuditEntry.action == "view_consents")
+    assert api.get(f"/consents?{bad}", headers=OFFICER).status_code == 422
+    assert count(api_world, db.AuditEntry, db.AuditEntry.action == "view_consents") == before
+
+
+def test_reading_the_consent_list_is_audited_and_changes_nothing(api, api_world, merchants):
+    merchant_id = merchants["consenting"][15]
+    consents_before = count(api_world, db.Consent)
+    loans = loans_snapshot(api_world)
+    for params, wanted_merchant in (("", None), (f"?merchant_id={merchant_id}", merchant_id)):
+        condition = (
+            db.AuditEntry.action == "view_consents",
+            db.AuditEntry.merchant_id == wanted_merchant
+            if wanted_merchant
+            else db.AuditEntry.merchant_id.is_(None),
+        )
+        before = count(api_world, db.AuditEntry, *condition)
+        get_consents(api, params, VIEWER)
+        assert count(api_world, db.AuditEntry, *condition) == before + 1
+    assert count(api_world, db.Consent) == consents_before
+    assert loans_snapshot(api_world) == loans
+
+
+def test_the_consent_list_cannot_be_used_to_change_a_consent(api):
+    for method in ("post", "put", "patch", "delete"):
+        response = getattr(api, method)("/consents", headers=ADMIN)
+        assert response.status_code == 405, method
+
+
+def test_the_consent_list_is_closed_for_a_source_whose_rows_may_not_be_shown(api, api_world):
+    hidden = copy.deepcopy(api_world.config)
+    hidden["data"]["rows_never_shown"] = ["synthetic_bd"]
+    app.state.services = Services(
+        config=hidden, engine=api_world.engine, scorer=api_world.services.scorer
+    )
+    response = api.get("/consents", headers=OFFICER)
+    assert response.status_code == 403
+    assert response.json()["detail"]["code"] == "rows_not_shown"
+
+
+def test_consent_status_on_the_day_it_changes(tmp_path):
+    """On the very day a consent expires or is revoked it no longer holds; on the day it is
+    granted it does. The list, its filter and the scorer's own rule must agree."""
+    import pandas as pd
+
+    from src.config import load_config
+    from src.db.models import create_tables, make_engine
+    from src.model.dataset import merchants_with_valid_consent
+
+    today = date(2026, 6, 30)
+    day = timedelta(days=1)
+    cases = {  # name: (granted, expires, revoked) -> expected status
+        "granted_today": (today, today + 30 * day, None, "valid"),
+        "expires_today": (today - 30 * day, today, None, "expired"),
+        "expires_tomorrow": (today - 30 * day, today + day, None, "valid"),
+        "revoked_today": (today - 30 * day, today + 30 * day, today, "revoked"),
+        "revoked_tomorrow": (today - 30 * day, today + 30 * day, today + day, "valid"),
+        "revoked_and_expired": (today - 60 * day, today - day, today - 30 * day, "revoked"),
+        "granted_tomorrow": (today + day, today + 30 * day, None, "not_started"),
+        "plainly_valid": (today - 90 * day, today + 90 * day, None, "valid"),
+    }
+    url = "sqlite:///" + (tmp_path / "boundary.db").as_posix()
+    create_tables(url)
+    engine = make_engine(url)
+    with Session(engine) as session:
+        session.add(db.User(user_id="officer-1", display_name="Demo", role="officer"))
+        for name in cases:
+            session.add(
+                db.Merchant(
+                    merchant_id=name,
+                    onboarded_at=today - 400 * day,
+                    consent_data_use=True,
+                    questionnaire_done=False,
+                )
+            )
+        session.flush()
+        for name, (granted, expires, revoked, _) in cases.items():
+            session.add(
+                db.Consent(
+                    consent_id="C-" + name,
+                    merchant_id=name,
+                    purpose="credit_readiness_assessment",
+                    data_categories="purchases|payments",
+                    granted_at=granted,
+                    expires_at=expires,
+                    revoked_at=revoked,
+                )
+            )
+        session.commit()
+    services = Services(config=load_config(), engine=engine)
+    services._data_today = today
+    app.state.services = services
+    try:
+        api = TestClient(app)
+        page = ConsentList.model_validate(api.get("/consents?limit=500", headers=OFFICER).json())
+        assert page.as_of == today.isoformat() and page.total == len(cases)
+        got = {item.merchant_id: item.status for item in page.items}
+        assert got == {name: case[3] for name, case in cases.items()}
+        for status in ("valid", "expired", "revoked", "not_started"):
+            filtered = ConsentList.model_validate(
+                api.get(f"/consents?status={status}", headers=OFFICER).json()
+            )
+            expected = {n for n, case in cases.items() if case[3] == status}
+            assert {i.merchant_id for i in filtered.items} == expected, status
+            assert filtered.total == page.counts[status] == len(expected)
+        # the scorer's rule, applied to the same rows, says the same about who is valid
+        frame = pd.DataFrame(
+            [
+                {"merchant_id": n, "granted_at": g, "expires_at": e, "revoked_at": r}
+                for n, (g, e, r, _) in cases.items()
+            ]
+        )
+        scored = merchants_with_valid_consent(frame, pd.Timestamp(today))
+        assert scored == {n for n, status in got.items() if status == "valid"}
+    finally:
+        del app.state.services
+        engine.dispose()
 
 
 # --- model card and audit log -----------------------------------------------------------

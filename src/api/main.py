@@ -22,6 +22,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.auth import TOKEN_HEADER
 from src.api.routes_admin import router as admin_router
+from src.api.routes_consents import router as consents_router
 from src.api.routes_decisions import router as decisions_router
 from src.api.routes_merchants import router as merchants_router
 from src.api.schemas import HealthResponse
@@ -58,6 +59,7 @@ app.add_middleware(
     allow_headers=[TOKEN_HEADER, "Content-Type"],
 )
 app.include_router(merchants_router)
+app.include_router(consents_router)
 app.include_router(decisions_router)
 app.include_router(admin_router)
 

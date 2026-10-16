@@ -86,4 +86,11 @@ A request with a wrong shape is the usual FastAPI 422.
   (`strong_min_score`, `min_coverage` as a share from 0 to 1, `low_score_warning_below`) for the
   card's data mode, read from the config. Show them beside the band ("Strong: score 90 or more and
   coverage 45% or more"). Take the band itself from the API; never work it out from these numbers.
+- **Consent list.** `GET /consents?merchant_id=&status=&limit=&offset=` (every role, audited) gives
+  one page of consent records for the consent page's main table: `consent_id`, `merchant_id`,
+  `purpose`, `data_categories` (a list), `granted_at`, `expires_at`, `revoked_at` and `status`
+  (`valid`, `expired`, `revoked`, `not_started`, worked out for `as_of`, the last day in the data,
+  with the rule the scorer uses). `total` counts all pages; `counts` gives the records per status for
+  the merchant filter (use it for tiles; it ignores the `status` filter). `limit` is 1 to 500
+  (default 100). Newest consent last per merchant; ordered by merchant id.
 - **Not built:** a consent revoke endpoint (see Consent).

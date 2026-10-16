@@ -123,6 +123,40 @@ class ConsentView(BaseModel):
     )
 
 
+ConsentStatus = Literal["valid", "expired", "revoked", "not_started"]
+
+
+class ConsentListItem(BaseModel):
+    """One consent record in GET /consents."""
+
+    consent_id: str
+    merchant_id: str
+    purpose: str
+    data_categories: list[str] = Field(description="What the consent covers, e.g. purchases.")
+    granted_at: str
+    expires_at: str
+    revoked_at: str | None = None
+    status: ConsentStatus = Field(
+        description="As of the last day in the data: valid, expired, revoked, or not_started "
+        "(granted after that day)."
+    )
+
+
+class ConsentList(BaseModel):
+    """GET /consents: one page of consent records and how many there are."""
+
+    as_of: str = Field(
+        description="The day the statuses are worked out for: the last day in the data."
+    )
+    total: int = Field(description="Records matching the filters, over all pages.")
+    limit: int
+    offset: int
+    counts: dict[str, int] = Field(
+        description="Records per status for the merchant filter (the status filter is ignored)."
+    )
+    items: list[ConsentListItem]
+
+
 class PurchasesSummary(BaseModel):
     """Mokam-style wholesale purchases: what the shop buys, never its sales."""
 

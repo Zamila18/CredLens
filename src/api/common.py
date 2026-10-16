@@ -19,7 +19,7 @@ from typing import Any
 from fastapi import HTTPException
 
 from src.api.schemas import BandRules
-from src.model.explain import ConsentRequired, RowsNotShown
+from src.model.explain import ConsentRequired, RowsNotShown, refuse_hidden_rows
 from src.model.score import band_lines
 from src.model.scoring import Scorer, UnknownMerchant
 
@@ -32,6 +32,14 @@ def api_error(status_code: int, code: str, message: str) -> HTTPException:
 def utc_now() -> datetime:
     """The current time in UTC, without a time zone, as stored in the database."""
     return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def refuse_rows_not_shown(config: dict[str, Any]) -> None:
+    """403 `rows_not_shown` when the running data mode may never show rows (Home Credit)."""
+    try:
+        refuse_hidden_rows(config, config["data"]["mode"])
+    except RowsNotShown as error:
+        raise api_error(403, "rows_not_shown", str(error)) from None
 
 
 def band_rules_for(config: dict[str, Any], mode: str) -> BandRules:
