@@ -57,7 +57,7 @@ export default function App() {
               </RequireRole>
             }
           />
-          <Route path="dev/states" element={<DevStates />} />
+          {import.meta.env.DEV && <Route path="dev/states" element={<DevStates />} />}
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

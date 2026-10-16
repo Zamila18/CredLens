@@ -66,7 +66,7 @@ export function QuestionnaireForm({
         </p>
         {QUESTION_WORDING_IS_DRAFT && (
           <p className="m-0 rounded-lg bg-amber-panel px-3 py-2 text-[13px] text-amber-deep">
-            Draft question wording, English only, waiting for the reviewed text.
+            Draft wording: the Bangla still needs a native-speaker review (docs/QUESTIONNAIRE.md).
           </p>
         )}
       </div>
@@ -74,6 +74,8 @@ export function QuestionnaireForm({
       <ol className="m-0 flex list-none flex-col gap-4 p-0">
         {ITEMS.map((item, i) => {
           const text = lang === 'bn' && item.bn ? item.bn : item.en
+          const low = lang === 'bn' ? item.lowBn : item.low
+          const high = lang === 'bn' ? item.highBn : item.high
           return (
             <li key={item.key}>
               <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
@@ -84,7 +86,7 @@ export function QuestionnaireForm({
                   <span className={cn(lang === 'bn' && item.bn && 'font-bn')}>{text}</span>
                 </legend>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="w-28 text-right text-xs text-muted max-sm:hidden">{item.low}</span>
+                  <span className={cn('w-28 text-right text-xs text-muted max-sm:hidden', lang === 'bn' && 'font-bn')}>{low}</span>
                   <div role="radiogroup" aria-label={text} className="flex gap-1.5">
                     {SCALE.map((n) => {
                       const on = answers[item.key] === n
@@ -94,7 +96,7 @@ export function QuestionnaireForm({
                           type="button"
                           role="radio"
                           aria-checked={on}
-                          aria-label={`${n}${n === 1 ? ` (${item.low})` : n === 5 ? ` (${item.high})` : ''}`}
+                          aria-label={`${n}${n === 1 ? ` (${low})` : n === 5 ? ` (${high})` : ''}`}
                           onClick={() => setAnswers((prev) => ({ ...prev, [item.key]: n }))}
                           className={cn(
                             'size-11 cursor-pointer rounded-[10px] border-[1.5px] font-mono text-sm font-semibold',
@@ -106,7 +108,7 @@ export function QuestionnaireForm({
                       )
                     })}
                   </div>
-                  <span className="text-xs text-muted max-sm:hidden">{item.high}</span>
+                  <span className={cn('text-xs text-muted max-sm:hidden', lang === 'bn' && 'font-bn')}>{high}</span>
                 </div>
               </fieldset>
             </li>

@@ -133,7 +133,11 @@ export function ConsentDemoPage() {
                   <En>Consent withdrawn. Your data is no longer used for scoring.</En>
                 </>
               ) : (
-                <En className="text-sm leading-5">Not now: no consent is recorded, so no score is made.</En>
+                <>
+                  <h2 className="m-0 text-[23px] leading-8 font-bold">ঠিক আছে, অনুমতি দেওয়া হয়নি</h2>
+                  <p className="m-0 text-[15px] leading-6">অনুমতি ছাড়া আপনার দোকানের কোনো স্কোর তৈরি হবে না। পরে চাইলে আবার দেখতে পারেন।</p>
+                  <En>Not now: no consent is recorded, so no score is made.</En>
+                </>
               )}
               <button type="button" onClick={() => setStep('ask')} className={`${bigButton} mt-auto border border-button-line bg-card font-medium text-ink-2`}>
                 আবার দেখুন
