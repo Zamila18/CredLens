@@ -89,6 +89,10 @@ python tasks.py api       # start the API, then open http://localhost:8000/docs
 
 `python tasks.py data --all-strengths` generates all three delivery signal strengths. `python tasks.py data --reset-db` wipes the local database first, including recorded decisions; it refuses a shared database (Supabase) unless `python -m src.db.load --reset --reset-shared-database` is run on purpose. `app` exists as a command and says "not implemented yet" until Phase 10.
 
+**No internet at the venue?** One command runs the API and the dashboard on this laptop (get it ready once, with
+internet; the steps are in `docs/DEPLOY.md`, part E): `python deploy/offline_demo.py`. Putting the demo on a
+server: `docs/DEPLOY.md`.
+
 To use a shared database, copy `.env.example` to `.env` and fill in `DATABASE_URL`. Without it, a local SQLite file is used. Never commit `.env`.
 
 ## Layout

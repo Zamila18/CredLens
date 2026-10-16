@@ -345,6 +345,52 @@ removes every decision and every audit entry. Back up first.
 | The queue is empty or shows a "data mismatch" | The database and the generated files disagree. Back up, then `sudo -u credlens python3 tasks.py data --reset-db` (this removes decisions). |
 | `df -h` shows the disk full | Delete old backups in `/opt/credlens/data/backups`. |
 
+## Part E: no internet at the venue (the fallback demo, on a laptop)
+
+If the venue's internet fails, the demo runs on one laptop with no internet at all. One command starts the
+API (30 to 60 seconds) and serves the dashboard and the API on one local address, the way Nginx does on the
+server:
+
+```
+python deploy/offline_demo.py
+```
+
+You should see `READY after ... s`, then `CredLens is running, offline, at http://localhost:8765/`, and the
+browser opens on it. Stop with Ctrl+C: it stops the API it started too. It listens on this laptop only and
+has no password. Options: `--no-browser`, `--port 9000` (another port for the dashboard).
+
+**Get the laptop ready before the event, while there is internet** (about 15 minutes, once):
+
+1. `git switch main`, `git pull`, then `python tasks.py setup`.
+2. `python tasks.py data` (about 2 minutes).
+3. The trained model. On the lead's laptop it is already there. On any other laptop **do not run
+   `python tasks.py train`** (it makes a model the cards do not describe): copy the lead's folder
+   `src/model/artifacts/synthetic_bd/` into the same place.
+4. The built dashboard: `cd web`, `npm ci`, `npm run build` (needs Node.js and internet, once). Or take the
+   bundle from Part A step 3 and unpack it in the project folder: `tar -xzf credlens-upload.tar.gz`, which puts
+   both the dashboard (`web/dist`) and the model in place.
+5. Check: `python -m src.api.preflight`. Only `OK` lines.
+
+**Rehearse with the Wi-Fi switched off**, at least once, the day before: run the command above, open a merchant,
+record a decision, switch the language, open the model card. Then `python tasks.py backup`.
+
+What is different offline, and why it is fine:
+
+- **Fonts.** The dashboard asks Google for its fonts (IBM Plex, Noto Sans Bengali). The offline server leaves those
+  lines out so the page does not wait for a network that is not there, and the text uses the laptop's own
+  fonts (Bangla included). It looks a little different; it works.
+- **Decisions are recorded in the laptop's own database** (`data/app.db`). To begin the demo clean:
+  `python tasks.py backup`, then `python tasks.py data --reset-db` (this removes every decision and audit entry).
+- **Nothing else needs the internet.** No Docker, no Node.js and no account is needed at demo time. The five
+  model cards are in the repository, so the model-card tabs work.
+
+| What you see | What to do |
+|---|---|
+| `Not ready:` and a list | Each line names the command to run (setup, data, train, or build the dashboard). |
+| The API did not become ready | Read `data/offline_demo_api.log`. A program already using port 8000 is the usual reason: close it. |
+| The page says "CredLens is starting" | The API is still starting; the page tries again every 5 seconds. |
+| Port 8765 is in use | `python deploy/offline_demo.py --port 9000` |
+
 ## What was tested, and what was not
 
 Tested before this guide was handed over (Humayra's laptop, Oct 16):
@@ -355,6 +401,9 @@ Tested before this guide was handed over (Humayra's laptop, Oct 16):
 - Step 11 to 12 in the same container: the real `deploy/nginx/credlens.conf`, `nginx -t`, the password (401 without,
   200 with), the API through Nginx.
 - The self-signed HTTPS commands of step 13 in a clean container.
+- The offline demo (Part E) with the real API and the built dashboard: the dashboard, the queue, a score and a
+  merchant page through it, and Ctrl+C stopping both the page server and the API (found and fixed: on Windows
+  an `Event().wait()` ignores Ctrl+C). It was not run with the Wi-Fi really switched off: rehearse that.
 - The same Nginx file in Docker with the built dashboard and the running API (`python deploy/test_nginx_local.py`,
   35 checks), and the dashboard in a headless Edge browser behind it.
 

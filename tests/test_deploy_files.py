@@ -411,6 +411,7 @@ def test_the_guide_uses_every_file_in_deploy():
         "env.template",
         "wait_for_api.py",
         "make_bundle.py",
+        "offline_demo.py",
         "test_nginx_local.py",
         "nginx/credlens.conf",
     ):

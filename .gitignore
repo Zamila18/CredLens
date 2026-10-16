@@ -1,6 +1,7 @@
 # Data: raw public downloads, generated CSVs and local databases never go to git
 data/raw/
 data/*.db
+data/*.log
 data/backups/
 data/exports/
 *.zip
