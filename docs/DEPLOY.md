@@ -303,6 +303,24 @@ From your laptop, in a browser, open `https://YOUR.DOMAIN/` and check:
 After a reboot the API starts by itself (give it a minute). While it starts, visitors see a page that says
 "CredLens is starting" and reloads by itself.
 
+### Choose the merchants to show
+
+Four cases tell the story: a Strong merchant, a Review merchant with a low-score warning, a merchant with a high
+score who still gets "Needs more info" (low coverage), and a merchant without consent. This picks them by a
+rule, so every rehearsal uses the same ones (the data is seeded):
+
+```
+python deploy/pick_demo_merchants.py              # the API on this laptop
+python deploy/pick_demo_merchants.py --details    # also each merchant's top reasons (one audit entry per score read)
+python deploy/pick_demo_merchants.py --more 4     # four other ids per case, if the first one's reasons do not suit
+```
+
+For the hosted site, from your laptop (the password is read from an environment variable, never typed in the
+command): `set SITE_LOGIN=demo:THE-PASSWORD` (PowerShell: `$env:SITE_LOGIN = "demo:THE-PASSWORD"`), then
+`python deploy/pick_demo_merchants.py --url https://YOUR.DOMAIN/api --basic-auth-env SITE_LOGIN`. Open each
+picked merchant before the event and read its reasons: a Strong score can still have reasons that hold it back,
+and a judge may ask about them.
+
 ### Back up the decisions
 
 Decisions and the audit log live only in the SQLite file. Before and after a demo:

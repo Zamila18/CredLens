@@ -18,7 +18,10 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-DataMode = Literal["synthetic_bd", "kiva_asia", "taiwan_cc", "india_ltfs", "homecredit"]
+from src.config import VALID_MODES
+
+# The data modes of the project: one list (src/config.py), so a new mode needs no change here.
+DataMode = Literal[VALID_MODES]
 Band = Literal["Strong", "Review", "Needs more info"]
 Role = Literal["officer", "admin", "viewer"]
 OfficerAction = Literal["accept", "override_up", "override_down", "needs_more_info"]
