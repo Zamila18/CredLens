@@ -4,8 +4,10 @@
  */
 import type { Band } from '@/api/types'
 import { cn } from '@/lib/utils'
+import { useT } from '@/lib/i18n'
 
 export function CoverageBar({ coverage, band }: { coverage: number; band: Band | null }) {
+  const t = useT()
   const percent = Math.round(coverage * 100)
   return (
     <div className="flex items-center gap-2">
@@ -15,7 +17,7 @@ export function CoverageBar({ coverage, band }: { coverage: number; band: Band |
           style={{ width: `${percent}%` }}
         />
       </div>
-      <span className="font-mono text-xs text-muted tabular">{percent}% coverage</span>
+      <span className="font-mono text-xs text-muted tabular">{percent}% {t('coverage', 'কভারেজ')}</span>
     </div>
   )
 }

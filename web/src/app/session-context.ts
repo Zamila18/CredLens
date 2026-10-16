@@ -1,6 +1,6 @@
 /**
- * The demo session: which demo user the sidebar picked, and which language reasons
- * and summaries are shown in. This is a demo role switch, not a login.
+ * The demo session: which demo user the sidebar picked, and the language of the whole
+ * dashboard (English or Bangla). This is a demo role switch, not a login.
  */
 import { createContext, useContext } from 'react'
 

@@ -1,6 +1,6 @@
 /** ActionChip: an officer action as a pill (Decisions.dc.html colours). */
 import type { OfficerAction } from '@/api/types'
-import { ACTION_SHORT } from '@/lib/actions'
+import { ACTION_TEXT, pick, useLang } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 const TONE: Record<OfficerAction, string> = {
@@ -11,9 +11,10 @@ const TONE: Record<OfficerAction, string> = {
 }
 
 export function ActionChip({ action }: { action: OfficerAction }) {
+  const lang = useLang()
   return (
     <span className={cn('inline-flex items-center rounded-full px-2.5 py-[3px] text-xs font-semibold whitespace-nowrap', TONE[action])}>
-      {ACTION_SHORT[action]}
+      {pick(ACTION_TEXT[action].short, lang)}
     </span>
   )
 }

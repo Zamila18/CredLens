@@ -1,7 +1,7 @@
 /**
  * ReasonCard: one plain sentence behind a score, its points and a bar.
  *
- * - The sentence is English or Bangla by the language toggle.
+ * - The sentence is English or Bangla by the language switch (both come from the API).
  * - The bar width is |contribution| ÷ the largest |contribution| on the screen, so
  *   small numbers (most reasons move a score by 0.2 to 6 points) still read.
  * - `reason.code` is a feature name for logs. It is never shown to officers.
