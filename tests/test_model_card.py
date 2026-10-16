@@ -175,6 +175,10 @@ def test_the_card_uses_plain_words_and_clean_keys(cards):
 
 def test_the_card_says_why_this_model_and_states_the_time_split_gap(cards):
     for mode, card in cards.items():
-        assert card["metrics"]["model_choice"] == _metrics(mode)["model_choice"]["reason"]
+        choice = _metrics(mode)["model_choice"]
+        said = card["metrics"]["model_choice"]
+        assert "Not met" not in said
+        lightgbm = choice["chosen"] == "lightgbm"
+        assert said.endswith("LightGBM is used." if lightgbm else "logistic regression stays.")
         time_split = _metrics(mode)["split"]["method"] == "time"
         assert (model_card.TIME_SPLIT_LIMIT in card["limitations"]) == time_split

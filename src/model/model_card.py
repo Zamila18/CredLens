@@ -36,7 +36,7 @@ from src.features.dictionary import SYNTHETIC_MODE, features_for_mode, load_dict
 from src.model.fairness import CANDIDATE, FLAGGED, REPORT_FILE, TOO_FEW
 from src.model.final_test import RESULTS_FILE
 from src.model.holdout_ledger import read_ledger
-from src.model.train import DATA_MISSING, METRICS_FILE
+from src.model.train import DATA_MISSING, METRICS_FILE, choice_reason
 
 REPORTS_DIR = PROJECT_ROOT / "reports"
 DOCS_DIR = PROJECT_ROOT / "docs"
@@ -308,6 +308,18 @@ def input_meanings(inputs: list[str], mode: str) -> list[str]:
     return [entries[name]["definition"] for name in inputs]
 
 
+def _choice(model_choice: dict[str, Any], config: dict[str, Any]) -> str:
+    """Why the model in use was chosen, said from the checks the training run recorded.
+
+    Built here rather than copied from the report, so reports written before the wording
+    was fixed (Oct 16) read correctly too, with no retraining.
+    """
+    if "checks" not in model_choice:
+        return model_choice["reason"]
+    needed = config["model"]["prefer_simple_if_auc_gain_below"]
+    return choice_reason(model_choice["auc_gain_of_lightgbm"], model_choice["checks"], needed)
+
+
 def card_metrics(metrics: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
     """The numbers and facts of the training report that a reader of the card needs."""
     validation = metrics["validation"]
@@ -323,7 +335,7 @@ def card_metrics(metrics: dict[str, Any], config: dict[str, Any]) -> dict[str, A
         "train_loans": float(metrics["split"]["sizes"]["train"]),
         "validation_loans": float(metrics["split"]["sizes"]["validation"]),
         "model": PLAIN.get(metrics["model"], metrics["model"]),
-        "model_choice": metrics["model_choice"]["reason"],
+        "model_choice": _choice(metrics["model_choice"], config),
         "calibration": PLAIN.get(
             metrics["calibration"]["method"], metrics["calibration"]["method"]
         ),
@@ -345,7 +357,21 @@ def card_metrics(metrics: dict[str, Any], config: dict[str, Any]) -> dict[str, A
         "auc_gain_over_simpler_model": _round(gain.get("auc_gain")),
         "auc_gain_over_simpler_model_range": _round(gain.get("range")),
         "auc_benchmark": config["sanity"]["useful_auc_benchmark"],
+        # Calibration in bins (the reliability plot), the lowest-scored loans, and the
+        # ranking under and above the coverage line, all on the validation period.
+        "calibration_mean_predicted": [
+            _round(row["mean_predicted"]) for row in validation["calibration"]
+        ],
+        "calibration_share_repaid": [
+            _round(row["share_repaid"]) for row in validation["calibration"]
+        ],
+        "lowest_k": float(config["evaluation"]["top_k"]),
+        "not_repaid_rate_in_lowest_k": _round(point["not_repaid_rate_in_lowest_k"]),
+        "not_repaid_rate_overall": _round(1 - validation["share_repaid"]),
     }
+    for name, part in metrics.get("validation_by_coverage", {}).items():
+        result[f"auc_{name}"] = _round(part["roc_auc"])
+        result[f"loans_{name}"] = float(part["loans"])
     for band, numbers in bands.items():
         key = band.lower().replace(" ", "_")
         result[f"band_{key}_share"] = _round(numbers["share"])
