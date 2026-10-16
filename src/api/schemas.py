@@ -221,6 +221,9 @@ class ModelCard(BaseModel):
     ablation: list[dict[str, float | str | None]] = []
     group_results: list[dict[str, float | str | None]] = []
     limitations: list[str]
+    limitations_bn: list[str] = Field(
+        default=[], description="The same limitations in Bangla, for the language switch."
+    )
 
 
 class QuestionnaireCreate(BaseModel):

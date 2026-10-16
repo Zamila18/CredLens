@@ -31,7 +31,8 @@ Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2
 | Group audit on every data mode, with a planted-gap test ([reports/FAIRNESS.md](reports/FAIRNESS.md)) | |
 | One model card per data mode ([docs/model_card_synthetic_bd.md](docs/model_card_synthetic_bd.md) and the others), served by `GET /model/card` | |
 | The held-back test period, once per model, with a ledger of every look ([reports/REAL_LABEL_RESULTS.md](reports/REAL_LABEL_RESULTS.md)) | |
-| Lint, 780 tests and CI | |
+| English/Bangla switch for the whole dashboard and the model cards (Bangla awaiting a native-speaker review) | |
+| Lint, 783 tests and CI | |
 
 ### Where the model stands (synthetic data, validation months, seed 42)
 

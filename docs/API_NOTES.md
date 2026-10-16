@@ -83,4 +83,5 @@ A request with a wrong shape is the usual FastAPI 422.
   says so: show it. A mode with no written card gets a placeholder with no numbers.
 - **Queue.** `low_score_warning` is in each row (null when there is no score).
 - **Timeline.** Each event has `label` and `label_bn` (Bangla, Oct 16), for the dashboard's English/Bangla switch.
+- **Model card in Bangla.** Every sentence in `metrics` has a Bangla twin `<key>_bn` (for example `label_bn`, `what_this_shows_bn`, `group_findings_bn`, `intended_use_bn`), and `limitations_bn` holds the limitations in Bangla (written from `src/model/model_card_bn.py`). A stale-card warning comes first in both lists.
 - **Not built:** a consent revoke endpoint (see Consent).

@@ -128,15 +128,17 @@ def test_cards_are_written_where_the_api_reads_them(tmp_path, config, monkeypatc
 
     monkeypatch.setattr(model_card_view, "PROJECT_ROOT", tmp_path)
     served = model_card_view.load_model_card("synthetic_bd", "ignored")
-    assert served.model_version == json.loads(json_path.read_text())["model_version"]
+    written = json.loads(json_path.read_text(encoding="utf-8"))
+    assert served.model_version == written["model_version"]
     assert served.group_results
 
 
 def test_a_card_for_another_model_version_says_so(tmp_path, monkeypatch):
     folder = tmp_path / "reports" / "taiwan_cc"
     folder.mkdir(parents=True)
-    written = (model_card.REPORTS_DIR / "taiwan_cc" / model_card.CARD_FILE).read_text()
-    (folder / model_card.CARD_FILE).write_text(written)
+    source = model_card.REPORTS_DIR / "taiwan_cc" / model_card.CARD_FILE
+    written = source.read_text(encoding="utf-8")
+    (folder / model_card.CARD_FILE).write_text(written, encoding="utf-8")
     version = json.loads(written)["model_version"]
     monkeypatch.setattr(model_card_view, "PROJECT_ROOT", tmp_path)
 
@@ -150,8 +152,8 @@ def test_an_audit_of_an_older_model_is_left_off_the_card(tmp_path, config):
     folder = tmp_path / "synthetic_bd"
     folder.mkdir()
     source = model_card.REPORTS_DIR / "synthetic_bd"
-    (folder / "metrics.json").write_text((source / "metrics.json").read_text())
-    fairness = json.loads((source / "fairness.json").read_text())
+    (folder / "metrics.json").write_text((source / "metrics.json").read_text(encoding="utf-8"))
+    fairness = json.loads((source / "fairness.json").read_text(encoding="utf-8"))
     fairness["model_version"] = "an-older-version"
     (folder / "fairness.json").write_text(json.dumps(fairness))
     card = model_card.build_card("synthetic_bd", config, reports_dir=tmp_path)
@@ -182,3 +184,29 @@ def test_the_card_says_why_this_model_and_states_the_time_split_gap(cards):
         assert said.endswith("LightGBM is used." if lightgbm else "logistic regression stays.")
         time_split = _metrics(mode)["split"]["method"] == "time"
         assert (model_card.TIME_SPLIT_LIMIT in card["limitations"]) == time_split
+
+
+def test_every_sentence_on_a_card_has_a_bangla_twin(cards):
+    for mode, card in cards.items():
+        m = card["metrics"]
+        sentences = [k for k, v in m.items() if isinstance(v, str) and not k.endswith("_bn")]
+        for key in sentences:
+            assert m.get(f"{key}_bn"), f"{mode}: no Bangla for {key}"
+            same = m[f"{key}_bn"] == m[key]
+            assert not same or key in ("split", "model"), f"{mode}: {key}_bn is English"
+        assert len(card["limitations_bn"]) == len(card["limitations"])
+        assert m["inputs_bn"].count(" | ") == m["inputs"].count(" | ")
+        assert m["banner_bn"].endswith("শুধু সিদ্ধান্তে সহায়তা।")
+
+
+def test_a_stale_card_warns_in_both_languages(tmp_path, monkeypatch):
+    folder = tmp_path / "reports" / "taiwan_cc"
+    folder.mkdir(parents=True)
+    source = model_card.REPORTS_DIR / "taiwan_cc" / model_card.CARD_FILE
+    written = source.read_text(encoding="utf-8")
+    (folder / model_card.CARD_FILE).write_text(written, encoding="utf-8")
+    monkeypatch.setattr(model_card_view, "PROJECT_ROOT", tmp_path)
+    card = model_card_view.load_model_card("taiwan_cc", "a-newer-version")
+    assert card.limitations[0].startswith("This card was written")
+    assert card.limitations_bn[0].startswith("এই কার্ড মডেল সংস্করণ")
+

@@ -15,6 +15,10 @@ Every number comes from a report file written by an earlier step, never typed in
 The words about each data source (what it is, its terms, what it shows and does not)
 are written once below, from docs/DATA_SOURCES.md and reports/REAL_LABEL_RESULTS.md.
 
+Every sentence has a Bangla twin from src/model/model_card_bn.py: `<key>_bn` in `metrics`
+and `limitations_bn`, for the dashboard's English/Bangla switch. The Markdown page stays
+English.
+
 Two outputs per mode:
     reports/<mode>/model_card.json   served by GET /model/card (shape: ModelCard in
                                      src/api/schemas.py; checked before writing)
@@ -33,6 +37,7 @@ from typing import Any
 from src.api.schemas import ModelCard
 from src.config import PROJECT_ROOT, VALID_MODES, banner_text, load_config
 from src.features.dictionary import SYNTHETIC_MODE, features_for_mode, load_dictionary
+from src.model import model_card_bn as bn
 from src.model.fairness import CANDIDATE, FLAGGED, REPORT_FILE, TOO_FEW
 from src.model.final_test import RESULTS_FILE
 from src.model.holdout_ledger import read_ledger
@@ -478,6 +483,7 @@ def build_card(mode: str, config: dict[str, Any], reports_dir: Path = REPORTS_DI
     )
     if mode == SYNTHETIC_MODE and ablation is not None:
         numbers["ablation_runs"] = ABLATION_RUNS
+    numbers.update(bangla_texts(mode, metrics, numbers, fairness, test, config))
     card = {
         "data_mode": mode,
         "model_version": metrics["model_version"],
@@ -488,9 +494,60 @@ def build_card(mode: str, config: dict[str, Any], reports_dir: Path = REPORTS_DI
         "limitations": MODE_LIMITS[mode]
         + ([TIME_SPLIT_LIMIT] if metrics["split"]["method"] == "time" else [])
         + COMMON_LIMITS,
+        "limitations_bn": bn.MODE_LIMITS[mode]
+        + ([bn.TIME_SPLIT_LIMIT] if metrics["split"]["method"] == "time" else [])
+        + bn.COMMON_LIMITS,
     }
     ModelCard.model_validate(card)  # the API must be able to serve it
     return card
+
+
+def bangla_texts(
+    mode: str,
+    metrics: dict[str, Any],
+    numbers: dict[str, Any],
+    fairness: dict[str, Any] | None,
+    test: dict[str, Any] | None,
+    config: dict[str, Any],
+) -> dict[str, str]:
+    """The Bangla twin (`<key>_bn`) of every sentence the card's metrics hold."""
+    split = metrics["split"]["method"]
+    choice = metrics["model_choice"]
+    if "checks" in choice:
+        needed = config["model"]["prefer_simple_if_auc_gain_below"]
+        choice_bn = bn.choice_reason(choice["auc_gain_of_lightgbm"], choice["checks"], needed)
+    else:
+        choice_bn = choice["reason"]
+    simpler_name = metrics["baselines"]["simpler_model"]["name"]
+    inputs = metrics["inputs_used"]
+    english_inputs = numbers["inputs"].split(INPUT_SEPARATOR)
+    texts = {
+        "measured_on_bn": bn.MEASURED_ON,
+        "split_bn": bn.PLAIN.get(split, numbers["split"]),
+        "split_note_bn": bn.SPLIT_NOTE.get(split, numbers["split_note"]),
+        "model_bn": bn.PLAIN.get(metrics["model"], numbers["model"]),
+        "calibration_bn": bn.PLAIN.get(metrics["calibration"]["method"], numbers["calibration"]),
+        "model_choice_bn": choice_bn,
+        "inputs_bn": INPUT_SEPARATOR.join(
+            bn.INPUTS.get(name, english) for name, english in zip(inputs, english_inputs)
+        ),
+        "simpler_model_bn": bn.SIMPLER.get(simpler_name, numbers["simpler_model"]),
+        "data_source_bn": bn.SOURCES[mode]["source"],
+        "terms_bn": bn.SOURCES[mode]["terms"],
+        "label_bn": bn.SOURCES[mode]["label"],
+        "banner_bn": bn.BANNER[mode],
+        "what_this_shows_bn": bn.READING[mode]["shows"],
+        "what_this_does_not_show_bn": bn.READING[mode]["does_not_show"],
+        "group_findings_bn": " ".join(bn.group_findings(fairness, FLAGGED, bn.value_words)),
+        "intended_use_bn": bn.INTENDED_USE if mode == SYNTHETIC_MODE else bn.PUBLIC_USE,
+    }
+    if "ablation_runs" in numbers:
+        texts["ablation_runs_bn"] = bn.ABLATION_RUNS
+    if test is None:
+        texts["test_result_bn"] = bn.TEST_NOT_USED
+    else:
+        texts["test_reading_bn"] = bn.TEST_READING[mode]
+    return texts
 
 
 def _cell(value: Any) -> str:

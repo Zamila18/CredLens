@@ -18,9 +18,15 @@ import { MerchantPage } from '@/pages/merchant/MerchantPage'
 import { ModelCardPage } from '@/pages/model/ModelCardPage'
 import { NotFound } from '@/pages/NotFound'
 import { QueuePage } from '@/pages/QueuePage'
+import { useT } from '@/lib/i18n'
 
 // The portfolio is the only page with a chart library (Recharts); load it only when opened.
 const PortfolioPage = lazy(() => import('@/pages/PortfolioPage').then((m) => ({ default: m.PortfolioPage })))
+
+function PortfolioLoading() {
+  const t = useT()
+  return <div className="p-8 text-sm text-muted">{t('Loading the portfolio…', 'পোর্টফোলিও আসছে…')}</div>
+}
 
 export default function App() {
   return (
@@ -33,7 +39,7 @@ export default function App() {
           <Route
             path="portfolio"
             element={
-              <Suspense fallback={<div className="p-8 text-sm text-muted">Loading the portfolio…</div>}>
+              <Suspense fallback={<PortfolioLoading />}>
                 <PortfolioPage />
               </Suspense>
             }

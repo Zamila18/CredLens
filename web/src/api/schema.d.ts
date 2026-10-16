@@ -555,6 +555,12 @@ export interface components {
             }[];
             /** Limitations */
             limitations: string[];
+            /**
+             * Limitations Bn
+             * @description The same limitations in Bangla, for the language switch.
+             * @default []
+             */
+            limitations_bn: string[];
         };
         /**
          * PaymentsSummary

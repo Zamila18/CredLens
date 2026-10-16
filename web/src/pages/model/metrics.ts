@@ -16,6 +16,20 @@ export function text(m: Metrics, key: string): string | undefined {
   return typeof v === 'string' && v.trim() !== '' ? v : undefined
 }
 
+/**
+ * A text of the card in the page's language: in Bangla the `<key>_bn` the card writer adds,
+ * falling back to the English when a card has no Bangla for it.
+ */
+export function textIn(m: Metrics, key: string, lang: 'en' | 'bn'): string | undefined {
+  return (lang === 'bn' ? text(m, `${key}_bn`) : undefined) ?? text(m, key)
+}
+
+/** A list of numbers (for example the calibration bins), or undefined. */
+export function numbers(m: Metrics, key: string): number[] | undefined {
+  const v = m[key]
+  return Array.isArray(v) && v.every((x) => typeof x === 'number') ? (v as number[]) : undefined
+}
+
 export function range(m: Metrics, key: string): [number, number] | undefined {
   const v = m[key]
   return Array.isArray(v) && v.length === 2 && v.every((x) => typeof x === 'number') ? [v[0], v[1]] : undefined
