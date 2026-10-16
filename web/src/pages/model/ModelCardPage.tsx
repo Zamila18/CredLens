@@ -3,9 +3,9 @@
  * falls short. One tab per data source; each tab calls GET /model/card?mode=<mode>.
  * The first tab shown is the mode the API is running.
  *
- * Every value comes from the card. A value a source does not report is not shown:
- * the calibration plot, the "lowest 20 scored" figure and the coverage-group AUCs of
- * the mockup are not in the API, so those blocks are left out.
+ * Every value comes from the card. A value a source does not report is not shown.
+ * The card's own sentences are shown in Bangla when the card has a Bangla version
+ * (`<key>_bn`, `limitations_bn`), else in English.
  */
 import { useSearchParams } from 'react-router'
 
@@ -15,12 +15,21 @@ import { ErrorCallout } from '@/components/ErrorCallout'
 import { WarnIcon } from '@/components/icons'
 import { Card, Eyebrow, Page, PageHeader } from '@/components/Page'
 import { count } from '@/lib/format'
-import { MODE_LABELS, MODE_ORDER } from '@/lib/modes'
+import { MODE_TEXT, pick, useLang, useT } from '@/lib/i18n'
+import { MODE_ORDER } from '@/lib/modes'
 import { cn } from '@/lib/utils'
-import { num, text } from './metrics'
-import { AblationCard, AucCard, BandsCard, GroupsCard, SmallMetrics, TestPeriodCard } from './ModelCardParts'
+import { num, textIn } from './metrics'
+import { AblationCard, AucCard, BandsCard, CalibrationCard, GroupsCard, SmallMetrics, TestPeriodCard } from './ModelCardParts'
+
+/** The card's limitations in the page's language (Bangla when the card has them). */
+function limitationsIn(card: ModelCard, lang: 'en' | 'bn'): string[] {
+  const bn = card.limitations_bn
+  return lang === 'bn' && bn && bn.length ? bn : card.limitations
+}
 
 function Facts({ card }: { card: ModelCard }) {
+  const t = useT()
+  const lang = useLang()
   const m = card.metrics
   const train = num(m, 'train_loans')
   const val = num(m, 'validation_loans')
@@ -28,13 +37,14 @@ function Facts({ card }: { card: ModelCard }) {
   const sizes = [train, val, test].some((v) => v !== undefined)
     ? [train, val, test].map((v) => (v === undefined ? '—' : count(v))).join(' / ')
     : undefined
+  const modelLabel = t('Model in use', 'ব্যবহৃত মডেল')
   const rows: [string, string | undefined, boolean?][] = [
-    ['Model in use', text(m, 'model')],
-    ['Split', text(m, 'split')],
-    ['Loans train / validation / test', sizes, true],
-    ['Outcome', text(m, 'label')],
-    ['Data terms', text(m, 'terms')],
-    ['Version', card.model_version, true],
+    [modelLabel, textIn(m, 'model', lang)],
+    [t('Split', 'ভাগ'), textIn(m, 'split', lang)],
+    [t('Loans train / validation / test', 'ঋণ: প্রশিক্ষণ / যাচাই / পরীক্ষা'), sizes, true],
+    [t('Outcome', 'ফলাফল'), textIn(m, 'label', lang)],
+    [t('Data terms', 'ডেটার শর্ত'), textIn(m, 'terms', lang)],
+    [t('Version', 'সংস্করণ'), card.model_version, true],
   ]
   return (
     <dl className="m-0 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-[13px] md:max-w-[440px]">
@@ -43,7 +53,7 @@ function Facts({ card }: { card: ModelCard }) {
         .map(([k, v, mono]) => (
           <div key={k} className="contents">
             <dt className="text-muted">{k}</dt>
-            <dd className={cn('m-0', mono && 'font-mono break-all tabular', k === 'Model in use' && 'font-semibold')}>{v}</dd>
+            <dd className={cn('m-0', mono && 'font-mono break-all tabular', k === modelLabel && 'font-semibold')}>{v}</dd>
           </div>
         ))}
     </dl>
@@ -51,17 +61,23 @@ function Facts({ card }: { card: ModelCard }) {
 }
 
 function Overview({ card }: { card: ModelCard }) {
+  const t = useT()
+  const lang = useLang()
   const m = card.metrics
-  const inputs = text(m, 'inputs')?.split(' | ').filter(Boolean) ?? []
-  const firstLimitation = card.limitations[0]
+  const inputs = textIn(m, 'inputs', lang)?.split(' | ').filter(Boolean) ?? []
+  const firstLimitation = limitationsIn(card, lang)[0]
+  const shows = textIn(m, 'what_this_shows', lang)
+  const notShows = textIn(m, 'what_this_does_not_show', lang)
   return (
     <Card className="flex flex-col gap-5 p-6">
       <div className="flex flex-wrap items-start justify-between gap-5">
         <div className="flex max-w-[640px] flex-col gap-1.5">
-          <Eyebrow>What this source tells us</Eyebrow>
-          <h2 className="m-0 text-xl leading-7 font-semibold tracking-[-0.01em]">{text(m, 'data_source') ?? MODE_LABELS[card.data_mode]}</h2>
-          {text(m, 'banner') && <span className="font-mono text-xs text-muted-2">{text(m, 'banner')}</span>}
-          <p className="m-0 text-sm text-ink-3">{card.intended_use}</p>
+          <Eyebrow>{t('What this source tells us', 'এই উৎস আমাদের কী বলে')}</Eyebrow>
+          <h2 className="m-0 text-xl leading-7 font-semibold tracking-[-0.01em]">
+            {textIn(m, 'data_source', lang) ?? pick(MODE_TEXT[card.data_mode], lang)}
+          </h2>
+          {textIn(m, 'banner', lang) && <span className="font-mono text-xs text-muted-2">{textIn(m, 'banner', lang)}</span>}
+          <p className="m-0 text-sm text-ink-3">{(lang === 'bn' ? textIn(m, 'intended_use', lang) : undefined) ?? card.intended_use}</p>
         </div>
         <Facts card={card} />
       </div>
@@ -69,30 +85,32 @@ function Overview({ card }: { card: ModelCard }) {
         <div className="flex items-start gap-3 rounded-panel bg-amber-chip px-4 py-3.5 text-amber-deep">
           <WarnIcon />
           <span className="text-sm leading-5 font-medium">
-            <span className="font-semibold">Read this first: </span>
+            <span className="font-semibold">{t('Read this first: ', 'আগে এটি পড়ুন: ')}</span>
             {firstLimitation}
           </span>
         </div>
       )}
-      {(text(m, 'what_this_shows') || text(m, 'what_this_does_not_show')) && (
+      {(shows || notShows) && (
         <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
-          {text(m, 'what_this_shows') && (
+          {shows && (
             <div className="flex flex-col gap-1.5 rounded-panel bg-strong-panel p-4">
-              <span className="text-[13px] font-semibold text-lens-dark">Shows</span>
-              <span className="text-sm leading-[21px]">{text(m, 'what_this_shows')}</span>
+              <span className="text-[13px] font-semibold text-lens-dark">{t('Shows', 'যা দেখায়')}</span>
+              <span className="text-sm leading-[21px]">{shows}</span>
             </div>
           )}
-          {text(m, 'what_this_does_not_show') && (
+          {notShows && (
             <div className="flex flex-col gap-1.5 rounded-panel bg-peri-panel p-4">
-              <span className="text-[13px] font-semibold text-peri-head">Does not show</span>
-              <span className="text-sm leading-[21px]">{text(m, 'what_this_does_not_show')}</span>
+              <span className="text-[13px] font-semibold text-peri-head">{t('Does not show', 'যা দেখায় না')}</span>
+              <span className="text-sm leading-[21px]">{notShows}</span>
             </div>
           )}
         </div>
       )}
       {inputs.length > 0 && (
         <details className="text-sm">
-          <summary className="cursor-pointer font-semibold">Inputs in words ({inputs.length})</summary>
+          <summary className="cursor-pointer font-semibold">
+            {t('Inputs in words', 'ইনপুটগুলো কথায়')} ({inputs.length})
+          </summary>
           <ul className="mt-2 mb-0 flex flex-col gap-1 pl-5 text-ink-2">
             {inputs.map((input) => (
               <li key={input}>{input}</li>
@@ -105,10 +123,11 @@ function Overview({ card }: { card: ModelCard }) {
 }
 
 function Limitations({ items }: { items: string[] }) {
+  const t = useT()
   if (items.length === 0) return null
   return (
     <Card className="flex flex-col gap-3 p-5">
-      <h2 className="m-0 text-lg font-semibold">Limitations, in plain words</h2>
+      <h2 className="m-0 text-lg font-semibold">{t('Limitations, in plain words', 'সীমাবদ্ধতা, সহজ কথায়')}</h2>
       <ul className="m-0 flex flex-col gap-2 pl-5 text-sm leading-[21px] text-ink-2">
         {items.map((l) => (
           <li key={l}>{l}</li>
@@ -119,6 +138,8 @@ function Limitations({ items }: { items: string[] }) {
 }
 
 export function ModelCardPage() {
+  const t = useT()
+  const lang = useLang()
   const health = useApi<Health>('/health')
   const [params, setParams] = useSearchParams()
   const running = health.data?.data_mode
@@ -130,11 +151,14 @@ export function ModelCardPage() {
   return (
     <Page>
       <PageHeader
-        title="Model card"
-        description="What the model is for, how it was tested and where it falls short. One card per data source, produced by the same code. Decision support for credit officers: the officer decides and records why."
+        title={t('Model card', 'মডেল কার্ড')}
+        description={t(
+          'What the model is for, how it was tested and where it falls short. One card per data source, produced by the same code. Decision support for credit officers: the officer decides and records why.',
+          'মডেলটি কীসের জন্য, কীভাবে পরীক্ষা করা হয়েছে, আর কোথায় এর ঘাটতি। প্রতিটি ডেটার উৎসের জন্য একটি কার্ড, একই কোড থেকে তৈরি। ঋণ কর্মকর্তাদের সিদ্ধান্তে সহায়তা: সিদ্ধান্ত নেন কর্মকর্তা, আর কারণ লিখে রাখেন।',
+        )}
       />
 
-      <div role="tablist" aria-label="Data source" className="flex flex-wrap gap-2">
+      <div role="tablist" aria-label={t('Data source', 'ডেটার উৎস')} className="flex flex-wrap gap-2">
         {MODE_ORDER.map((k) => {
           const on = k === mode
           return (
@@ -149,10 +173,10 @@ export function ModelCardPage() {
                 on ? 'border-ink bg-ink text-white' : 'border-control-line bg-card text-ink-2 hover:border-[#9FAAA3]',
               )}
             >
-              <span className="font-semibold">{MODE_LABELS[k]}</span>
+              <span className="font-semibold">{pick(MODE_TEXT[k], lang)}</span>
               <small className="font-mono text-[11px] opacity-75">
                 {k}
-                {k === running && ' · running'}
+                {k === running && t(' · running', ' · চলছে')}
               </small>
             </button>
           )
@@ -162,13 +186,13 @@ export function ModelCardPage() {
       {card.error ? (
         <ErrorCallout error={card.error} />
       ) : !card.data ? (
-        <Card className="p-5 text-sm text-muted">Loading the model card…</Card>
+        <Card className="p-5 text-sm text-muted">{t('Loading the model card…', 'মডেল কার্ড আসছে…')}</Card>
       ) : (
         <>
           <Overview card={card.data} />
           {hasNumbers ? (
             <>
-              <section aria-label="Headline metrics" className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
+              <section aria-label={t('Headline metrics', 'মূল পরিমাপ')} className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
                 <AucCard m={card.data.metrics} />
                 <SmallMetrics m={card.data.metrics} />
               </section>
@@ -176,15 +200,19 @@ export function ModelCardPage() {
                 <BandsCard m={card.data.metrics} />
                 <TestPeriodCard m={card.data.metrics} />
               </section>
+              <CalibrationCard m={card.data.metrics} />
               <AblationCard card={card.data} />
               <GroupsCard card={card.data} />
             </>
           ) : (
             <Card className="p-5 text-sm text-ink-3">
-              No results have been written for this source yet, so there are no numbers to show.
+              {t(
+                'No results have been written for this source yet, so there are no numbers to show.',
+                'এই উৎসের ফলাফল এখনও লেখা হয়নি, তাই দেখানোর মতো কোনো সংখ্যা নেই।',
+              )}
             </Card>
           )}
-          <Limitations items={card.data.limitations} />
+          <Limitations items={limitationsIn(card.data, lang)} />
         </>
       )}
     </Page>

@@ -9,7 +9,7 @@
     "train_loans": 32581.0,
     "validation_loans": 15113.0,
     "model": "logistic regression",
-    "model_choice": "LightGBM adds -0.2377 AUC over the logistic regression (range -0.2550 to -0.2187; the whole range must reach +0.0100). Not met: whole gain range reaches the threshold, brier is not worse.",
+    "model_choice": "LightGBM adds -0.2377 AUC over the logistic regression (range -0.2550 to -0.2187). It is used only if the whole range reaches +0.0100 and its Brier score is not worse. Here the whole range of the gain does not reach it and its Brier score is worse, so the logistic regression stays.",
     "calibration": "Platt scaling",
     "inputs": "The number of months over which the loan is to be repaid | 1 when the field partner, not the lender, carries the loss if the borrower does not pay",
     "share_repaid": 0.947529,
@@ -37,6 +37,37 @@
       0.0
     ],
     "auc_benchmark": 0.7,
+    "calibration_mean_predicted": [
+      0.9186,
+      0.9408,
+      0.9428,
+      0.9473,
+      0.9486,
+      0.9542,
+      0.9543,
+      0.9545,
+      0.9562,
+      0.958
+    ],
+    "calibration_share_repaid": [
+      0.9848,
+      0.994,
+      0.9027,
+      0.812,
+      0.7976,
+      0.9967,
+      0.9954,
+      0.9967,
+      0.996,
+      0.9993
+    ],
+    "lowest_k": 20.0,
+    "not_repaid_rate_in_lowest_k": 0.0,
+    "not_repaid_rate_overall": 0.052471,
+    "auc_coverage_below_the_line": 0.468289,
+    "loans_coverage_below_the_line": 648.0,
+    "auc_coverage_at_or_above_the_line": 0.656028,
+    "loans_coverage_at_or_above_the_line": 14465.0,
     "band_strong_share": 0.957123,
     "band_strong_share_repaid": 0.947114,
     "band_review_share": 0.0,
@@ -76,7 +107,24 @@
     "banner": "Public data: Kiva (Asia), not ShopUp data. Decision support only.",
     "what_this_shows": "Where the only information is about the loan and its field partner, a score cannot be trusted.",
     "what_this_does_not_show": "Anything about scoring a merchant from behaviour. This model must not be used to pick out risky loans, and its AUC must not be quoted as support.",
-    "group_findings": "Ranking differs for borrower gender 'female' (13,758 loans): AUC 0.66 against 0.51 for everyone else. Ranking differs for borrower gender 'male' (1,319 loans): AUC 0.52 against 0.66 for everyone else. Ranking differs for country 'Philippines' (10,857 loans): AUC 0.82 against 0.33 for everyone else. Ranking differs for country 'Pakistan' (605 loans): AUC 0.45 against 0.65 for everyone else. Calibration differs for country 'Pakistan' (605 loans, 79% repaid): the model expects 16 points more repayment than happened for this group, against 1 point less repayment than happened for everyone else. Ranking differs for country 'Indonesia' (253 loans): AUC 0.39 against 0.64 for everyone else. Calibration differs for country 'Indonesia' (253 loans, 84% repaid): the model expects 9 points more repayment than happened for this group, against about as much repayment as happened for everyone else."
+    "group_findings": "Ranking differs for borrower gender 'female' (13,758 loans): AUC 0.66 against 0.51 for everyone else. Ranking differs for borrower gender 'male' (1,319 loans): AUC 0.52 against 0.66 for everyone else. Ranking differs for country 'Philippines' (10,857 loans): AUC 0.82 against 0.33 for everyone else. Ranking differs for country 'Pakistan' (605 loans): AUC 0.45 against 0.65 for everyone else. Calibration differs for country 'Pakistan' (605 loans, 79% repaid): the model expects 16 points more repayment than happened for this group, against 1 point less repayment than happened for everyone else. Ranking differs for country 'Indonesia' (253 loans): AUC 0.39 against 0.64 for everyone else. Calibration differs for country 'Indonesia' (253 loans, 84% repaid): the model expects 9 points more repayment than happened for this group, against about as much repayment as happened for everyone else.",
+    "measured_on_bn": "যাচাইয়ের সময়; test_ সংখ্যাগুলো আলাদা রাখা পরীক্ষার সময়ের, একবারই ব্যবহৃত",
+    "split_bn": "সময় অনুযায়ী (আগের ঋণে প্রশিক্ষণ, পরের ঋণে মাপ)",
+    "split_note_bn": "ঋণ দেওয়ার তারিখ অনুযায়ী ভাগ। প্রতিটি অংশ পরের অংশ শুরুর আগের দিনে শেষ।",
+    "model_bn": "লজিস্টিক রিগ্রেশন",
+    "calibration_bn": "Platt স্কেলিং",
+    "model_choice_bn": "লজিস্টিক রিগ্রেশনের চেয়ে LightGBM -0.2377 AUC যোগ করে (সীমা -0.2550 থেকে -0.2187)। এটি তখনই ব্যবহার হয়, যখন পুরো সীমা +0.0100-এ পৌঁছায় এবং এর Brier স্কোর খারাপ নয়। এখানে লাভের পুরো সীমা সেখানে পৌঁছায় না এবং এর Brier স্কোর খারাপ, তাই লজিস্টিক রিগ্রেশনই থাকে।",
+    "inputs_bn": "কত মাসে ঋণ পরিশোধ করতে হবে | ঋণগ্রহীতা না দিলে ক্ষতি ঋণদাতা নয়, ফিল্ড পার্টনার বহন করলে 1",
+    "simpler_model_bn": "শুধু ঋণের শর্ত, ফিল্ড পার্টনার সম্পর্কিত দুটি ইনপুট ছাড়া",
+    "data_source_bn": "এশিয়ায় Kiva-র ঋণ, Kiva-র 2 মে 2016-এর স্ন্যাপশট থেকে (Internet Archive-এর কপি), খুচরা, খাদ্য ও সেবা খাত",
+    "terms_bn": "কোনো ডেটা লাইসেন্স লেখা নেই, শুধু Kiva-র সাধারণ ব্যবহারের শর্ত",
+    "label_bn": "পরিশোধ: ঋণ ফেরত দেওয়া হয়েছে, খেলাপি হয়নি",
+    "banner_bn": "পাবলিক ডেটা: কিভা (এশিয়া), ShopUp-এর ডেটা নয়। শুধু সিদ্ধান্তে সহায়তা।",
+    "what_this_shows_bn": "যেখানে তথ্য শুধু ঋণ ও তার ফিল্ড পার্টনার সম্পর্কে, সেখানে স্কোরের ওপর ভরসা করা যায় না।",
+    "what_this_does_not_show_bn": "আচরণ থেকে মার্চেন্টকে স্কোর করা সম্পর্কে কিছুই নয়। ঝুঁকিপূর্ণ ঋণ বাছতে এই মডেল ব্যবহার করা যাবে না, আর এর AUC সমর্থন হিসেবে উদ্ধৃত করা যাবে না।",
+    "group_findings_bn": "ঋণগ্রহীতার লিঙ্গ 'female' (13,758টি ঋণ)-এর ক্ষেত্রে ক্রম আলাদা: AUC 0.66, বাকি সবার 0.51। ঋণগ্রহীতার লিঙ্গ 'male' (1,319টি ঋণ)-এর ক্ষেত্রে ক্রম আলাদা: AUC 0.52, বাকি সবার 0.66। দেশ 'Philippines' (10,857টি ঋণ)-এর ক্ষেত্রে ক্রম আলাদা: AUC 0.82, বাকি সবার 0.33। দেশ 'Pakistan' (605টি ঋণ)-এর ক্ষেত্রে ক্রম আলাদা: AUC 0.45, বাকি সবার 0.65। দেশ 'Pakistan' (605টি ঋণ, 79% পরিশোধ)-এর ক্ষেত্রে ক্যালিব্রেশন আলাদা: মডেল এই দলের জন্য যা ঘটেছে তার চেয়ে 16 পয়েন্ট বেশি পরিশোধ আশা করে, বাকি সবার জন্য যা ঘটেছে তার চেয়ে 1 পয়েন্ট কম পরিশোধ আশা করে। দেশ 'Indonesia' (253টি ঋণ)-এর ক্ষেত্রে ক্রম আলাদা: AUC 0.39, বাকি সবার 0.64। দেশ 'Indonesia' (253টি ঋণ, 84% পরিশোধ)-এর ক্ষেত্রে ক্যালিব্রেশন আলাদা: মডেল এই দলের জন্য যা ঘটেছে তার চেয়ে 9 পয়েন্ট বেশি পরিশোধ আশা করে, বাকি সবার জন্য যা ঘটেছে প্রায় ততটাই পরিশোধ আশা করে।",
+    "intended_use_bn": "আসল ফলাফলসহ পাবলিক ডেটায় পদ্ধতিটির যাচাই। এই মডেল কাউকে স্কোর করার জন্য নয়: যেখানে ফলাফল জানা, সেখানে একই পাইপলাইন কেমন করে তা দেখায়।",
+    "test_reading_bn": "পরের পরীক্ষার মাসগুলোতে মডেল ঋণগুলোকে উল্টো ক্রমে সাজায় (AUC 0.5-এর নিচে)। এটি নিশ্চিত করে যে এটি ব্যবহার করা যাবে না।"
   },
   "ablation": [],
   "group_results": [
@@ -219,5 +267,14 @@
     "The validation numbers are a little optimistic: that period was also used to choose the model and the calibration. The held-back test period gives the honest check.",
     "Group columns are used only to audit results, never as model inputs. The group audit shows where the model works measurably differently on these data; it does not show that the model is fair.",
     "The tool supports a human decision. It must not be used for automatic approval or decline."
+  ],
+  "limitations_bn": [
+    "পাবলিক ডেটা, ShopUp-এর ডেটা নয়। স্কোর করার কাজে ব্যবহারযোগ্য নয়: 'যা দেখায় না' অংশ দেখুন।",
+    "সময়ের অংশগুলো মাঝে কোনো ফাঁক ছাড়া পরপর। একটি অংশের শেষের দিকে দেওয়া ঋণের ফলাফল জানা গেছে পরের অংশ শুরু হওয়ার পরে, কিন্তু প্রশিক্ষণ (ও ক্যালিব্রেশন) সেটা আগে থেকে জানা ধরে ব্যবহার করেছে। কড়া সামনের পরীক্ষায় একটি ফাঁক রাখা হতো; সেটা না থাকায় ফলাফল কিছুটা আশাবাদী।",
+    "ফলাফল জানা শুধু তাদের, যারা আগে ঋণ পেয়েছেন। আগের নীতিতে যাদের ফিরিয়ে দেওয়া হতো, তাদের ক্ষেত্রে মডেল কাজ নাও করতে পারে।",
+    "কভারেজ কম হলে স্কোর কম নিশ্চিত। কম তথ্যের ফাইল কখনও খারাপ ফাইল ধরা হয় না: কভারেজ সীমার নিচে ব্যান্ড হয় 'আরও তথ্য প্রয়োজন', স্কোর যা-ই হোক।",
+    "যাচাইয়ের সংখ্যাগুলো কিছুটা আশাবাদী: মডেল ও ক্যালিব্রেশন বাছাইয়েও সেই সময় ব্যবহার হয়েছে। আলাদা রাখা পরীক্ষার সময়ই আসল যাচাই।",
+    "দলের কলাম শুধু ফলাফল অডিটের জন্য, কখনও মডেলের ইনপুট নয়। দলভিত্তিক অডিট দেখায় এই ডেটায় মডেল কোথায় মাপার মতো আলাদা আচরণ করে; এটি দেখায় না যে মডেলটি ন্যায্য।",
+    "টুলটি মানুষের সিদ্ধান্তে সহায়তা করে। স্বয়ংক্রিয়ভাবে ঋণ মঞ্জুর বা নামঞ্জুরে এটি ব্যবহার করা যাবে না।"
   ]
 }

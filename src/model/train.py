@@ -237,6 +237,26 @@ def _fit_candidate(
     }
 
 
+# How each failed check is said in a sentence (the check names state what must hold).
+FAILED_CHECK_WORDS = {
+    "whole_gain_range_reaches_the_threshold": "the whole range of the gain does not reach it",
+    "brier_is_not_worse": "its Brier score is worse",
+}
+
+
+def choice_reason(gain: dict[str, Any], checks: dict[str, bool], needed: float) -> str:
+    """The model choice in one plain sentence, from the gain and the two checks."""
+    failed = [FAILED_CHECK_WORDS[name] for name, passed in checks.items() if not passed]
+    numbers = (
+        f"LightGBM adds {gain['auc_gain']:+.4f} AUC over the logistic regression (range "
+        f"{gain['range'][0]:+.4f} to {gain['range'][1]:+.4f}). It is used only if the whole "
+        f"range reaches {needed:+.4f} and its Brier score is not worse."
+    )
+    if failed:
+        return f"{numbers} Here {' and '.join(failed)}, so the logistic regression stays."
+    return f"{numbers} Both hold, so LightGBM is used."
+
+
 def choose_model(
     fitted: dict[str, dict[str, Any]], labels: np.ndarray, config: dict[str, Any]
 ) -> dict[str, Any]:
@@ -266,13 +286,7 @@ def choose_model(
         "brier_is_not_worse": bool(brier_flexible <= brier_simple),
     }
     chosen = LIGHTGBM if all(checks.values()) else LOGISTIC_REGRESSION
-    failed = [name.replace("_", " ") for name, passed in checks.items() if not passed]
-    reason = (
-        f"LightGBM adds {gain['auc_gain']:+.4f} AUC over the logistic regression "
-        f"(range {gain['range'][0]:+.4f} to {gain['range'][1]:+.4f}; the whole range must "
-        f"reach {needed:+.4f}). "
-        + ("Both checks pass." if not failed else f"Not met: {', '.join(failed)}.")
-    )
+    reason = choice_reason(gain, checks, needed)
     return {
         "chosen": chosen,
         "reason": reason,

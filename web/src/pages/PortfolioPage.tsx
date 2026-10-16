@@ -15,7 +15,8 @@ import { ErrorCallout } from '@/components/ErrorCallout'
 import { Card, Page, PageHeader } from '@/components/Page'
 import { isOverride } from '@/lib/actions'
 import { count, fmtDate, pct } from '@/lib/format'
-import { hasQueue, MODE_LABELS } from '@/lib/modes'
+import { BAND_TEXT, MODE_TEXT, pick, useLang, useT } from '@/lib/i18n'
+import { hasQueue } from '@/lib/modes'
 import { cn } from '@/lib/utils'
 import { num, text } from './model/metrics'
 import { GroupsCard } from './model/ModelCardParts'
@@ -51,6 +52,11 @@ const SEG = {
 }
 
 function BandsSection({ card, queue, showQueue }: { card: ModelCard; queue?: QueueItem[]; showQueue: boolean }) {
+  const t = useT()
+  const lang = useLang()
+  const strongName = pick(BAND_TEXT.Strong, lang)
+  const reviewName = pick(BAND_TEXT.Review, lang)
+  const nmiName = pick(BAND_TEXT['Needs more info'], lang)
   const m = card.metrics
   const strong = num(m, 'band_strong_share')
   const review = num(m, 'band_review_share')
@@ -61,55 +67,81 @@ function BandsSection({ card, queue, showQueue }: { card: ModelCard; queue?: Que
     if (!queue || queue.length === 0) return null
     const share = (pred: (r: QueueItem) => boolean) => queue.filter(pred).length / queue.length
     return [
-      { label: 'Strong', short: 'Strong', share: share((r) => r.band === 'Strong'), className: SEG.strong },
-      { label: 'Review', short: 'Rev.', share: share((r) => r.band === 'Review'), className: SEG.review },
-      { label: 'Needs more info', short: 'NMI', share: share((r) => r.band === 'Needs more info'), className: SEG.nmi },
-      { label: 'No consent', short: 'None', share: share((r) => !r.consent_valid), className: SEG.none },
+      { label: strongName, short: strongName, share: share((r) => r.band === 'Strong'), className: SEG.strong },
+      { label: reviewName, short: t('Rev.', 'পর্য.'), share: share((r) => r.band === 'Review'), className: SEG.review },
+      { label: nmiName, short: t('NMI', 'আরও তথ্য'), share: share((r) => r.band === 'Needs more info'), className: SEG.nmi },
+      { label: t('No consent', 'অনুমতি নেই'), short: t('None', 'নেই'), share: share((r) => !r.consent_valid), className: SEG.none },
     ]
-  }, [queue])
+  }, [queue, t, strongName, reviewName, nmiName])
 
   if (strong === undefined || review === undefined || nmi === undefined) {
-    return <Card className="p-5 text-sm text-ink-3">This source does not report band shares.</Card>
+    return <Card className="p-5 text-sm text-ink-3">{t('This source does not report band shares.', 'এই উৎস ব্যান্ডের ভাগ জানায় না।')}</Card>
   }
 
   const tiles = [
-    { name: 'Strong', repaid: num(m, 'band_strong_share_repaid'), panel: 'bg-strong-panel', head: 'text-lens-dark', note: 'repaid in time' },
-    { name: 'Review', repaid: num(m, 'band_review_share_repaid'), panel: 'bg-amber-panel', head: 'text-amber-text', note: 'repaid: the band that needs an officer’s eye' },
-    { name: 'Needs more info', repaid: num(m, 'band_needs_more_info_share_repaid'), panel: 'bg-peri-panel', head: 'text-peri-text', note: 'repaid: thin files are not bad files' },
+    {
+      name: strongName,
+      repaid: num(m, 'band_strong_share_repaid'),
+      panel: 'bg-strong-panel',
+      head: 'text-lens-dark',
+      note: t('repaid in time', 'সময়মতো পরিশোধ'),
+    },
+    {
+      name: reviewName,
+      repaid: num(m, 'band_review_share_repaid'),
+      panel: 'bg-amber-panel',
+      head: 'text-amber-text',
+      note: t('repaid: the band that needs an officer’s eye', 'পরিশোধ: যে ব্যান্ডে কর্মকর্তার নজর দরকার'),
+    },
+    {
+      name: nmiName,
+      repaid: num(m, 'band_needs_more_info_share_repaid'),
+      panel: 'bg-peri-panel',
+      head: 'text-peri-text',
+      note: t('repaid: thin files are not bad files', 'পরিশোধ: কম তথ্য মানে খারাপ ফাইল নয়'),
+    },
   ]
 
   return (
     <Card className="flex flex-col gap-5 p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="m-0 text-lg font-semibold">Bands and what happened next</h2>
+        <h2 className="m-0 text-lg font-semibold">{t('Bands and what happened next', 'ব্যান্ড, এবং পরে যা ঘটেছে')}</h2>
         <span className="font-mono text-xs text-muted">
-          {loans !== undefined && `${count(loans)} validation loans · `}
-          {MODE_LABELS[card.data_mode]}
+          {loans !== undefined && t(`${count(loans)} validation loans · `, `${count(loans)}টি যাচাইয়ের ঋণ · `)}
+          {pick(MODE_TEXT[card.data_mode], lang)}
         </span>
       </div>
-      {text(m, 'label') && <span className="-mt-3 text-[13px] text-muted">{text(m, 'label')}.</span>}
+      {(() => {
+        const label = (lang === 'bn' ? text(m, 'label_bn') : undefined) ?? text(m, 'label')
+        return label && <span className="-mt-3 text-[13px] text-muted">{label}{lang === 'bn' ? '।' : '.'}</span>
+      })()}
       <StackedBar
-        ariaLabel={`Validation loans: Strong ${pct(strong)}, Review ${pct(review)}, Needs more info ${pct(nmi)}`}
+        ariaLabel={t(
+          `Validation loans: Strong ${pct(strong)}, Review ${pct(review)}, Needs more info ${pct(nmi)}`,
+          `যাচাইয়ের ঋণ: ${strongName} ${pct(strong)}, ${reviewName} ${pct(review)}, ${nmiName} ${pct(nmi)}`,
+        )}
         segments={[
-          { label: 'Strong', short: 'Strong', share: strong, className: SEG.strong },
-          { label: 'Review', short: 'Rev.', share: review, className: SEG.review },
-          { label: 'Needs more info', short: 'NMI', share: nmi, className: SEG.nmi },
+          { label: strongName, short: strongName, share: strong, className: SEG.strong },
+          { label: reviewName, short: t('Rev.', 'পর্য.'), share: review, className: SEG.review },
+          { label: nmiName, short: t('NMI', 'আরও তথ্য'), share: nmi, className: SEG.nmi },
         ]}
       />
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(240px,100%),1fr))] gap-4">
-        {tiles.map((t) => (
-          <div key={t.name} className={cn('flex flex-col gap-1.5 rounded-panel p-4', t.panel)}>
-            <span className={cn('text-[13px] font-semibold', t.head)}>{t.name}</span>
-            <span className="font-mono text-[30px] font-semibold tabular">{pct(t.repaid, 1)}</span>
-            <span className="text-[13px] text-ink-3">{t.note}</span>
+        {tiles.map((tile) => (
+          <div key={tile.name} className={cn('flex flex-col gap-1.5 rounded-panel p-4', tile.panel)}>
+            <span className={cn('text-[13px] font-semibold', tile.head)}>{tile.name}</span>
+            <span className="font-mono text-[30px] font-semibold tabular">{pct(tile.repaid, 1)}</span>
+            <span className="text-[13px] text-ink-3">{tile.note}</span>
           </div>
         ))}
       </div>
       {showQueue && queueSegments && queue && (
         <div className="flex flex-col gap-2 border-t border-line-soft pt-4">
           <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <span className="text-sm font-semibold">Review queue today</span>
-            <span className="font-mono text-xs text-muted">{count(queue.length)} merchants · outcomes not known yet</span>
+            <span className="text-sm font-semibold">{t('Review queue today', 'আজকের পর্যালোচনার তালিকা')}</span>
+            <span className="font-mono text-xs text-muted">
+              {t(`${count(queue.length)} merchants · outcomes not known yet`, `${count(queue.length)} জন মার্চেন্ট · ফলাফল এখনও জানা নেই`)}
+            </span>
           </div>
           <StackedBar
             height={28}
@@ -123,6 +155,7 @@ function BandsSection({ card, queue, showQueue }: { card: ModelCard; queue?: Que
 }
 
 function OfficerUse({ decisions }: { decisions: Decision[] }) {
+  const t = useT()
   const accepts = decisions.filter((d) => d.officer_action === 'accept').length
   const overrides = decisions.filter((d) => isOverride(d.officer_action)).length
   const moreInfo = decisions.filter((d) => d.officer_action === 'needs_more_info').length
@@ -131,14 +164,16 @@ function OfficerUse({ decisions }: { decisions: Decision[] }) {
   return (
     <Card className="flex flex-col gap-4 p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="m-0 text-lg font-semibold">How officers use the score</h2>
-        <span className="font-mono text-xs text-muted">{count(decisions.length)} decisions recorded</span>
+        <h2 className="m-0 text-lg font-semibold">{t('How officers use the score', 'কর্মকর্তারা স্কোর কীভাবে ব্যবহার করেন')}</h2>
+        <span className="font-mono text-xs text-muted">
+          {t(`${count(decisions.length)} decisions recorded`, `${count(decisions.length)}টি সিদ্ধান্ত রাখা হয়েছে`)}
+        </span>
       </div>
       <div className="grid grid-cols-3 gap-3">
         {[
-          [accepts, 'accepted'],
-          [overrides, 'overridden, with a reason'],
-          [moreInfo, 'asked for more info'],
+          [accepts, t('accepted', 'মেনে নেওয়া')],
+          [overrides, t('overridden, with a reason', 'কারণসহ পরিবর্তন')],
+          [moreInfo, t('asked for more info', 'আরও তথ্য চাওয়া')],
         ].map(([n, label]) => (
           <div key={label} className="flex flex-col gap-1">
             <span className="font-mono text-[28px] font-semibold tabular">{count(n as number)}</span>
@@ -148,15 +183,17 @@ function OfficerUse({ decisions }: { decisions: Decision[] }) {
       </div>
       <div className="flex flex-col gap-1.5">
         <div className="flex justify-between text-sm">
-          <span>Override rate</span>
+          <span>{t('Override rate', 'পরিবর্তনের হার')}</span>
           <span className="font-mono font-semibold tabular">{rate === undefined ? '—' : pct(rate)}</span>
         </div>
         <div className="h-2.5 overflow-hidden rounded-[5px] bg-line-soft" aria-hidden="true">
           <span className="block h-2.5 rounded-[5px] bg-amber" style={{ width: `${(rate ?? 0) * 100}%` }} />
         </div>
         <span className="text-[13px] text-muted">
-          A rate near zero can mean rubber-stamping; a rate near half means the score is not helping. Both are worth a
-          conversation.
+          {t(
+            'A rate near zero can mean rubber-stamping; a rate near half means the score is not helping. Both are worth a conversation.',
+            'হার শূন্যের কাছে হলে হয়তো না দেখেই মেনে নেওয়া হচ্ছে; অর্ধেকের কাছে হলে স্কোর কাজে আসছে না। দুটোই আলোচনার বিষয়।',
+          )}
         </span>
       </div>
     </Card>
@@ -166,19 +203,21 @@ function OfficerUse({ decisions }: { decisions: Decision[] }) {
 type DayCount = { day: string; label: string; decisions: number }
 
 function DayTooltip({ active, payload }: { active?: boolean; payload?: { payload: DayCount }[] }) {
+  const t = useT()
   if (!active || !payload?.length) return null
   const d = payload[0].payload
   return (
     <div className="rounded-lg border border-card-line bg-card px-3 py-2 text-[13px] shadow-[0_2px_8px_rgba(19,32,28,.12)]">
       <div className="text-muted">{fmtDate(d.day)}</div>
       <div className="font-mono font-semibold tabular">
-        {d.decisions} {d.decisions === 1 ? 'decision' : 'decisions'}
+        {d.decisions} {t(d.decisions === 1 ? 'decision' : 'decisions', 'টি সিদ্ধান্ত')}
       </div>
     </div>
   )
 }
 
 function DecisionsOverTime({ decisions }: { decisions: Decision[] }) {
+  const t = useT()
   const days = useMemo<DayCount[]>(() => {
     const byDay = new Map<string, number>()
     for (const d of decisions) {
@@ -192,9 +231,14 @@ function DecisionsOverTime({ decisions }: { decisions: Decision[] }) {
 
   return (
     <Card className="flex flex-col gap-4 p-5">
-      <h2 className="m-0 text-lg font-semibold">Decisions over time</h2>
+      <h2 className="m-0 text-lg font-semibold">{t('Decisions over time', 'সময়ের সাথে সিদ্ধান্ত')}</h2>
       {days.length === 0 ? (
-        <p className="m-0 text-sm text-ink-3">No decisions recorded yet. Officers record them on a merchant’s page.</p>
+        <p className="m-0 text-sm text-ink-3">
+          {t(
+            'No decisions recorded yet. Officers record them on a merchant’s page.',
+            'এখনও কোনো সিদ্ধান্ত রাখা হয়নি। কর্মকর্তারা মার্চেন্টের পাতায় সিদ্ধান্ত রাখেন।',
+          )}
+        </p>
       ) : (
         <>
           <div
@@ -212,7 +256,9 @@ function DecisionsOverTime({ decisions }: { decisions: Decision[] }) {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <span className="text-[13px] text-muted">Decisions recorded per day. Hover a bar for the count.</span>
+          <span className="text-[13px] text-muted">
+            {t('Decisions recorded per day. Hover a bar for the count.', 'প্রতিদিন রাখা সিদ্ধান্ত। সংখ্যা দেখতে বারের ওপর মাউস রাখুন।')}
+          </span>
         </>
       )}
     </Card>
@@ -220,6 +266,7 @@ function DecisionsOverTime({ decisions }: { decisions: Decision[] }) {
 }
 
 export function PortfolioPage() {
+  const t = useT()
   const health = useApi<Health>('/health')
   const showQueue = hasQueue(health.data?.data_mode)
   const card = useApi<ModelCard>(health.data ? '/model/card' : null)
@@ -229,8 +276,11 @@ export function PortfolioPage() {
   return (
     <Page>
       <PageHeader
-        title="Portfolio"
-        description="How the book splits across bands, how each band actually repaid, and how officers use the score."
+        title={t('Portfolio', 'পোর্টফোলিও')}
+        description={t(
+          'How the book splits across bands, how each band actually repaid, and how officers use the score.',
+          'ঋণগুলো কোন ব্যান্ডে কতটা, প্রতিটি ব্যান্ড আসলে কতটা পরিশোধ করেছে, আর কর্মকর্তারা স্কোর কীভাবে ব্যবহার করেন।',
+        )}
       />
 
       {card.error ? (
@@ -238,7 +288,7 @@ export function PortfolioPage() {
       ) : card.data ? (
         <BandsSection card={card.data} queue={queue.data} showQueue={showQueue} />
       ) : (
-        <Card className="p-5 text-sm text-muted">Loading…</Card>
+        <Card className="p-5 text-sm text-muted">{t('Loading…', 'আসছে…')}</Card>
       )}
 
       {showQueue && (
@@ -251,7 +301,7 @@ export function PortfolioPage() {
               <DecisionsOverTime decisions={decisions.data} />
             </>
           ) : (
-            <Card className="p-5 text-sm text-muted">Loading decisions…</Card>
+            <Card className="p-5 text-sm text-muted">{t('Loading decisions…', 'সিদ্ধান্ত আসছে…')}</Card>
           )}
         </section>
       )}

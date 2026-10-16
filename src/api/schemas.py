@@ -216,6 +216,7 @@ class TimelineEvent(BaseModel):
     date: str
     stream: Literal["purchase", "delivery", "payment", "loan"]
     label: str
+    label_bn: str | None = Field(default=None, description="The same label in Bangla.")
     amount_bdt: float | None = None
 
 
@@ -287,6 +288,9 @@ class ModelCard(BaseModel):
     limitations: list[str]
     band_rules: BandRules | None = Field(
         default=None, description="The band lines of this data mode (set by the API)."
+    )
+    limitations_bn: list[str] = Field(
+        default=[], description="The same limitations in Bangla, for the language switch."
     )
 
 

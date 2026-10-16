@@ -11,10 +11,14 @@ import { Link } from 'react-router'
 import type { Health } from '@/api/types'
 import { useApi } from '@/api/useApi'
 import { Page, PageHeader } from '@/components/Page'
+import { useLang, useT } from '@/lib/i18n'
 
 type Step = 'ask' | 'done' | 'withdrawn' | 'notNow'
 
+/** The English line under the Bangla, for English readers. In Bangla mode the phone is all Bangla. */
 function En({ children, className = '' }: { children: ReactNode; className?: string }) {
+  const lang = useLang()
+  if (lang === 'bn') return null
   return <span className={`font-sans text-xs leading-4 text-muted ${className}`}>{children}</span>
 }
 
@@ -33,6 +37,7 @@ function LockedRow({ bn, en }: { bn: string; en: string }) {
 const bigButton = 'min-h-12 w-full cursor-pointer rounded-panel font-bn text-base'
 
 export function ConsentDemoPage() {
+  const t = useT()
   const health = useApi<Health>('/health')
   const [step, setStep] = useState<Step>('ask')
   const [questionnaire, setQuestionnaire] = useState(true)
@@ -42,8 +47,11 @@ export function ConsentDemoPage() {
   return (
     <Page>
       <PageHeader
-        title="Mock consent page"
-        description="What a merchant would see on their phone before any data is used. A demo screen only: nothing here is sent to the API and no consent is recorded."
+        title={t('Mock consent page', 'অনুমতির নমুনা পাতা')}
+        description={t(
+          'What a merchant would see on their phone before any data is used. A demo screen only: nothing here is sent to the API and no consent is recorded.',
+          'কোনো ডেটা ব্যবহারের আগে মার্চেন্ট তাঁর ফোনে যা দেখবেন। শুধু ডেমো: এখান থেকে API-তে কিছু যায় না, আর কোনো অনুমতি রাখা হয় না।',
+        )}
         aside={
           <Link to="/consent" className="text-sm font-semibold">
             Back to consent records
@@ -57,7 +65,7 @@ export function ConsentDemoPage() {
           className="box-border flex min-h-[760px] w-full max-w-[390px] flex-col overflow-hidden rounded-[28px] border-[6px] border-night bg-ground font-bn text-ink shadow-[0_8px_30px_rgba(15,29,25,.18)]"
         >
           <div className="flex items-center justify-between bg-banner px-5 py-3.5 font-sans text-xs text-banner-text" lang="en">
-            <span className="font-semibold">Demo screen · not live</span>
+            <span className="font-semibold">{t('Demo screen · not live', 'ডেমো পর্দা · আসল নয়')}</span>
             {source && <span>{source}.</span>}
           </div>
 
@@ -133,7 +141,11 @@ export function ConsentDemoPage() {
                   <En>Consent withdrawn. Your data is no longer used for scoring.</En>
                 </>
               ) : (
-                <En className="text-sm leading-5">Not now: no consent is recorded, so no score is made.</En>
+                <>
+                  <h2 className="m-0 text-[23px] leading-8 font-bold">ঠিক আছে, অনুমতি দেওয়া হয়নি</h2>
+                  <p className="m-0 text-[15px] leading-6">অনুমতি ছাড়া আপনার দোকানের কোনো স্কোর তৈরি হবে না। পরে চাইলে আবার দেখতে পারেন।</p>
+                  <En>Not now: no consent is recorded, so no score is made.</En>
+                </>
               )}
               <button type="button" onClick={() => setStep('ask')} className={`${bigButton} mt-auto border border-button-line bg-card font-medium text-ink-2`}>
                 আবার দেখুন
@@ -144,7 +156,10 @@ export function ConsentDemoPage() {
       </div>
 
       <p className="m-0 text-center text-[13px] text-muted">
-        The Bangla on this screen needs a native-speaker review before the demo.
+        {t(
+          'The Bangla on this screen needs a native-speaker review before the demo.',
+          'ডেমোর আগে এই পর্দার বাংলা একজন বাংলাভাষী পর্যালোচককে দেখাতে হবে।',
+        )}
       </p>
     </Page>
   )

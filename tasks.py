@@ -120,6 +120,12 @@ def task_train(args: argparse.Namespace) -> int:
     command = ["-m", "src.model.train"]
     if args.mode:
         command += ["--mode", args.mode]
+    if args.mode in (None, "synthetic_bd"):
+        print(
+            "Note: the synthetic model in git is the one measured on the test period. "
+            "Training replaces it with a new version whose model card has no test result. "
+            "To get the measured one back: git restore src/model/artifacts/synthetic_bd"
+        )
     code = run_in_venv(command)
     if code != 0:
         return code

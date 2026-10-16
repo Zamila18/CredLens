@@ -9,7 +9,7 @@
     "train_loans": 33333.0,
     "validation_loans": 8333.0,
     "model": "logistic regression",
-    "model_choice": "LightGBM adds +0.0049 AUC over the logistic regression (range +0.0013 to +0.0084; the whole range must reach +0.0100). Not met: whole gain range reaches the threshold.",
+    "model_choice": "LightGBM adds +0.0049 AUC over the logistic regression (range +0.0013 to +0.0084). It is used only if the whole range reaches +0.0100 and its Brier score is not worse. Here the whole range of the gain does not reach it, so the logistic regression stays.",
     "calibration": "none (the model's probabilities were already well calibrated)",
     "inputs": "Share of the instalments on earlier loans paid on or before the due day | Share of the instalments on earlier loans paid more than 30 days late, or still unpaid after 30 days | Share of the instalments on earlier loans where less than 99% of the amount due was paid | The on-time share over instalments due in the 365 days before the application | Share of the monthly records of earlier store and cash loans with an amount overdue | The loan's repayment amount divided by the income stated in the application | The loan amount divided by the price of the goods it pays for | Average of the scores \"from external data sources\" that the application has (up to three)",
     "share_repaid": 0.919597,
@@ -37,6 +37,37 @@
       0.169108
     ],
     "auc_benchmark": 0.7,
+    "calibration_mean_predicted": [
+      0.7449,
+      0.8593,
+      0.8999,
+      0.9225,
+      0.9376,
+      0.949,
+      0.9584,
+      0.9662,
+      0.9734,
+      0.9815
+    ],
+    "calibration_share_repaid": [
+      0.7254,
+      0.8655,
+      0.898,
+      0.9172,
+      0.946,
+      0.958,
+      0.958,
+      0.964,
+      0.9796,
+      0.9844
+    ],
+    "lowest_k": 20.0,
+    "not_repaid_rate_in_lowest_k": 0.65,
+    "not_repaid_rate_overall": 0.080403,
+    "auc_coverage_below_the_line": 0.744032,
+    "loans_coverage_below_the_line": 409.0,
+    "auc_coverage_at_or_above_the_line": 0.745695,
+    "loans_coverage_at_or_above_the_line": 7924.0,
     "band_strong_share": 0.731069,
     "band_strong_share_repaid": 0.95174,
     "band_review_share": 0.219849,
@@ -76,7 +107,24 @@
     "banner": "Public data: Home Credit (country not stated), not ShopUp data. Decision support only.",
     "what_this_shows": "Most of the ranking comes from a credit score bought from outside; the applicant's own instalment history and loan terms carry little.",
     "what_this_does_not_show": "That repayment history alone is enough on this data, or anything about Asia: the country is not stated.",
-    "group_findings": "Ranking differs for age band 'under 30' (1,170 loans): AUC 0.67 against 0.75 for everyone else. Ranking differs for region rating '2' (6,207 loans): AUC 0.73 against 0.80 for everyone else."
+    "group_findings": "Ranking differs for age band 'under 30' (1,170 loans): AUC 0.67 against 0.75 for everyone else. Ranking differs for region rating '2' (6,207 loans): AUC 0.73 against 0.80 for everyone else.",
+    "measured_on_bn": "যাচাইয়ের সময়; test_ সংখ্যাগুলো আলাদা রাখা পরীক্ষার সময়ের, একবারই ব্যবহৃত",
+    "split_bn": "এলোমেলোভাবে, প্রতিটি অংশে পরিশোধের একই ভাগ রেখে",
+    "split_note_bn": "দুর্বল ভাগ: এই উৎসে ব্যবহারযোগ্য তারিখ নেই, তাই ঋণগুলো সময় অনুযায়ী নয়, এলোমেলোভাবে ভাগ করা হয়েছে (প্রতিটি অংশে পরিশোধের একই ভাগ রেখে)।",
+    "model_bn": "লজিস্টিক রিগ্রেশন",
+    "calibration_bn": "নেই (মডেলের সম্ভাবনা আগে থেকেই ভালোভাবে ক্যালিব্রেটেড)",
+    "model_choice_bn": "লজিস্টিক রিগ্রেশনের চেয়ে LightGBM +0.0049 AUC যোগ করে (সীমা +0.0013 থেকে +0.0084)। এটি তখনই ব্যবহার হয়, যখন পুরো সীমা +0.0100-এ পৌঁছায় এবং এর Brier স্কোর খারাপ নয়। এখানে লাভের পুরো সীমা সেখানে পৌঁছায় না, তাই লজিস্টিক রিগ্রেশনই থাকে।",
+    "inputs_bn": "আগের ঋণের কিস্তির মধ্যে নির্ধারিত দিনে বা আগে দেওয়া কিস্তির ভাগ | আগের ঋণের কিস্তির মধ্যে 30 দিনের বেশি দেরিতে দেওয়া, বা 30 দিন পরেও না দেওয়া কিস্তির ভাগ | আগের ঋণের কিস্তির মধ্যে বকেয়ার 99%-এর কম দেওয়া কিস্তির ভাগ | আবেদনের আগের 365 দিনে বকেয়া কিস্তির মধ্যে সময়মতো দেওয়ার ভাগ | আগের দোকান ও নগদ ঋণের মাসিক রেকর্ডের মধ্যে বকেয়া থাকা রেকর্ডের ভাগ | ঋণের কিস্তির পরিমাণ, আবেদনে লেখা আয় দিয়ে ভাগ | ঋণের পরিমাণ, যে পণ্যের জন্য ঋণ তার দাম দিয়ে ভাগ | আবেদনে থাকা 'বাইরের ডেটা উৎস থেকে' স্কোরগুলোর গড় (সর্বোচ্চ তিনটি)",
+    "simpler_model_bn": "আবেদনকারীর নিজের পরিশোধের আচরণ ও ঋণের শর্ত, বাইরের স্কোর ছাড়া",
+    "data_source_bn": "Home Credit Default Risk (Kaggle, 2018), আবেদনকারীদের একটি নমুনা; প্রকাশক দেশের নাম বলেননি",
+    "terms_bn": "Kaggle প্রতিযোগিতার নিয়মে ব্যবহার শুধু সেই প্রতিযোগিতার জন্য, আর পুনর্বিতরণ নিষেধ; এখানে দলনেতার সিদ্ধান্তে শুধু স্থানীয়, অবাণিজ্যিক পদ্ধতি-যাচাই হিসেবে ব্যবহার। সারি কখনও দেখানো হয় না; শুধু মোট হিসাব",
+    "label_bn": "পরিশোধ: আবেদনকারীর পেমেন্টে কোনো সমস্যা হয়নি",
+    "banner_bn": "পাবলিক ডেটা: হোম ক্রেডিট (দেশ উল্লেখ নেই), ShopUp-এর ডেটা নয়। শুধু সিদ্ধান্তে সহায়তা।",
+    "what_this_shows_bn": "ক্রমের বেশিরভাগ আসে বাইরে থেকে কেনা একটি ক্রেডিট স্কোর থেকে; আবেদনকারীর নিজের কিস্তির ইতিহাস ও ঋণের শর্ত সামান্যই অবদান রাখে।",
+    "what_this_does_not_show_bn": "যে এই ডেটায় শুধু পরিশোধের ইতিহাসই যথেষ্ট (তা নয়), বা এশিয়া সম্পর্কে কিছু: দেশের নাম বলা নেই।",
+    "group_findings_bn": "বয়সের দল 'under 30' (1,170টি ঋণ)-এর ক্ষেত্রে ক্রম আলাদা: AUC 0.67, বাকি সবার 0.75। অঞ্চলের রেটিং '2' (6,207টি ঋণ)-এর ক্ষেত্রে ক্রম আলাদা: AUC 0.73, বাকি সবার 0.80।",
+    "intended_use_bn": "আসল ফলাফলসহ পাবলিক ডেটায় পদ্ধতিটির যাচাই। এই মডেল কাউকে স্কোর করার জন্য নয়: যেখানে ফলাফল জানা, সেখানে একই পাইপলাইন কেমন করে তা দেখায়।",
+    "test_reading_bn": "মডেল আগে দেখেনি এমন ঋণেও ক্যালিব্রেশন টিকে থাকে, আর ক্রম যাচাইয়ের ফলাফলের চেয়ে একটু কম।"
   },
   "ablation": [],
   "group_results": [
@@ -209,5 +257,14 @@
     "The validation numbers are a little optimistic: that period was also used to choose the model and the calibration. The held-back test period gives the honest check.",
     "Group columns are used only to audit results, never as model inputs. The group audit shows where the model works measurably differently on these data; it does not show that the model is fair.",
     "The tool supports a human decision. It must not be used for automatic approval or decline."
+  ],
+  "limitations_bn": [
+    "পাবলিক ডেটা, ShopUp-এর ডেটা নয়; দেশের নাম বলা নেই, তাই এশিয়া সম্পর্কে কোনো দাবি করে না। উৎসে তারিখ নেই বলে ভাগটি এলোমেলো।",
+    "আলাদা সারি কোনো পর্দায় দেখানো হয় না: প্রতিযোগিতার নিয়মে পুনর্বিতরণ নিষেধ। শুধু এ ধরনের মোট হিসাব দেখানো হয়।",
+    "ফলাফল জানা শুধু তাদের, যারা আগে ঋণ পেয়েছেন। আগের নীতিতে যাদের ফিরিয়ে দেওয়া হতো, তাদের ক্ষেত্রে মডেল কাজ নাও করতে পারে।",
+    "কভারেজ কম হলে স্কোর কম নিশ্চিত। কম তথ্যের ফাইল কখনও খারাপ ফাইল ধরা হয় না: কভারেজ সীমার নিচে ব্যান্ড হয় 'আরও তথ্য প্রয়োজন', স্কোর যা-ই হোক।",
+    "যাচাইয়ের সংখ্যাগুলো কিছুটা আশাবাদী: মডেল ও ক্যালিব্রেশন বাছাইয়েও সেই সময় ব্যবহার হয়েছে। আলাদা রাখা পরীক্ষার সময়ই আসল যাচাই।",
+    "দলের কলাম শুধু ফলাফল অডিটের জন্য, কখনও মডেলের ইনপুট নয়। দলভিত্তিক অডিট দেখায় এই ডেটায় মডেল কোথায় মাপার মতো আলাদা আচরণ করে; এটি দেখায় না যে মডেলটি ন্যায্য।",
+    "টুলটি মানুষের সিদ্ধান্তে সহায়তা করে। স্বয়ংক্রিয়ভাবে ঋণ মঞ্জুর বা নামঞ্জুরে এটি ব্যবহার করা যাবে না।"
   ]
 }

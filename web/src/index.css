@@ -148,6 +148,10 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
+  /* Bangla chosen in the sidebar: the whole page uses the Bangla font. */
+  html[lang='bn'] body {
+    font-family: var(--font-bn);
+  }
   a {
     color: var(--color-lens);
   }

@@ -51,6 +51,15 @@ def stale_card_warning(card_version: str, running_version: str) -> str:
     )
 
 
+def stale_card_warning_bn(card_version: str, running_version: str) -> str:
+    """The same warning in Bangla."""
+    return (
+        f"এই কার্ড মডেল সংস্করণ {card_version}-এর জন্য লেখা, কিন্তু স্কোর আসছে সংস্করণ "
+        f"{running_version} থেকে। এর সংখ্যা ব্যবহৃত মডেলকে নাও বোঝাতে পারে। আবার লিখুন: "
+        "python -m src.model.model_card"
+    )
+
+
 def load_model_card(mode: str, model_version: str | None) -> ModelCard:
     """The written model card for `mode`, or the placeholder."""
     path = PROJECT_ROOT / "reports" / mode / CARD_FILE
@@ -58,6 +67,10 @@ def load_model_card(mode: str, model_version: str | None) -> ModelCard:
         card = ModelCard.model_validate(json.loads(path.read_text(encoding="utf-8")))
         if model_version and card.model_version != model_version:
             card.limitations.insert(0, stale_card_warning(card.model_version, model_version))
+            if card.limitations_bn:
+                card.limitations_bn.insert(
+                    0, stale_card_warning_bn(card.model_version, model_version)
+                )
         return card
     return ModelCard(
         data_mode=mode,

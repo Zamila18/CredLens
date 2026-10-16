@@ -2,7 +2,7 @@
  * Holds the demo session and remembers it in the browser between visits.
  * Switching the demo user changes the X-Demo-Token sent with every later call.
  */
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 
 import { setDemoUser } from '@/api/client'
 import { DEMO_USERS, roleOf, type DemoUser } from '@/api/types'
@@ -19,6 +19,12 @@ setDemoUser(initialUser)
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<DemoUser>(initialUser)
   const [lang, setLangState] = useState<Lang>(() => readChoice<Lang>(LANG_KEY, ['en', 'bn'], 'en'))
+
+  // The whole page follows the language switch: screen readers and the Bangla font
+  // (index.css, html[lang='bn']) read it from <html lang>.
+  useEffect(() => {
+    document.documentElement.lang = lang
+  }, [lang])
 
   const session = useMemo<Session>(
     () => ({

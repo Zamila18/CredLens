@@ -1,6 +1,6 @@
 /**
- * Sidebar (Sidebar.dc.html): logo, Work and Trust menus, data source, reason
- * language and the demo role switch.
+ * Sidebar (Sidebar.dc.html): logo, Work and Trust menus, data source, the language of
+ * the whole dashboard and the demo role switch.
  *
  * - Items the current role may not open are hidden (docs/API_NOTES.md, "Who may call what").
  * - The data source is read-only: the API picks it from its config.
@@ -14,13 +14,15 @@ import { useApi } from '@/api/useApi'
 import { LensMark } from '@/components/icons'
 import { Segmented } from '@/components/Segmented'
 import { count } from '@/lib/format'
-import { MODE_LABELS, hasQueue } from '@/lib/modes'
+import { MODE_TEXT, pick, useT } from '@/lib/i18n'
+import { hasQueue } from '@/lib/modes'
 import { cn } from '@/lib/utils'
 import { useSession, type Lang } from './session-context'
 
 type Item = {
   to: string
   label: string
+  labelBn: string
   /** Roles that may open the page; all roles when left out. */
   roles?: Role[]
   adminTag?: boolean
@@ -30,23 +32,23 @@ type Item = {
 }
 
 const WORK: Item[] = [
-  { to: '/', label: 'Review queue', needsQueue: true, badge: true },
-  { to: '/decisions', label: 'Decision log' },
-  { to: '/portfolio', label: 'Portfolio' },
+  { to: '/', label: 'Review queue', labelBn: 'পর্যালোচনার তালিকা', needsQueue: true, badge: true },
+  { to: '/decisions', label: 'Decision log', labelBn: 'সিদ্ধান্তের খাতা' },
+  { to: '/portfolio', label: 'Portfolio', labelBn: 'পোর্টফোলিও' },
 ]
 
 const TRUST: Item[] = [
-  { to: '/model', label: 'Model card' },
-  { to: '/consent', label: 'Consent' },
-  { to: '/audit', label: 'Audit log', roles: ['admin'], adminTag: true },
-  { to: '/admin/import', label: 'Data import', roles: ['admin'], adminTag: true },
+  { to: '/model', label: 'Model card', labelBn: 'মডেল কার্ড' },
+  { to: '/consent', label: 'Consent', labelBn: 'অনুমতি' },
+  { to: '/audit', label: 'Audit log', labelBn: 'অডিট লগ', roles: ['admin'], adminTag: true },
+  { to: '/admin/import', label: 'Data import', labelBn: 'ডেটা আমদানি', roles: ['admin'], adminTag: true },
 ]
 
-const ROLE_LABELS: Record<DemoUser, string> = {
-  'officer-1': 'Officer 1',
-  'officer-2': 'Officer 2',
-  'admin-1': 'Admin',
-  'viewer-1': 'Viewer',
+const ROLE_LABELS: Record<DemoUser, { en: string; bn: string }> = {
+  'officer-1': { en: 'Officer 1', bn: 'কর্মকর্তা ১' },
+  'officer-2': { en: 'Officer 2', bn: 'কর্মকর্তা ২' },
+  'admin-1': { en: 'Admin', bn: 'অ্যাডমিন' },
+  'viewer-1': { en: 'Viewer', bn: 'দর্শক' },
 }
 
 function GroupLabel({ children }: { children: string }) {
@@ -55,6 +57,7 @@ function GroupLabel({ children }: { children: string }) {
 
 function NavItem({ item, badge }: { item: Item; badge?: number }) {
   const { pathname } = useLocation()
+  const t = useT()
   // A merchant page belongs to the review queue.
   const forceActive = item.to === '/' && pathname.startsWith('/merchants/')
   return (
@@ -71,15 +74,16 @@ function NavItem({ item, badge }: { item: Item; badge?: number }) {
       }
       aria-current={forceActive ? 'page' : undefined}
     >
-      <span>{item.label}</span>
+      <span>{t(item.label, item.labelBn)}</span>
       {badge !== undefined && <span className="font-mono text-xs text-night-text tabular">{count(badge)}</span>}
-      {item.adminTag && <span className="rounded-md border border-[#3A4E47] px-1.5 py-px text-[11px] text-night-soft">admin</span>}
+      {item.adminTag && <span className="rounded-md border border-[#3A4E47] px-1.5 py-px text-[11px] text-night-soft">{t('admin', 'অ্যাডমিন')}</span>}
     </NavLink>
   )
 }
 
 export function Sidebar() {
   const { user, role, setUser, lang, setLang } = useSession()
+  const t = useT()
   const health = useApi<Health>('/health')
   const mode = health.data?.data_mode
   const queue = useApi<QueueItem[]>(hasQueue(mode) ? '/merchants' : null)
@@ -96,45 +100,50 @@ export function Sidebar() {
         <LensMark />
         <span className="flex flex-col leading-[1.1]">
           <span className="text-[19px] font-bold tracking-[-0.01em]">CredLens</span>
-          <span className="text-[11px] tracking-[.06em] text-night-soft uppercase">Merchant readiness</span>
+          <span className="text-[11px] tracking-[.06em] text-night-soft uppercase">{t('Merchant readiness', 'মার্চেন্টের প্রস্তুতি')}</span>
         </span>
       </NavLink>
 
       <div className="flex flex-col gap-1">
-        <GroupLabel>Work</GroupLabel>
+        <GroupLabel>{t('Work', 'কাজ')}</GroupLabel>
         {WORK.filter(visible).map((item) => (
           <NavItem key={item.to} item={item} badge={item.badge ? pending : undefined} />
         ))}
       </div>
 
       <div className="flex flex-col gap-1">
-        <GroupLabel>Trust</GroupLabel>
+        <GroupLabel>{t('Trust', 'আস্থা')}</GroupLabel>
         {TRUST.filter(visible).map((item) => (
           <NavItem key={item.to} item={item} />
         ))}
       </div>
 
       <div className="flex flex-col gap-2 px-2.5">
-        <span className="text-[11px] tracking-[.08em] text-night-label uppercase">Data source</span>
+        <span className="text-[11px] tracking-[.08em] text-night-label uppercase">{t('Data source', 'ডেটার উৎস')}</span>
         <div className="flex min-h-11 items-center rounded-lg border border-night-line bg-night-2 px-2.5 text-[13px] text-white">
           {mode ? (
             <span>
-              <span className="font-mono">{mode}</span> · {MODE_LABELS[mode]}
+              <span className="font-mono">{mode}</span> · {pick(MODE_TEXT[mode], lang)}
             </span>
           ) : (
-            <span className="text-night-soft">Waiting for the API…</span>
+            <span className="text-night-soft">{t('Waiting for the API…', 'API-র জন্য অপেক্ষা…')}</span>
           )}
         </div>
         <span className="text-xs leading-[17px] text-night-soft">
-          Set in the API config. Public modes show only what their data supports.
+          {t(
+            'Set in the API config. Public modes show only what their data supports.',
+            'API-র কনফিগে ঠিক করা। পাবলিক ডেটা শুধু ততটুকু দেখায় যতটুকু তার ডেটায় আছে।',
+          )}
         </span>
       </div>
 
       <div className="flex flex-col gap-2 px-2.5">
-        <span className="text-[11px] tracking-[.08em] text-night-label uppercase">Reason language</span>
+        <span className="text-[11px] tracking-[.08em] text-night-label uppercase">
+          Language · <span className="font-bn normal-case">ভাষা</span>
+        </span>
         <Segmented<Lang>
           tone="dark"
-          label="Reason language"
+          label="Language / ভাষা"
           value={lang}
           onChange={setLang}
           options={[
@@ -145,16 +154,17 @@ export function Sidebar() {
       </div>
 
       <div className="mt-auto flex flex-col gap-2 px-2.5">
-        <span className="text-[11px] tracking-[.08em] text-night-label uppercase">Demo role</span>
+        <span className="text-[11px] tracking-[.08em] text-night-label uppercase">{t('Demo role', 'ডেমো ভূমিকা')}</span>
         <Segmented<DemoUser>
           tone="dark"
-          label="Demo role"
+          label={t('Demo role', 'ডেমো ভূমিকা')}
           value={user}
           onChange={setUser}
-          options={DEMO_USERS.map((u) => ({ value: u, label: ROLE_LABELS[u] }))}
+          options={DEMO_USERS.map((u) => ({ value: u, label: pick(ROLE_LABELS[u], lang) }))}
         />
         <span className="text-xs leading-[17px] text-night-soft">
-          Signed in as <span className="font-mono text-night-hi">{user}</span>. A demo role switch, not a login.
+          {t('Signed in as', 'ব্যবহারকারী:')} <span className="font-mono text-night-hi">{user}</span>.{' '}
+          {t('A demo role switch, not a login.', 'এটি ডেমোর ভূমিকা বদল, লগইন নয়।')}
         </span>
       </div>
     </nav>

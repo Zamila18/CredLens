@@ -5,6 +5,7 @@
 import type { ReactNode } from 'react'
 
 import type { Band } from '@/api/types'
+import { BAND_TEXT, pick, useLang } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { bandChipClass } from './band'
 
@@ -17,12 +18,14 @@ type Props = {
   className?: string
 }
 
-export function BandChip({ band, lowScoreWarning, noneLabel = 'No band', size = 'sm', className }: Props) {
+export function BandChip({ band, lowScoreWarning, noneLabel, size = 'sm', className }: Props) {
+  const lang = useLang()
+  const name = band ? pick(BAND_TEXT[band], lang) : ''
   const label = band
     ? lowScoreWarning && band !== 'Needs more info'
-      ? `${band} · low score`
-      : band
-    : noneLabel
+      ? `${name} · ${lang === 'bn' ? 'কম স্কোর' : 'low score'}`
+      : name
+    : (noneLabel ?? (lang === 'bn' ? 'কোনো ব্যান্ড নেই' : 'No band'))
   return (
     <span
       className={cn(
