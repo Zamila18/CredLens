@@ -174,3 +174,96 @@ def test_the_env_template_has_no_real_values_and_only_settings_the_code_reads():
 def test_the_real_env_file_is_ignored_by_git():
     ignored = (ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
     assert ".env" in [line.strip() for line in ignored]
+
+
+# --- the Nginx config (the Docker test, deploy/test_nginx_local.py, runs it for real) -----
+
+NGINX = (DEPLOY / "nginx" / "credlens.conf").read_text(encoding="utf-8")
+
+
+def block(text: str, header: str) -> str:
+    """The text between the braces that follow `header` (the config has no nested blocks
+    inside the ones read here)."""
+    start = text.index(header)
+    opening = text.index("{", start)
+    depth, position = 0, opening
+    while True:
+        depth += {"{": 1, "}": -1}.get(text[position], 0)
+        if depth == 0:
+            return text[opening + 1 : position]
+        position += 1
+
+
+def test_the_nginx_file_is_balanced_and_the_site_is_behind_a_password():
+    assert NGINX.count("{") == NGINX.count("}")
+    server = block(NGINX, "server {")
+    lines = [line.strip() for line in server.splitlines()]  # a commented-out line is no line
+    assert any(line.startswith('auth_basic "') for line in lines)
+    assert "auth_basic_user_file /etc/nginx/credlens.htpasswd;" in lines
+    assert "server_tokens off;" in lines
+    assert "location /api/" in server and "location /assets/" in server
+
+
+def test_the_api_is_passed_on_with_the_prefix_off_and_the_password_kept_from_it():
+    api = block(NGINX, "location /api/ {")
+    # a trailing slash on both sides is what removes "/api"
+    assert "proxy_pass http://127.0.0.1:8000/;" in api
+    assert 'proxy_set_header Authorization "";' in api
+    for header in ("Host", "X-Real-IP", "X-Forwarded-For", "X-Forwarded-Proto"):
+        assert f"proxy_set_header {header} " in api
+    assert 'add_header Cache-Control "no-store" always;' in api
+    # add_header in a location replaces the server's, so the important ones are repeated
+    for header in ("X-Content-Type-Options", "X-Frame-Options", "Referrer-Policy"):
+        assert f"add_header {header} " in api
+    assert "0.0.0.0" not in NGINX  # the API is never named by anything but the loopback address
+
+
+def test_the_dashboards_api_prefix_is_the_one_nginx_serves():
+    client = (ROOT / "web" / "src" / "api" / "client.ts").read_text(encoding="utf-8")
+    assert "?? '/api'" in client
+    vite = (ROOT / "web" / "vite.config.ts").read_text(encoding="utf-8")
+    assert "'/api'" in vite and r"replace(/^\/api/, '')" in vite  # the same job as Nginx's
+
+
+def test_the_nginx_file_allows_the_largest_import_and_no_more_than_needed():
+    from src.api.importer import MAX_IMPORT_BYTES
+
+    size = int(NGINX.split("client_max_body_size ")[1].split("m;")[0]) * 1024 * 1024
+    assert MAX_IMPORT_BYTES < size <= 2 * MAX_IMPORT_BYTES
+
+
+def test_the_dashboard_is_a_one_page_app_and_built_files_are_cached_for_good():
+    assert "try_files $uri /index.html;" in block(NGINX, "location / {")
+    assets = block(NGINX, "location /assets/ {")
+    assert "try_files $uri =404;" in assets  # a missing built file is not the dashboard
+    assert "expires 1y;" in assets and "immutable" in assets
+    assert "no-cache" in block(NGINX, "location = /index.html {")
+    assert r"location ~ /\." in NGINX and "deny all;" in NGINX
+
+
+def test_a_flood_is_answered_429_so_it_is_not_mistaken_for_the_starting_page():
+    assert "limit_req_status 429;" in NGINX
+    assert "limit_req_zone $binary_remote_addr" in NGINX
+    assert "error_page 502 503 504 /starting.html;" in NGINX
+
+
+def test_the_starting_page_exists_reloads_itself_and_promises_nothing_wrong():
+    page = (DEPLOY / "nginx" / "starting.html").read_text(encoding="utf-8")
+    assert 'http-equiv="refresh"' in page and "CredLens is starting" in page
+    assert "Decision support only" in page
+    for word in ("approved", "declined", "eligible"):
+        assert word not in page.lower()
+    assert "/opt/credlens/deploy/nginx" in NGINX
+
+
+def test_the_security_headers_are_on_the_page():
+    for header in (
+        "X-Content-Type-Options",
+        "X-Frame-Options",
+        "Referrer-Policy",
+        "Permissions-Policy",
+        "Content-Security-Policy",
+    ):
+        assert f"add_header {header} " in block(NGINX, "server {")
+    index = block(NGINX, "location = /index.html {")
+    assert "Content-Security-Policy" in index and "frame-ancestors 'none'" in index
