@@ -93,4 +93,11 @@ A request with a wrong shape is the usual FastAPI 422.
   with the rule the scorer uses). `total` counts all pages; `counts` gives the records per status for
   the merchant filter (use it for tiles; it ignores the `status` filter). `limit` is 1 to 500
   (default 100). Newest consent last per merchant; ordered by merchant id.
+- **Ready.** `GET /ready` (no token) is 200 when the database is open and the scorer is built,
+  else 503 with the plain reasons. The API's port does not answer at all while the scorer is being
+  built (30 to 60 seconds), so a script must treat "not answering" as "starting". `deploy/wait_for_api.py`
+  does that.
+- **Production.** With `CREDLENS_ENV=production` the API serves no `/docs`, `/redoc` or `/openapi.json`.
+  `CREDLENS_CORS_ORIGINS` lists the browser origins allowed to call it (empty: none; unset: the
+  Vite dev server).
 - **Not built:** a consent revoke endpoint (see Consent).

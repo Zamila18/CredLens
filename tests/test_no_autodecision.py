@@ -38,6 +38,7 @@ def every_endpoint(merchant_id: str) -> list[tuple[str, str, dict]]:
     """
     return [
         ("GET", "/health", {}),
+        ("GET", "/ready", {}),
         ("GET", "/merchants", {}),
         ("GET", f"/merchants/{merchant_id}", {}),
         ("GET", f"/merchants/{merchant_id}/score", {}),

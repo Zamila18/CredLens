@@ -46,6 +46,16 @@ class Reason(BaseModel):
     )
 
 
+class ReadyResponse(BaseModel):
+    """GET /ready: can the API answer yet? (503 with the same body when it cannot.)"""
+
+    ready: bool
+    scorer: bool = Field(description="The scorer has been built.")
+    database: bool = Field(description="The database is open and has its tables.")
+    model_version: str | None = Field(default=None, description="The model the scores come from.")
+    problems: list[str] = Field(default=[], description="Plain reasons, when not ready.")
+
+
 class BandRules(BaseModel):
     """The lines that turn a score and a coverage into a band, for one data mode.
 

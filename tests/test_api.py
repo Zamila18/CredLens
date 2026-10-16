@@ -24,7 +24,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from src.api import model_card_view
-from src.api.main import app
+from src.api.main import app, create_app
 from src.api.schemas import (
     AuditEntry,
     ConsentList,
@@ -34,6 +34,7 @@ from src.api.schemas import (
     MerchantQueueItem,
     ModelCard,
     QuestionnaireSummary,
+    ReadyResponse,
     ScoreResponse,
 )
 from src.api.state import Services
@@ -125,6 +126,7 @@ def test_openapi_spec_is_published():
     paths = response.json()["paths"]
     assert set(paths) == {
         "/health",
+        "/ready",
         "/merchants",
         "/merchants/{merchant_id}",
         "/merchants/{merchant_id}/score",
@@ -1086,6 +1088,95 @@ def test_a_data_source_whose_rows_may_not_be_shown_has_no_merchant_pages(api, ap
         assert response.status_code == 403, url
         assert response.json()["detail"]["code"] == "rows_not_shown", url
     assert (count(api_world, db.Decision), count(api_world, db.Questionnaire)) == before
+
+
+# --- starting up and running in production ----------------------------------------------
+
+
+def test_ready_says_yes_only_when_the_database_and_the_scorer_are_there(api, api_world):
+    answer = api.get("/ready")  # no token needed
+    assert answer.status_code == 200
+    body = ReadyResponse.model_validate(answer.json())
+    assert body.ready and body.scorer and body.database and body.problems == []
+    assert body.model_version == "test-version"
+
+    app.state.services = Services(
+        config=api_world.config,
+        engine=api_world.engine,
+        scorer=None,
+        scorer_error="Traceback in /secret/path/model.joblib",
+    )
+    answer = api.get("/ready")
+    assert answer.status_code == 503
+    body = ReadyResponse.model_validate(answer.json())
+    assert not body.ready and not body.scorer and body.database and body.model_version is None
+    assert "python -m src.api.preflight" in body.problems[0]
+    assert "secret" not in answer.text and "model.joblib" not in answer.text
+
+    app.state.services = Services(
+        config=api_world.config,
+        engine=api_world.engine,
+        scorer=api_world.services.scorer,
+        database_error="the database file /secret/app.db is empty",
+    )
+    answer = api.get("/ready")
+    assert answer.status_code == 503 and answer.json()["database"] is False
+    assert "secret" not in answer.text
+
+
+def test_ready_before_the_api_has_finished_starting():
+    answer = TestClient(app).get("/ready")
+    assert answer.status_code == 503
+    assert answer.json()["problems"] == ["The API is still starting."]
+    assert TestClient(app).get("/health").status_code == 200
+
+
+def test_production_switches_off_the_pages_that_list_every_endpoint(api_world):
+    production = create_app(production=True)
+    production.state.services = api_world.services
+    shut = TestClient(production)
+    for path in ("/docs", "/redoc", "/openapi.json"):
+        assert shut.get(path).status_code == 404, path
+    assert shut.get("/health").status_code == 200 and shut.get("/ready").status_code == 200
+    assert shut.get("/merchants", headers=OFFICER).status_code == 200
+    development = TestClient(create_app(production=False))
+    for path in ("/docs", "/redoc", "/openapi.json"):
+        assert development.get(path).status_code == 200, path
+
+
+def test_the_environment_variable_decides_whether_the_real_app_is_in_production():
+    import os
+    import subprocess
+    import sys
+
+    code = "from src.api.main import app; print(app.openapi_url, app.docs_url)"
+    for value, expected in (("production", "None None"), ("", "/openapi.json /docs")):
+        env = {**os.environ, "CREDLENS_ENV": value}
+        done = subprocess.run(
+            [sys.executable, "-c", code], capture_output=True, text=True, env=env, check=True
+        )
+        assert done.stdout.strip() == expected, value
+
+
+def test_a_server_can_allow_no_browser_origin_or_exactly_its_own(monkeypatch):
+    preflight = {
+        "Access-Control-Request-Method": "GET",
+        "Access-Control-Request-Headers": "x-demo-token",
+    }
+
+    def allowed(origin: str, **kwargs) -> bool:
+        reply = TestClient(create_app(**kwargs)).options(
+            "/merchants", headers={"Origin": origin, **preflight}
+        )
+        return reply.headers.get("access-control-allow-origin") == origin
+
+    assert allowed("http://localhost:5173")  # the default is the Vite dev server
+    assert not allowed("http://localhost:5173", cors_origins=[])
+    monkeypatch.setenv("CREDLENS_CORS_ORIGINS", "")
+    assert not allowed("http://localhost:5173")
+    monkeypatch.setenv("CREDLENS_CORS_ORIGINS", "https://credlens.example, https://b.example")
+    assert allowed("https://credlens.example") and allowed("https://b.example")
+    assert not allowed("http://localhost:5173") and not allowed("https://evil.example")
 
 
 # --- the browser ------------------------------------------------------------------------
