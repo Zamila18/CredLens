@@ -13,7 +13,7 @@ Before you run it:
      Without the API the checks that need it are skipped and said so.
 
     python deploy/test_nginx_local.py                 run the checks, then clean up
-    python deploy/test_nginx_local.py --keep-running  leave the site on http://localhost:8080
+    python deploy/test_nginx_local.py --keep-running  leave the site on http://localhost:18080
                                                       (user: demo, password: demo-test)
     stop it later with:        docker rm -f credlens-nginx-site
 
@@ -35,6 +35,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
@@ -50,12 +51,15 @@ USER, PASSWORD = "demo", "demo-test"
 UPSTREAM = "http://127.0.0.1:8000/"
 # container name -> port on this laptop
 SITE, ECHO, DEAD = "credlens-nginx-site", "credlens-nginx-echo", "credlens-nginx-dead"
-PORTS = {SITE: 8080, ECHO: 8082, DEAD: 8081}
+PORTS = {SITE: 18080, ECHO: 18082, DEAD: 18081}
 MEGABYTE = 1024 * 1024
 
 
 def docker(*args: str, check: bool = True) -> subprocess.CompletedProcess:
-    return subprocess.run(["docker", *args], capture_output=True, text=True, check=check)
+    done = subprocess.run(["docker", *args], capture_output=True, text=True)
+    if check and done.returncode != 0:
+        raise SystemExit(f"docker {args[0]} failed: {done.stderr.strip()}")
+    return done
 
 
 def basic(user: str = USER, password: str = PASSWORD) -> dict[str, str]:
@@ -178,7 +182,10 @@ def check_dashboard(r: Report, site: str) -> None:
     if asset is not None:
         status, headers, _ = get(site + f"/assets/{asset.name}", basic())
         cache = headers.get("Cache-Control", "")
-        r.check("a built file is kept for a year", status == 200 and "immutable" in cache, cache)
+        kept = "max-age=31536000" in cache and "immutable" in cache
+        r.check("a built file is kept for a year", status == 200 and kept, cache)
+        sent = headers.get_all("Cache-Control") or []
+        r.check("with one Cache-Control header, not two", len(sent) == 1, str(sent))
     status, _, body = get(site + "/assets/missing-file.js", basic())
     r.check("a missing built file is 404, not the dashboard", status == 404, str(status))
     for hidden in ("/.env", "/.git/config", "/assets/.env"):
@@ -226,7 +233,11 @@ def check_api_down(r: Report, dead_site: str) -> None:
 
 
 def check_flood(r: Report, site: str) -> None:
-    codes = {get(site + "/favicon.svg", basic())[0] for _ in range(150)}
+    def one(_: int) -> int:
+        return get(site + "/favicon.svg", basic())[0]
+
+    with ThreadPoolExecutor(max_workers=40) as pool:
+        codes = set(pool.map(one, range(400)))
     r.check("a flood is answered 429, never 'starting' (503)", 429 in codes and 503 not in codes,
             str(sorted(codes)))
 

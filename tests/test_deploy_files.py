@@ -236,7 +236,8 @@ def test_the_dashboard_is_a_one_page_app_and_built_files_are_cached_for_good():
     assert "try_files $uri /index.html;" in block(NGINX, "location / {")
     assets = block(NGINX, "location /assets/ {")
     assert "try_files $uri =404;" in assets  # a missing built file is not the dashboard
-    assert "expires 1y;" in assets and "immutable" in assets
+    assert "max-age=31536000" in assets and "immutable" in assets
+    assert "expires" not in assets  # `expires` would add a second Cache-Control header
     assert "no-cache" in block(NGINX, "location = /index.html {")
     assert r"location ~ /\." in NGINX and "deny all;" in NGINX
 
