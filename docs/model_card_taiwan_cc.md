@@ -19,7 +19,7 @@ A check of the method on public data with real outcomes. This model is not for s
 ## Model
 
 - **Model in use:** logistic regression, calibration: isotonic regression.
-- **Why this model:** LightGBM adds +0.0181 AUC over the logistic regression (range +0.0099 to +0.0265; the whole range must reach +0.0100). Not met: whole gain range reaches the threshold. (The simpler model stays unless the other is clearly better.)
+- **Why this model:** LightGBM adds +0.0181 AUC over the logistic regression (range +0.0099 to +0.0265). It is used only if the whole range reaches +0.0100 and its Brier score is not worse. Here the whole range of the gain does not reach it, so the logistic regression stays. (The simpler model stays unless the other is clearly better.)
 - **Inputs** (each can only push the score the way its meaning says; how much data exists about a borrower is never an input):
   - Of the last six months in which the card was used, the share with no late payment
   - The longest payment delay, in months, in the last six months

@@ -21,8 +21,8 @@ import { CheckIcon } from '@/components/icons'
 import { Card, Eyebrow, Page } from '@/components/Page'
 import { Segmented } from '@/components/Segmented'
 import { Button } from '@/components/ui/button'
-import { humanize } from '@/lib/consent'
 import { fmtDate } from '@/lib/format'
+import { listInWords, useT, valueText } from '@/lib/i18n'
 import { hasQueue } from '@/lib/modes'
 import { text } from '../model/metrics'
 import { ConsentPanel } from './ConsentPanel'
@@ -30,13 +30,6 @@ import { DecisionForm, DecisionHistory, ReadOnlyDecisionNote } from './DecisionP
 import { EvidenceCards, Timeline } from './Evidence'
 import { QuestionnaireForm } from './QuestionnaireForm'
 import { HabitsPanel, NoConsentScore, ScoreCard, WhyMightThisBeWrong, WhyThisScore } from './ScorePanels'
-
-/** ["purchases", "payments", "questionnaire"] -> "purchases, payments and the questionnaire". */
-function listInWords(items: string[]): string {
-  const words = items.map((c) => (c === 'questionnaire' ? 'the questionnaire' : c))
-  if (words.length <= 1) return words.join('')
-  return `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`
-}
 
 /** The latest expiry among the records that are not revoked. */
 function validUntil(consent: ConsentView | undefined): string | null {
@@ -49,9 +42,10 @@ function validUntil(consent: ConsentView | undefined): string | null {
 
 function Header({ profile, consent, queueRow }: { profile: MerchantProfile; consent?: ConsentView; queueRow?: QueueItem }) {
   const { lang, setLang } = useSession()
+  const t = useT()
   const until = consent?.valid ? validUntil(consent) : null
   const consentValid = consent ? consent.valid : profile.consent_valid
-  const place = [profile.district, profile.town_tier].filter(Boolean).join(' · ')
+  const place = [profile.district, profile.town_tier && valueText(profile.town_tier, lang)].filter(Boolean).join(' · ')
 
   return (
     <header className="flex flex-wrap items-start justify-between gap-4">
@@ -60,34 +54,50 @@ function Header({ profile, consent, queueRow }: { profile: MerchantProfile; cons
           <h1 className="m-0 font-mono text-[30px] leading-9 font-semibold tracking-[-0.02em]">{profile.merchant_id}</h1>
           {consentValid ? (
             <Chip tone="strong" className="px-2.5 py-1">
-              <CheckIcon /> {until ? `Consent valid until ${fmtDate(until)}` : 'Consent valid'}
+              <CheckIcon />{' '}
+              {until
+                ? t(`Consent valid until ${fmtDate(until)}`, `অনুমতি বৈধ ${fmtDate(until)} পর্যন্ত`)
+                : t('Consent valid', 'অনুমতি বৈধ')}
             </Chip>
           ) : (
-            <Chip className="px-2.5 py-1">No valid consent</Chip>
+            <Chip className="px-2.5 py-1">{t('No valid consent', 'বৈধ অনুমতি নেই')}</Chip>
           )}
           {queueRow?.status === 'pending' && queueRow.pending_since && (
-            <Chip className="px-2.5 py-1">Pending since {fmtDate(queueRow.pending_since)}</Chip>
+            <Chip className="px-2.5 py-1">
+              {t(`Pending since ${fmtDate(queueRow.pending_since)}`, `${fmtDate(queueRow.pending_since)} থেকে অপেক্ষমাণ`)}
+            </Chip>
           )}
           {queueRow?.status === 'decided' && (
             <Chip tone="strong" className="px-2.5 py-1">
-              Decided
+              {t('Decided', 'সিদ্ধান্ত হয়েছে')}
             </Chip>
           )}
         </div>
         <div className="flex flex-wrap gap-x-[18px] gap-y-1.5 text-sm text-ink-3">
-          {profile.shop_type && <span>{humanize(profile.shop_type)}</span>}
+          {profile.shop_type && <span>{valueText(profile.shop_type, lang)}</span>}
           {place && <span>{place}</span>}
-          {profile.has_trade_license != null && <span>Trade licence: {profile.has_trade_license ? 'yes' : 'no'}</span>}
-          <span>Onboarded {fmtDate(profile.onboarded_at)}</span>
+          {profile.has_trade_license != null && (
+            <span>
+              {t('Trade licence', 'ট্রেড লাইসেন্স')}: {profile.has_trade_license ? t('yes', 'আছে') : t('no', 'নেই')}
+            </span>
+          )}
+          <span>{t(`Onboarded ${fmtDate(profile.onboarded_at)}`, `যুক্ত হয়েছে ${fmtDate(profile.onboarded_at)}`)}</span>
         </div>
         {consent && consent.data_categories.length > 0 && (
-          <div className="text-[13px] text-muted-2">Consent covers {listInWords(consent.data_categories)}.</div>
+          <div className="text-[13px] text-muted-2">
+            {t(
+              `Consent covers ${listInWords(consent.data_categories, lang)}.`,
+              `অনুমতিতে আছে: ${listInWords(consent.data_categories, lang)}।`,
+            )}
+          </div>
         )}
       </div>
       <div className="flex flex-col items-end gap-1.5">
-        <Eyebrow>Reason language</Eyebrow>
+        <Eyebrow>
+          Language · <span className="font-bn normal-case">ভাষা</span>
+        </Eyebrow>
         <Segmented<Lang>
-          label="Reason language"
+          label="Language / ভাষা"
           value={lang}
           onChange={setLang}
           options={[
@@ -101,7 +111,7 @@ function Header({ profile, consent, queueRow }: { profile: MerchantProfile; cons
 }
 
 function Loading({ what }: { what: string }) {
-  return <Card className="p-5 text-sm text-muted">Loading {what}…</Card>
+  return <Card className="p-5 text-sm text-muted">{what}</Card>
 }
 
 /** One merchant's page. The key makes React start fresh for every merchant (no answers carried over). */
@@ -112,6 +122,7 @@ export function MerchantPage() {
 
 function MerchantView({ merchantId }: { merchantId: string }) {
   const { lang, role } = useSession()
+  const t = useT()
   const id = encodeURIComponent(merchantId)
   const isOfficer = role === 'officer'
 
@@ -129,7 +140,10 @@ function MerchantView({ merchantId }: { merchantId: string }) {
   const decisions = useApi<Decision[]>(ask('/decisions'), { merchant_id: merchantId })
   // The outcome the score predicts, in the model card's own words (the 30-day rule lives in config).
   const card = useApi<ModelCard>('/model/card')
-  const outcome = card.data ? text(card.data.metrics, 'label') : undefined
+  // In Bangla the card's `label_bn` is used when the card has one (part 4 adds it).
+  const outcome = card.data
+    ? ((lang === 'bn' ? text(card.data.metrics, 'label_bn') : undefined) ?? text(card.data.metrics, 'label'))
+    : undefined
 
   // Questionnaire answers saved on this visit replace the ones in the profile.
   const [savedAnswers, setSavedAnswers] = useState<MerchantProfile['questionnaire'] | undefined>(undefined)
@@ -137,9 +151,9 @@ function MerchantView({ merchantId }: { merchantId: string }) {
   const [justSaved, setJustSaved] = useState(false)
 
   const breadcrumb = (
-    <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-[13px] text-muted">
+    <nav aria-label={t('Breadcrumb', 'পথ')} className="flex items-center gap-2 text-[13px] text-muted">
       <Link to="/" className="font-medium no-underline">
-        Review queue
+        {t('Review queue', 'পর্যালোচনার তালিকা')}
       </Link>
       <span aria-hidden="true">/</span>
       <span className="font-mono" aria-current="page">
@@ -153,10 +167,15 @@ function MerchantView({ merchantId }: { merchantId: string }) {
       <Page wide>
         {breadcrumb}
         <Card className="flex max-w-[720px] flex-col gap-2 p-5 text-sm text-ink-3">
-          <span className="font-semibold text-ink">No merchant pages for public data</span>
-          <span>This data source shows its model card and totals only. Individual rows are not shown.</span>
+          <span className="font-semibold text-ink">{t('No merchant pages for public data', 'পাবলিক ডেটায় মার্চেন্টের পাতা নেই')}</span>
+          <span>
+            {t(
+              'This data source shows its model card and totals only. Individual rows are not shown.',
+              'এই ডেটার উৎস শুধু তার মডেল কার্ড ও মোট হিসাব দেখায়। আলাদা সারি দেখানো হয় না।',
+            )}
+          </span>
           <Link to="/model" className="font-semibold">
-            Open the model card
+            {t('Open the model card', 'মডেল কার্ড খুলুন')}
           </Link>
         </Card>
       </Page>
@@ -174,7 +193,7 @@ function MerchantView({ merchantId }: { merchantId: string }) {
     return (
       <Page wide>
         {breadcrumb}
-        <Loading what="the merchant" />
+        <Loading what={t('Loading the merchant…', 'মার্চেন্টের তথ্য আসছে…')} />
       </Page>
     )
   }
@@ -185,15 +204,17 @@ function MerchantView({ merchantId }: { merchantId: string }) {
 
   let habitsAction = null
   if (justSaved && !answering) {
-    habitsAction = <span className="font-medium text-lens-dark">Saved. The score did not change.</span>
+    habitsAction = (
+      <span className="font-medium text-lens-dark">{t('Saved. The score did not change.', 'রাখা হয়েছে। স্কোর বদলায়নি।')}</span>
+    )
   } else if (isOfficer && !answering && coversQuestionnaire) {
     habitsAction = (
       <Button variant="outline" size="sm" onClick={() => { setAnswering(true); setJustSaved(false) }}>
-        Record new answers
+        {t('Record new answers', 'নতুন উত্তর লিখুন')}
       </Button>
     )
   } else if (isOfficer && !coversQuestionnaire) {
-    habitsAction = <span>Consent does not cover the questionnaire.</span>
+    habitsAction = <span>{t('Consent does not cover the questionnaire.', 'অনুমতিতে প্রশ্নাবলি নেই।')}</span>
   }
 
   return (
@@ -218,7 +239,7 @@ function MerchantView({ merchantId }: { merchantId: string }) {
           ) : score.error ? (
             <ErrorCallout error={score.error} />
           ) : !score.data ? (
-            <Loading what="the score" />
+            <Loading what={t('Loading the score…', 'স্কোর আসছে…')} />
           ) : (
             <>
               <ScoreCard score={score.data} lang={lang} outcome={outcome} />
@@ -245,7 +266,7 @@ function MerchantView({ merchantId }: { merchantId: string }) {
           ) : consent.data ? (
             <ConsentPanel consent={consent.data} />
           ) : (
-            <Loading what="the consent record" />
+            <Loading what={t('Loading the consent record…', 'অনুমতির রেকর্ড আসছে…')} />
           )}
           {/* No decision without a score: no form when consent is missing or the score failed. */}
           {score.data && (isOfficer ? <DecisionForm merchantId={merchantId} score={score.data} onRecorded={decisions.reload} /> : <ReadOnlyDecisionNote />)}

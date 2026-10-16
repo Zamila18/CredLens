@@ -19,7 +19,7 @@ Decision support for credit officers: a repayment score with its coverage, band 
 ## Model
 
 - **Model in use:** logistic regression, calibration: none (the model's probabilities were already well calibrated).
-- **Why this model:** LightGBM adds +0.0128 AUC over the logistic regression (range +0.0032 to +0.0212; the whole range must reach +0.0100). Not met: whole gain range reaches the threshold. (The simpler model stays unless the other is clearly better.)
+- **Why this model:** LightGBM adds +0.0128 AUC over the logistic regression (range +0.0032 to +0.0212). It is used only if the whole range reaches +0.0100 and its Brier score is not worse. Here the whole range of the gain does not reach it, so the logistic regression stays. (The simpler model stays unless the other is clearly better.)
 - **Inputs** (each can only push the score the way its meaning says; how much data exists about a borrower is never an input):
   - Purchase value last 90 days vs the 90 before, %
   - Chance that two of the merchant's purchases in the last 90 days came from the same supplier (counted over all pairs of purchases, so it does not depend on how many purchases there were)

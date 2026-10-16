@@ -907,3 +907,13 @@ def test_another_modes_model_card_can_be_read(api):
     card = ModelCard.model_validate(response.json())
     assert card.data_mode == "taiwan_cc"
     assert api.get("/model/card?mode=nowhere", headers=VIEWER).status_code == 422
+
+
+def test_every_timeline_event_has_a_bangla_label(api, merchants):
+    profile = api.get(f"/merchants/{merchants['consenting'][2]}", headers=OFFICER).json()
+    events = profile["timeline"]
+    assert events
+    for event in events:
+        assert event["label_bn"], event
+        assert "_" not in event["label_bn"], "codes are put into words"
+

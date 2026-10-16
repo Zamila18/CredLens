@@ -170,6 +170,64 @@ def questionnaire_summary(session: Session, merchant_id: str) -> QuestionnaireSu
     )
 
 
+# Bangla for the codes the timeline shows (purchase categories, delivery outcomes and
+# return reasons). A code missing here is shown as it is, with spaces for underscores.
+CATEGORY_BN = {
+    "household": "গৃহস্থালি পণ্য",
+    "spices": "মসলা",
+    "beverages": "পানীয়",
+    "cooking_oil": "রান্নার তেল",
+    "rice_grain": "চাল ও শস্য",
+    "snacks": "নাস্তা",
+    "clothing": "পোশাক",
+    "fabrics": "কাপড়",
+    "footwear": "জুতা",
+    "accessories": "অনুষঙ্গ",
+    "lighting": "বাতি",
+    "small_appliances": "ছোট যন্ত্রপাতি",
+    "mobile_accessories": "মোবাইলের অনুষঙ্গ",
+    "personal_care": "ব্যক্তিগত যত্ন",
+    "batteries": "ব্যাটারি",
+    "medicine": "ওষুধ",
+    "baby_care": "শিশুর যত্ন",
+    "health_devices": "স্বাস্থ্য সরঞ্জাম",
+    "stationery": "স্টেশনারি",
+    "hardware": "হার্ডওয়্যার",
+    "toys": "খেলনা",
+    "cosmetics": "প্রসাধনী",
+}
+DELIVERY_BN = {
+    "delivered": "পার্সেল পৌঁছেছে",
+    "returned": "পার্সেল ফেরত এসেছে",
+    "failed": "পার্সেল পৌঁছানো যায়নি",
+    "cancelled": "পার্সেল বাতিল",
+}
+REASON_BN = {
+    "address_issue": "ঠিকানার সমস্যা",
+    "rider_issue": "রাইডারের সমস্যা",
+    "refused": "ক্রেতা নেননি",
+    "wrong_item": "ভুল পণ্য",
+    "other": "অন্যান্য",
+}
+
+
+def _bn(code: str | None, words: dict[str, str]) -> str:
+    """The Bangla of a code, or the code in plain words when there is none."""
+    return words.get(code or "", _words(code))
+
+
+def _payment_label_bn(due: date, paid: date) -> str:
+    late = (paid - due).days
+    if late == 0:
+        return "নির্ধারিত দিনে পেমেন্ট"
+    return f"নির্ধারিত দিনের {abs(late)} দিন {'পরে' if late > 0 else 'আগে'} পেমেন্ট"
+
+
+def _delivery_label_bn(status: str, reason: str | None) -> str:
+    detail = f" ({_bn(reason, REASON_BN)})" if reason else ""
+    return DELIVERY_BN.get(status, f"পার্সেল {status}") + detail
+
+
 def _payment_label(due: date, paid: date) -> str:
     late = (paid - due).days
     if late == 0:
@@ -194,7 +252,7 @@ def timeline(session: Session, merchant_id: str, as_of: date) -> list[TimelineEv
 
     An unpaid instalment is listed from the day it was due. One that is not due yet is not.
     """
-    events: list[tuple[date, str, str, Any]] = []
+    events: list[tuple[date, str, str, Any, str]] = []
     purchases = session.execute(
         select(db.Purchase.purchase_date, db.Purchase.category, db.Purchase.amount_bdt).where(
             db.Purchase.merchant_id == merchant_id
@@ -202,19 +260,28 @@ def timeline(session: Session, merchant_id: str, as_of: date) -> list[TimelineEv
     )
     for day, category, amount in purchases:
         label = f"Stock purchase: {_words(category)}" if category else "Stock purchase"
-        events.append((day, "purchase", label, amount))
+        label_bn = f"মাল কেনা: {_bn(category, CATEGORY_BN)}" if category else "মাল কেনা"
+        events.append((day, "purchase", label, amount, label_bn))
     parcels = session.execute(
         select(db.Delivery.dispatched_at, db.Delivery.status, db.Delivery.return_reason).where(
             db.Delivery.merchant_id == merchant_id
         )
     )
     for moment, status, reason in parcels:
-        events.append((moment.date(), "delivery", _delivery_label(status, reason), None))
+        events.append(
+            (
+                moment.date(),
+                "delivery",
+                _delivery_label(status, reason),
+                None,
+                _delivery_label_bn(status, reason),
+            )
+        )
     loans = session.execute(
         select(db.Loan.issued_at, db.Loan.limit_bdt).where(db.Loan.merchant_id == merchant_id)
     )
     for day, limit in loans:
-        events.append((day, "loan", "Loan issued", limit))
+        events.append((day, "loan", "Loan issued", limit, "ঋণ দেওয়া হয়েছে"))
     payments = session.execute(
         select(
             db.Payment.due_date,
@@ -225,16 +292,33 @@ def timeline(session: Session, merchant_id: str, as_of: date) -> list[TimelineEv
     )
     for due, paid, amount_due, amount_paid in payments:
         if paid is not None:
-            events.append((paid, "payment", _payment_label(due, paid), amount_paid))
+            events.append(
+                (
+                    paid,
+                    "payment",
+                    _payment_label(due, paid),
+                    amount_paid,
+                    _payment_label_bn(due, paid),
+                )
+            )
         elif due <= as_of:
-            events.append((due, "payment", "Payment due; no payment recorded", amount_due))
+            events.append(
+                (
+                    due,
+                    "payment",
+                    "Payment due; no payment recorded",
+                    amount_due,
+                    "পেমেন্টের দিন পেরিয়েছে; কোনো পেমেন্ট নেই",
+                )
+            )
     events.sort(key=lambda event: (event[0], STREAM_ORDER[event[1]], event[2]))
     return [
         TimelineEvent(
             date=day.isoformat(),
             stream=stream,
             label=label,
+            label_bn=label_bn,
             amount_bdt=None if amount is None else float(amount),
         )
-        for day, stream, label, amount in events
+        for day, stream, label, amount, label_bn in events
     ]

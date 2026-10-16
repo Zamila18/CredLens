@@ -19,7 +19,7 @@ A check of the method on public data with real outcomes. This model is not for s
 ## Model
 
 - **Model in use:** logistic regression, calibration: Platt scaling.
-- **Why this model:** LightGBM adds -0.2377 AUC over the logistic regression (range -0.2550 to -0.2187; the whole range must reach +0.0100). Not met: whole gain range reaches the threshold, brier is not worse. (The simpler model stays unless the other is clearly better.)
+- **Why this model:** LightGBM adds -0.2377 AUC over the logistic regression (range -0.2550 to -0.2187). It is used only if the whole range reaches +0.0100 and its Brier score is not worse. Here the whole range of the gain does not reach it and its Brier score is worse, so the logistic regression stays. (The simpler model stays unless the other is clearly better.)
 - **Inputs** (each can only push the score the way its meaning says; how much data exists about a borrower is never an input):
   - The number of months over which the loan is to be repaid
   - 1 when the field partner, not the lender, carries the loss if the borrower does not pay

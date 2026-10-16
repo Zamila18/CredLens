@@ -9,6 +9,7 @@
  */
 import type { Band } from '@/api/types'
 import { cn } from '@/lib/utils'
+import { bandText, useLang, useT } from '@/lib/i18n'
 import { BAND_ARC, scoreNumberClass } from './band'
 import { BandChip } from './BandChip'
 import { LockIcon } from './icons'
@@ -34,10 +35,14 @@ export function LensDial(props: Scored | NoConsent) {
   const band = scored ? props.band : null
   const warn = scored ? props.lowScoreWarning : false
   const coverPct = Math.round(coverage * 100)
-
+  const t = useT()
+  const lang = useLang()
   const aria = scored
-    ? `Score ${score} of 100, band ${band}, coverage ${coverPct} percent`
-    : 'No score: consent needed'
+    ? t(
+        `Score ${score} of 100, band ${band}, coverage ${coverPct} percent`,
+        `স্কোর ১০০-এর মধ্যে ${score}, ব্যান্ড ${bandText(band, lang)}, কভারেজ ${coverPct} শতাংশ`,
+      )
+    : t('No score: consent needed', 'কোনো স্কোর নেই: অনুমতি দরকার')
 
   return (
     <div className="flex w-[220px] flex-col items-center gap-2.5">
@@ -68,19 +73,19 @@ export function LensDial(props: Scored | NoConsent) {
               <span className={cn('font-mono text-[54px] leading-[58px] font-semibold tracking-[-0.03em] tabular', scoreNumberClass(band, warn))}>
                 {score}
               </span>
-              <span className="-mt-1 text-xs text-muted-2">of 100</span>
+              <span className="-mt-1 text-xs text-muted-2">{t('of 100', '১০০-এর মধ্যে')}</span>
             </>
           ) : (
             <>
               <LockIcon size={26} />
-              <span className="mt-1 text-[13px] font-semibold text-neutral-text">No score</span>
+              <span className="mt-1 text-[13px] font-semibold text-neutral-text">{t('No score', 'কোনো স্কোর নেই')}</span>
             </>
           )}
         </div>
       </div>
       <div className="flex flex-col items-center gap-1.5">
-        <BandChip band={band} lowScoreWarning={warn} noneLabel="Consent needed" size="md" />
-        <span className="font-mono text-xs text-muted tabular">{scored ? `coverage ${coverPct}%` : 'scoring blocked'}</span>
+        <BandChip band={band} lowScoreWarning={warn} noneLabel={t('Consent needed', 'অনুমতি দরকার')} size="md" />
+        <span className="font-mono text-xs text-muted tabular">{scored ? `${t('coverage', 'কভারেজ')} ${coverPct}%` : t('scoring blocked', 'স্কোর বন্ধ')}</span>
       </div>
     </div>
   )

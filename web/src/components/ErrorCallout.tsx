@@ -5,6 +5,7 @@
  */
 import type { ApiError } from '@/api/client'
 import { describeError } from '@/api/errors'
+import { useLang } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 type Props = {
@@ -13,11 +14,12 @@ type Props = {
 }
 
 export function ErrorCallout({ error, className }: Props) {
-  const copy = describeError(error)
+  const lang = useLang()
+  const copy = describeError(error, lang)
   return (
     <div role="alert" className={cn('flex gap-3.5 rounded-card border border-card-line bg-card p-[18px]', className)}>
       <span className="self-start rounded-md bg-neutral-chip px-2 py-[3px] font-mono text-xs font-semibold whitespace-nowrap text-neutral-text">
-        {error.status === 0 ? 'no reply' : error.status}
+        {error.status === 0 ? (lang === 'bn' ? 'সাড়া নেই' : 'no reply') : error.status}
       </span>
       <div className="flex min-w-0 flex-col gap-1">
         <span className="font-semibold">{copy.title}</span>

@@ -15,6 +15,10 @@ Every number comes from a report file written by an earlier step, never typed in
 The words about each data source (what it is, its terms, what it shows and does not)
 are written once below, from docs/DATA_SOURCES.md and reports/REAL_LABEL_RESULTS.md.
 
+Every sentence has a Bangla twin from src/model/model_card_bn.py: `<key>_bn` in `metrics`
+and `limitations_bn`, for the dashboard's English/Bangla switch. The Markdown page stays
+English.
+
 Two outputs per mode:
     reports/<mode>/model_card.json   served by GET /model/card (shape: ModelCard in
                                      src/api/schemas.py; checked before writing)
@@ -33,10 +37,11 @@ from typing import Any
 from src.api.schemas import ModelCard
 from src.config import PROJECT_ROOT, VALID_MODES, banner_text, load_config
 from src.features.dictionary import SYNTHETIC_MODE, features_for_mode, load_dictionary
+from src.model import model_card_bn as bn
 from src.model.fairness import CANDIDATE, FLAGGED, REPORT_FILE, TOO_FEW
 from src.model.final_test import RESULTS_FILE
 from src.model.holdout_ledger import read_ledger
-from src.model.train import DATA_MISSING, METRICS_FILE
+from src.model.train import DATA_MISSING, METRICS_FILE, choice_reason
 
 REPORTS_DIR = PROJECT_ROOT / "reports"
 DOCS_DIR = PROJECT_ROOT / "docs"
@@ -308,6 +313,18 @@ def input_meanings(inputs: list[str], mode: str) -> list[str]:
     return [entries[name]["definition"] for name in inputs]
 
 
+def _choice(model_choice: dict[str, Any], config: dict[str, Any]) -> str:
+    """Why the model in use was chosen, said from the checks the training run recorded.
+
+    Built here rather than copied from the report, so reports written before the wording
+    was fixed (Oct 16) read correctly too, with no retraining.
+    """
+    if "checks" not in model_choice:
+        return model_choice["reason"]
+    needed = config["model"]["prefer_simple_if_auc_gain_below"]
+    return choice_reason(model_choice["auc_gain_of_lightgbm"], model_choice["checks"], needed)
+
+
 def card_metrics(metrics: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
     """The numbers and facts of the training report that a reader of the card needs."""
     validation = metrics["validation"]
@@ -323,7 +340,7 @@ def card_metrics(metrics: dict[str, Any], config: dict[str, Any]) -> dict[str, A
         "train_loans": float(metrics["split"]["sizes"]["train"]),
         "validation_loans": float(metrics["split"]["sizes"]["validation"]),
         "model": PLAIN.get(metrics["model"], metrics["model"]),
-        "model_choice": metrics["model_choice"]["reason"],
+        "model_choice": _choice(metrics["model_choice"], config),
         "calibration": PLAIN.get(
             metrics["calibration"]["method"], metrics["calibration"]["method"]
         ),
@@ -345,7 +362,21 @@ def card_metrics(metrics: dict[str, Any], config: dict[str, Any]) -> dict[str, A
         "auc_gain_over_simpler_model": _round(gain.get("auc_gain")),
         "auc_gain_over_simpler_model_range": _round(gain.get("range")),
         "auc_benchmark": config["sanity"]["useful_auc_benchmark"],
+        # Calibration in bins (the reliability plot), the lowest-scored loans, and the
+        # ranking under and above the coverage line, all on the validation period.
+        "calibration_mean_predicted": [
+            _round(row["mean_predicted"]) for row in validation["calibration"]
+        ],
+        "calibration_share_repaid": [
+            _round(row["share_repaid"]) for row in validation["calibration"]
+        ],
+        "lowest_k": float(config["evaluation"]["top_k"]),
+        "not_repaid_rate_in_lowest_k": _round(point["not_repaid_rate_in_lowest_k"]),
+        "not_repaid_rate_overall": _round(1 - validation["share_repaid"]),
     }
+    for name, part in metrics.get("validation_by_coverage", {}).items():
+        result[f"auc_{name}"] = _round(part["roc_auc"])
+        result[f"loans_{name}"] = float(part["loans"])
     for band, numbers in bands.items():
         key = band.lower().replace(" ", "_")
         result[f"band_{key}_share"] = _round(numbers["share"])
@@ -452,6 +483,7 @@ def build_card(mode: str, config: dict[str, Any], reports_dir: Path = REPORTS_DI
     )
     if mode == SYNTHETIC_MODE and ablation is not None:
         numbers["ablation_runs"] = ABLATION_RUNS
+    numbers.update(bangla_texts(mode, metrics, numbers, fairness, test, config))
     card = {
         "data_mode": mode,
         "model_version": metrics["model_version"],
@@ -462,9 +494,60 @@ def build_card(mode: str, config: dict[str, Any], reports_dir: Path = REPORTS_DI
         "limitations": MODE_LIMITS[mode]
         + ([TIME_SPLIT_LIMIT] if metrics["split"]["method"] == "time" else [])
         + COMMON_LIMITS,
+        "limitations_bn": bn.MODE_LIMITS[mode]
+        + ([bn.TIME_SPLIT_LIMIT] if metrics["split"]["method"] == "time" else [])
+        + bn.COMMON_LIMITS,
     }
     ModelCard.model_validate(card)  # the API must be able to serve it
     return card
+
+
+def bangla_texts(
+    mode: str,
+    metrics: dict[str, Any],
+    numbers: dict[str, Any],
+    fairness: dict[str, Any] | None,
+    test: dict[str, Any] | None,
+    config: dict[str, Any],
+) -> dict[str, str]:
+    """The Bangla twin (`<key>_bn`) of every sentence the card's metrics hold."""
+    split = metrics["split"]["method"]
+    choice = metrics["model_choice"]
+    if "checks" in choice:
+        needed = config["model"]["prefer_simple_if_auc_gain_below"]
+        choice_bn = bn.choice_reason(choice["auc_gain_of_lightgbm"], choice["checks"], needed)
+    else:
+        choice_bn = choice["reason"]
+    simpler_name = metrics["baselines"]["simpler_model"]["name"]
+    inputs = metrics["inputs_used"]
+    english_inputs = numbers["inputs"].split(INPUT_SEPARATOR)
+    texts = {
+        "measured_on_bn": bn.MEASURED_ON,
+        "split_bn": bn.PLAIN.get(split, numbers["split"]),
+        "split_note_bn": bn.SPLIT_NOTE.get(split, numbers["split_note"]),
+        "model_bn": bn.PLAIN.get(metrics["model"], numbers["model"]),
+        "calibration_bn": bn.PLAIN.get(metrics["calibration"]["method"], numbers["calibration"]),
+        "model_choice_bn": choice_bn,
+        "inputs_bn": INPUT_SEPARATOR.join(
+            bn.INPUTS.get(name, english) for name, english in zip(inputs, english_inputs)
+        ),
+        "simpler_model_bn": bn.SIMPLER.get(simpler_name, numbers["simpler_model"]),
+        "data_source_bn": bn.SOURCES[mode]["source"],
+        "terms_bn": bn.SOURCES[mode]["terms"],
+        "label_bn": bn.SOURCES[mode]["label"],
+        "banner_bn": bn.BANNER[mode],
+        "what_this_shows_bn": bn.READING[mode]["shows"],
+        "what_this_does_not_show_bn": bn.READING[mode]["does_not_show"],
+        "group_findings_bn": " ".join(bn.group_findings(fairness, FLAGGED, bn.value_words)),
+        "intended_use_bn": bn.INTENDED_USE if mode == SYNTHETIC_MODE else bn.PUBLIC_USE,
+    }
+    if "ablation_runs" in numbers:
+        texts["ablation_runs_bn"] = bn.ABLATION_RUNS
+    if test is None:
+        texts["test_result_bn"] = bn.TEST_NOT_USED
+    else:
+        texts["test_reading_bn"] = bn.TEST_READING[mode]
+    return texts
 
 
 def _cell(value: Any) -> str:

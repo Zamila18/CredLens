@@ -189,7 +189,8 @@ def test_a_clearly_better_lightgbm_is_chosen(config):
 def test_an_equal_lightgbm_does_not_replace_the_simple_model(config):
     choice = make_choice(noise_simple=0.5, noise_flexible=0.5, config=config)
     assert choice["chosen"] == LOGISTIC_REGRESSION
-    assert "Not met" in choice["reason"]
+    assert choice["reason"].endswith("so the logistic regression stays.")
+    assert "Not met" not in choice["reason"], "the old wording read backwards"
 
 
 def test_a_small_gain_that_may_be_chance_does_not_replace_the_simple_model(config):

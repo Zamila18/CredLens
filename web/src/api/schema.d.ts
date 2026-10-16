@@ -555,6 +555,12 @@ export interface components {
             }[];
             /** Limitations */
             limitations: string[];
+            /**
+             * Limitations Bn
+             * @description The same limitations in Bangla, for the language switch.
+             * @default []
+             */
+            limitations_bn: string[];
         };
         /**
          * PaymentsSummary
@@ -746,6 +752,11 @@ export interface components {
             stream: "purchase" | "delivery" | "payment" | "loan";
             /** Label */
             label: string;
+            /**
+             * Label Bn
+             * @description The same label in Bangla.
+             */
+            label_bn?: string | null;
             /** Amount Bdt */
             amount_bdt?: number | null;
         };

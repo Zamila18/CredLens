@@ -1,0 +1,59 @@
+{
+  "version_id": "synthetic_bd-20261015-005409-9db9d66",
+  "created_at": "2026-10-15T00:54:09",
+  "data_mode": "synthetic_bd",
+  "code_commit": "9db9d66+uncommitted",
+  "data_seed": 42,
+  "delivery_signal_strength": 0.5,
+  "model": "logistic_regression",
+  "calibrator": "none",
+  "feature_list": [
+    "basket_growth",
+    "supplier_repeat_share",
+    "avg_pay_delay_days",
+    "late_pay_count_90d",
+    "ontime_payment_rate",
+    "credit_utilisation",
+    "return_rate_90d",
+    "failed_rate_90d",
+    "cod_remit_ontime_rate",
+    "dispatch_to_delivery_hours"
+  ],
+  "train_window": {
+    "train_from": "2025-01-01",
+    "validation_from": "2026-01-01",
+    "test_from": "2026-04-01",
+    "test_until": "2026-07-01"
+  },
+  "split_method": "time",
+  "validation_metrics": {
+    "roc_auc": 0.7095343071194196,
+    "pr_auc_not_repaid": 0.22963155925406012,
+    "brier": 0.08191852475007164,
+    "calibration_error": 0.011723266973884145,
+    "not_repaid_rate_in_lowest_k": 0.55,
+    "not_repaid_caught_in_lowest": 0.4326241134751773,
+    "precision_at_top_k": 0.95,
+    "share_at_or_above_strong_line": 0.6647872885699642
+  },
+  "validation_ranges": {
+    "roc_auc": [
+      0.6879206245533557,
+      0.7287520030974041
+    ],
+    "pr_auc_not_repaid": [
+      0.2000945761703809,
+      0.2652321501557503
+    ],
+    "brier": [
+      0.07682075871424861,
+      0.08780054896863185
+    ],
+    "calibration_error": [
+      0.010015510379825248,
+      0.021075473364463217
+    ],
+    "resamples_used": 500
+  },
+  "note": "Outputs a probability of repaying in time. Decision support only."
+}

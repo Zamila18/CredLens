@@ -9,7 +9,7 @@
     "train_loans": 68002.0,
     "validation_loans": 66788.0,
     "model": "LightGBM (boosted decision trees)",
-    "model_choice": "LightGBM adds +0.0158 AUC over the logistic regression (range +0.0135 to +0.0181; the whole range must reach +0.0100). Both checks pass.",
+    "model_choice": "LightGBM adds +0.0158 AUC over the logistic regression (range +0.0135 to +0.0181). It is used only if the whole range reaches +0.0100 and its Brier score is not worse. Both hold, so LightGBM is used.",
     "calibration": "Platt scaling",
     "inputs": "One minus the loan-to-value, the part of the vehicle's price the borrower paid up front | Credit-bureau score at disbursement, for borrowers the bureau could score | Overdue earlier loans divided by all earlier loans, at disbursement | Loans that became delinquent in the six months before disbursement | New loans taken in the six months before disbursement | Enquiries the borrower made for loans, as recorded by the bureau",
     "share_repaid": 0.808124,
@@ -37,6 +37,37 @@
       0.049914
     ],
     "auc_benchmark": 0.7,
+    "calibration_mean_predicted": [
+      0.7009,
+      0.7348,
+      0.7634,
+      0.791,
+      0.8016,
+      0.8184,
+      0.8402,
+      0.858,
+      0.8735,
+      0.8996
+    ],
+    "calibration_share_repaid": [
+      0.705,
+      0.7389,
+      0.7661,
+      0.7884,
+      0.7863,
+      0.8139,
+      0.8497,
+      0.859,
+      0.87,
+      0.9039
+    ],
+    "lowest_k": 20.0,
+    "not_repaid_rate_in_lowest_k": 0.5,
+    "not_repaid_rate_overall": 0.191876,
+    "auc_coverage_below_the_line": 0.579593,
+    "loans_coverage_below_the_line": 33705.0,
+    "auc_coverage_at_or_above_the_line": 0.62862,
+    "loans_coverage_at_or_above_the_line": 33083.0,
     "band_strong_share": 0.054621,
     "band_strong_share_repaid": 0.911458,
     "band_review_share": 0.440723,
@@ -76,7 +107,24 @@
     "banner": "Public data: India L&T vehicle loans, not ShopUp data. Decision support only.",
     "what_this_shows": "The thin-file problem in real data: half the borrowers have no bureau record, and for them the model ranks barely better than chance.",
     "what_this_does_not_show": "That the method works: the AUC is well under the 0.70 benchmark. Use this source as the problem statement, not as a result.",
-    "group_findings": "Calibration differs for state (source code) '13' (5,403 loans, 71% repaid): the model expects 11 points more repayment than happened for this group, against 1 point less repayment than happened for everyone else. Ranking differs for state (source code) '12' (1,339 loans): AUC 0.54 against 0.61 for everyone else. Calibration differs for state (source code) '12' (1,339 loans, 79% repaid): the model expects 5 points more repayment than happened for this group, against about as much repayment as happened for everyone else. Calibration differs for state (source code) '19' (406 loans, 89% repaid): the model expects 9 points less repayment than happened for this group, against about as much repayment as happened for everyone else."
+    "group_findings": "Calibration differs for state (source code) '13' (5,403 loans, 71% repaid): the model expects 11 points more repayment than happened for this group, against 1 point less repayment than happened for everyone else. Ranking differs for state (source code) '12' (1,339 loans): AUC 0.54 against 0.61 for everyone else. Calibration differs for state (source code) '12' (1,339 loans, 79% repaid): the model expects 5 points more repayment than happened for this group, against about as much repayment as happened for everyone else. Calibration differs for state (source code) '19' (406 loans, 89% repaid): the model expects 9 points less repayment than happened for this group, against about as much repayment as happened for everyone else.",
+    "measured_on_bn": "যাচাইয়ের সময়; test_ সংখ্যাগুলো আলাদা রাখা পরীক্ষার সময়ের, একবারই ব্যবহৃত",
+    "split_bn": "সময় অনুযায়ী (আগের ঋণে প্রশিক্ষণ, পরের ঋণে মাপ)",
+    "split_note_bn": "ঋণ দেওয়ার তারিখ অনুযায়ী ভাগ। প্রতিটি অংশ পরের অংশ শুরুর আগের দিনে শেষ।",
+    "model_bn": "LightGBM (বুস্টেড ডিসিশন ট্রি)",
+    "calibration_bn": "Platt স্কেলিং",
+    "model_choice_bn": "লজিস্টিক রিগ্রেশনের চেয়ে LightGBM +0.0158 AUC যোগ করে (সীমা +0.0135 থেকে +0.0181)। এটি তখনই ব্যবহার হয়, যখন পুরো সীমা +0.0100-এ পৌঁছায় এবং এর Brier স্কোর খারাপ নয়। দুটিই খাটে, তাই LightGBM ব্যবহার হয়।",
+    "inputs_bn": "এক বিয়োগ লোন-টু-ভ্যালু, অর্থাৎ গাড়ির দামের যে অংশ ঋণগ্রহীতা আগে দিয়েছেন | ঋণ দেওয়ার সময় ক্রেডিট ব্যুরোর স্কোর, যাদের ব্যুরো স্কোর করতে পেরেছে | আগের ঋণের মধ্যে বকেয়া ঋণের ভাগ, ঋণ দেওয়ার সময় | ঋণ দেওয়ার আগের ছয় মাসে খেলাপি হওয়া ঋণ | ঋণ দেওয়ার আগের ছয় মাসে নেওয়া নতুন ঋণ | ব্যুরোর হিসাবে ঋণের জন্য ঋণগ্রহীতার খোঁজ নেওয়ার সংখ্যা",
+    "simpler_model_bn": "শুধু ঋণের শর্ত: ব্যুরো রেকর্ড নেই এমন ঋণগ্রহীতার জন্য এটুকুই আছে",
+    "data_source_bn": "L&T গাড়ির ঋণ, ভারত (Kaggle): আগস্ট থেকে অক্টোবর 2018-এ দেওয়া 233,154টি ঋণ",
+    "terms_bn": "পাতায় ব্যবহারের কোনো শর্ত লেখা নেই",
+    "label_bn": "পরিশোধ: প্রথম কিস্তি নির্ধারিত দিনে দেওয়া হয়েছে (আগাম সতর্কতার ফলাফল, শেষ পর্যন্ত খেলাপি হওয়া নয়)",
+    "banner_bn": "পাবলিক ডেটা: ভারতের L&T গাড়ির ঋণ, ShopUp-এর ডেটা নয়। শুধু সিদ্ধান্তে সহায়তা।",
+    "what_this_shows_bn": "আসল ডেটায় কম-তথ্যের সমস্যা: অর্ধেক ঋণগ্রহীতার কোনো ব্যুরো রেকর্ড নেই, আর তাদের ক্ষেত্রে মডেলের ক্রম প্রায় আন্দাজের মতো।",
+    "what_this_does_not_show_bn": "যে পদ্ধতিটি কাজ করে: AUC 0.70 মাপকাঠির অনেক নিচে। এই উৎসকে সমস্যার বর্ণনা হিসেবে ব্যবহার করুন, ফলাফল হিসেবে নয়।",
+    "group_findings_bn": "রাজ্য (উৎসের কোড) '13' (5,403টি ঋণ, 71% পরিশোধ)-এর ক্ষেত্রে ক্যালিব্রেশন আলাদা: মডেল এই দলের জন্য যা ঘটেছে তার চেয়ে 11 পয়েন্ট বেশি পরিশোধ আশা করে, বাকি সবার জন্য যা ঘটেছে তার চেয়ে 1 পয়েন্ট কম পরিশোধ আশা করে। রাজ্য (উৎসের কোড) '12' (1,339টি ঋণ)-এর ক্ষেত্রে ক্রম আলাদা: AUC 0.54, বাকি সবার 0.61। রাজ্য (উৎসের কোড) '12' (1,339টি ঋণ, 79% পরিশোধ)-এর ক্ষেত্রে ক্যালিব্রেশন আলাদা: মডেল এই দলের জন্য যা ঘটেছে তার চেয়ে 5 পয়েন্ট বেশি পরিশোধ আশা করে, বাকি সবার জন্য যা ঘটেছে প্রায় ততটাই পরিশোধ আশা করে। রাজ্য (উৎসের কোড) '19' (406টি ঋণ, 89% পরিশোধ)-এর ক্ষেত্রে ক্যালিব্রেশন আলাদা: মডেল এই দলের জন্য যা ঘটেছে তার চেয়ে 9 পয়েন্ট কম পরিশোধ আশা করে, বাকি সবার জন্য যা ঘটেছে প্রায় ততটাই পরিশোধ আশা করে।",
+    "intended_use_bn": "আসল ফলাফলসহ পাবলিক ডেটায় পদ্ধতিটির যাচাই। এই মডেল কাউকে স্কোর করার জন্য নয়: যেখানে ফলাফল জানা, সেখানে একই পাইপলাইন কেমন করে তা দেখায়।",
+    "test_reading_bn": "পরীক্ষার মাসে পরিশোধ যাচাইয়ের মাসের চেয়ে কম ছিল, আর আগের মাসে ঠিক করা ক্যালিব্রেশন বেশি পরিশোধ আশা করে: এমনকি শক্তিশালী ব্যান্ডের ঋণও ১০টির মধ্যে ৯টির কম পরিশোধ হয়েছে। ক্রম দুর্বলই থাকে। ব্যবহারের আগে ঋণদাতাকে সাম্প্রতিক ঋণ দিয়ে আবার ক্যালিব্রেট করতে হবে।"
   },
   "ablation": [],
   "group_results": [
@@ -434,5 +482,14 @@
     "The validation numbers are a little optimistic: that period was also used to choose the model and the calibration. The held-back test period gives the honest check.",
     "Group columns are used only to audit results, never as model inputs. The group audit shows where the model works measurably differently on these data; it does not show that the model is fair.",
     "The tool supports a human decision. It must not be used for automatic approval or decline."
+  ],
+  "limitations_bn": [
+    "পাবলিক ডেটা, ShopUp-এর ডেটা নয়। ফলাফল হলো প্রথম কিস্তি না দেওয়া, ঋণ খারাপ হয়ে যাওয়া নয়। সময় অনুযায়ী ভাগের প্রতিটি অংশ এক মাসের।",
+    "সময়ের অংশগুলো মাঝে কোনো ফাঁক ছাড়া পরপর। একটি অংশের শেষের দিকে দেওয়া ঋণের ফলাফল জানা গেছে পরের অংশ শুরু হওয়ার পরে, কিন্তু প্রশিক্ষণ (ও ক্যালিব্রেশন) সেটা আগে থেকে জানা ধরে ব্যবহার করেছে। কড়া সামনের পরীক্ষায় একটি ফাঁক রাখা হতো; সেটা না থাকায় ফলাফল কিছুটা আশাবাদী।",
+    "ফলাফল জানা শুধু তাদের, যারা আগে ঋণ পেয়েছেন। আগের নীতিতে যাদের ফিরিয়ে দেওয়া হতো, তাদের ক্ষেত্রে মডেল কাজ নাও করতে পারে।",
+    "কভারেজ কম হলে স্কোর কম নিশ্চিত। কম তথ্যের ফাইল কখনও খারাপ ফাইল ধরা হয় না: কভারেজ সীমার নিচে ব্যান্ড হয় 'আরও তথ্য প্রয়োজন', স্কোর যা-ই হোক।",
+    "যাচাইয়ের সংখ্যাগুলো কিছুটা আশাবাদী: মডেল ও ক্যালিব্রেশন বাছাইয়েও সেই সময় ব্যবহার হয়েছে। আলাদা রাখা পরীক্ষার সময়ই আসল যাচাই।",
+    "দলের কলাম শুধু ফলাফল অডিটের জন্য, কখনও মডেলের ইনপুট নয়। দলভিত্তিক অডিট দেখায় এই ডেটায় মডেল কোথায় মাপার মতো আলাদা আচরণ করে; এটি দেখায় না যে মডেলটি ন্যায্য।",
+    "টুলটি মানুষের সিদ্ধান্তে সহায়তা করে। স্বয়ংক্রিয়ভাবে ঋণ মঞ্জুর বা নামঞ্জুরে এটি ব্যবহার করা যাবে না।"
   ]
 }

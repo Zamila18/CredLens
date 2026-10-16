@@ -9,6 +9,10 @@ data/exports/
 # Model artifacts and report images are rebuilt by `python tasks.py train`
 src/model/artifacts/*
 !src/model/artifacts/.gitkeep
+# Kept: the synthetic model that was measured on the test period (3 KB). Every laptop and
+# the server use this one, so the model card's test result and group audit stay valid.
+# Public-data models stay out of git: they were trained on licensed files.
+!src/model/artifacts/synthetic_bd/
 reports/*.png
 reports/**/*.png
 # Kept: the ablation chart is part of the evidence (built from synthetic data only)
