@@ -13,6 +13,7 @@ import type { MerchantProfile, QuestionnaireCreate } from '@/api/types'
 import type { Lang } from '@/app/session-context'
 import { ErrorCallout } from '@/components/ErrorCallout'
 import { Button } from '@/components/ui/button'
+import { GROUP_TEXT, pick, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { ITEMS, QUESTION_WORDING_IS_DRAFT, type ItemKey } from './questionnaireItems'
 
@@ -32,6 +33,7 @@ export function QuestionnaireForm({
   onSaved: (summary: Summary) => void
   onCancel: () => void
 }) {
+  const t = useT()
   const [answers, setAnswers] = useState<Answers>({})
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<ApiError | null>(null)
@@ -59,14 +61,19 @@ export function QuestionnaireForm({
   return (
     <div className="flex flex-col gap-4 border-t border-line-soft pt-4">
       <div className="flex flex-col gap-1">
-        <h3 className="m-0 text-base font-semibold">Record new answers</h3>
+        <h3 className="m-0 text-base font-semibold">{t('Record new answers', 'নতুন উত্তর লিখুন')}</h3>
         <p className="m-0 text-[13px] text-muted">
-          Ask the merchant each question and pick their answer from 1 to 5. Saving replaces the earlier answers. The
-          score does not change.
+          {t(
+            'Ask the merchant each question and pick their answer from 1 to 5. Saving replaces the earlier answers. The score does not change.',
+            'মার্চেন্টকে প্রতিটি প্রশ্ন করুন এবং ১ থেকে ৫-এর মধ্যে উত্তর বেছে নিন। রাখলে আগের উত্তর বদলে যায়। স্কোর বদলায় না।',
+          )}
         </p>
         {QUESTION_WORDING_IS_DRAFT && (
           <p className="m-0 rounded-lg bg-amber-panel px-3 py-2 text-[13px] text-amber-deep">
-            Draft wording: the Bangla still needs a native-speaker review (docs/QUESTIONNAIRE.md).
+            {t(
+              'Draft wording: the Bangla still needs a native-speaker review (docs/QUESTIONNAIRE.md).',
+              'খসড়া ভাষা: বাংলা এখনও একজন বাংলাভাষী পর্যালোচকের দেখা বাকি (docs/QUESTIONNAIRE.md)।',
+            )}
           </p>
         )}
       </div>
@@ -81,7 +88,7 @@ export function QuestionnaireForm({
               <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
                 <legend className="mb-2 p-0 text-sm">
                   <span className="mr-2 font-mono text-xs text-muted-2">
-                    {i + 1} · {item.group}
+                    {i + 1} · {pick(GROUP_TEXT[item.group], lang)}
                   </span>
                   <span className={cn(lang === 'bn' && item.bn && 'font-bn')}>{text}</span>
                 </legend>
@@ -120,14 +127,14 @@ export function QuestionnaireForm({
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="font-mono text-xs text-muted-2 tabular">
-          {answered} of {ITEMS.length} answered
+          {t(`${answered} of ${ITEMS.length} answered`, `${ITEMS.length}টির মধ্যে ${answered}টির উত্তর হয়েছে`)}
         </span>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onCancel} disabled={saving}>
-            Cancel
+            {t('Cancel', 'বাতিল')}
           </Button>
           <Button onClick={save} disabled={!complete || saving}>
-            {saving ? 'Saving…' : 'Save answers'}
+            {saving ? t('Saving…', 'রাখা হচ্ছে…') : t('Save answers', 'উত্তর রাখুন')}
           </Button>
         </div>
       </div>
