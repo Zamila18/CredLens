@@ -4,6 +4,7 @@ data/*.db
 data/backups/
 data/exports/
 *.zip
+*.tar.gz
 *.parquet
 
 # Model artifacts and report images are rebuilt by `python tasks.py train`

@@ -268,3 +268,182 @@ def test_the_security_headers_are_on_the_page():
         assert f"add_header {header} " in block(NGINX, "server {")
     index = block(NGINX, "location = /index.html {")
     assert "Content-Security-Policy" in index and "frame-ancestors 'none'" in index
+
+
+# --- the systemd service ------------------------------------------------------------------
+
+SERVICE = (DEPLOY / "credlens-api.service").read_text(encoding="utf-8")
+
+
+def service_lines() -> list[str]:
+    return [line.strip() for line in SERVICE.splitlines() if line.strip()]
+
+
+def test_the_service_runs_the_api_on_the_loopback_address_only_as_its_own_user():
+    lines = service_lines()
+    start = next(line for line in lines if line.startswith("ExecStart="))
+    assert "-m uvicorn src.api.main:app" in start
+    assert "--host 127.0.0.1 --port 8000" in start  # the same address Nginx proxies to
+    assert "--workers 1" in start and "0.0.0.0" not in SERVICE
+    assert "proxy_pass http://127.0.0.1:8000/;" in NGINX
+    assert "User=credlens" in lines and "Group=credlens" in lines
+    assert "User=root" not in lines
+    assert "WorkingDirectory=/opt/credlens" in lines
+
+
+def test_the_service_reads_the_env_file_and_waits_for_the_scorer_before_it_counts_as_started():
+    lines = service_lines()
+    assert "EnvironmentFile=/opt/credlens/.env" in lines
+    post = next(line for line in lines if line.startswith("ExecStartPost="))
+    assert "/opt/credlens/deploy/wait_for_api.py" in post
+    timeout = int(post.split("--timeout ")[1].split()[0])
+    startup = int(next(line for line in lines if line.startswith("TimeoutStartSec=")).split("=")[1])
+    assert timeout < startup  # the wait gives up first, with its own message
+    assert "Restart=on-failure" in lines and "WantedBy=multi-user.target" in lines
+
+
+def test_the_service_may_write_only_its_data_folder():
+    lines = service_lines()
+    for setting in ("NoNewPrivileges=true", "PrivateTmp=true", "ProtectSystem=strict"):
+        assert setting in lines
+    assert "ReadWritePaths=/opt/credlens/data" in lines
+    assert "PYTHONDONTWRITEBYTECODE=1" in SERVICE.replace("Environment=", "")
+
+
+def test_the_service_nginx_and_env_template_agree_on_where_the_project_lives():
+    assert "root /opt/credlens/web/dist;" in NGINX
+    assert "/opt/credlens/deploy/nginx" in NGINX
+    template = (DEPLOY / "env.template").read_text(encoding="utf-8")
+    assert "/opt/credlens/.env" in template
+
+
+# --- the upload bundle --------------------------------------------------------------------
+
+
+@pytest.fixture()
+def project(tmp_path):
+    """A small project folder: built dashboard, trained model, written model card."""
+    (tmp_path / "web" / "dist" / "assets").mkdir(parents=True)
+    (tmp_path / "web" / "dist" / "index.html").write_text("<div id=root>", encoding="utf-8")
+    (tmp_path / "web" / "dist" / "assets" / "app.js").write_text("x", encoding="utf-8")
+    model = tmp_path / "src" / "model" / "artifacts" / "synthetic_bd"
+    model.mkdir(parents=True)
+    (model / "model.joblib").write_bytes(b"model")
+    (model / "metadata.json").write_text('{"version_id": "v1"}', encoding="utf-8")
+    (model.parent / "other_mode").mkdir()
+    (model.parent / "other_mode" / "model.joblib").write_bytes(b"not for the server")
+    card = tmp_path / "reports" / "synthetic_bd"
+    card.mkdir(parents=True)
+    (card / "model_card.json").write_text('{"model_version": "v1"}', encoding="utf-8")
+    return tmp_path
+
+
+def test_the_bundle_holds_the_dashboard_and_the_model_and_nothing_else(project, tmp_path):
+    import tarfile
+
+    from deploy import make_bundle
+
+    output = tmp_path / "out.tar.gz"
+    names = make_bundle.make_bundle(project, output)
+    assert sorted(names) == [
+        "src/model/artifacts/synthetic_bd/metadata.json",
+        "src/model/artifacts/synthetic_bd/model.joblib",
+        "web/dist/assets/app.js",
+        "web/dist/index.html",
+    ]
+    with tarfile.open(output) as archive:
+        assert sorted(archive.getnames()) == sorted(names)
+        member = archive.getmember("src/model/artifacts/synthetic_bd/model.joblib")
+        assert archive.extractfile(member).read() == b"model"
+
+
+def test_the_bundle_refuses_a_model_the_card_was_not_written_for(project, tmp_path):
+    from deploy import make_bundle
+
+    card = project / "reports" / "synthetic_bd" / "model_card.json"
+    card.write_text('{"model_version": "older"}', encoding="utf-8")
+    with pytest.raises(make_bundle.BundleError, match="written for older"):
+        make_bundle.make_bundle(project, tmp_path / "out.tar.gz")
+    assert len(make_bundle.make_bundle(project, tmp_path / "o.tar.gz", allow_other_model=True)) == 4
+    card.unlink()
+    with pytest.raises(make_bundle.BundleError, match="written for None"):
+        make_bundle.make_bundle(project, tmp_path / "out.tar.gz")
+
+
+def test_the_bundle_refuses_when_something_is_missing(project, tmp_path):
+    from deploy import make_bundle
+
+    (project / "src" / "model" / "artifacts" / "synthetic_bd" / "metadata.json").unlink()
+    with pytest.raises(make_bundle.BundleError, match="No trained model"):
+        make_bundle.make_bundle(project, tmp_path / "out.tar.gz")
+    (project / "web" / "dist" / "index.html").unlink()
+    with pytest.raises(make_bundle.BundleError, match="not built"):
+        make_bundle.make_bundle(project, tmp_path / "out.tar.gz")
+
+
+def test_the_bundle_command_says_what_it_did_and_its_exit_code(
+    project, tmp_path, monkeypatch, capsys
+):
+    from deploy import make_bundle
+
+    monkeypatch.setattr(make_bundle, "ROOT", project)
+    output = tmp_path / "pack.tar.gz"
+    assert make_bundle.main(["--output", str(output)]) == 0
+    assert "model v1" in capsys.readouterr().out and output.exists()
+    (project / "web" / "dist" / "index.html").unlink()
+    assert make_bundle.main(["--output", str(output)]) == 1
+    assert "NOT PACKED" in capsys.readouterr().out
+
+
+def test_a_bundle_is_never_committed():
+    ignored = (ROOT / ".gitignore").read_text(encoding="utf-8")
+    assert "credlens-upload.tar.gz" in ignored or "*.tar.gz" in ignored
+
+
+# --- the deployment guide -----------------------------------------------------------------
+
+GUIDE = (ROOT / "docs" / "DEPLOY.md").read_text(encoding="utf-8")
+
+
+def test_the_guide_uses_every_file_in_deploy():
+    for name in (
+        "credlens-api.service",
+        "env.template",
+        "wait_for_api.py",
+        "make_bundle.py",
+        "test_nginx_local.py",
+        "nginx/credlens.conf",
+    ):
+        assert name in GUIDE, f"docs/DEPLOY.md never mentions {name}"
+        assert (DEPLOY / name).exists(), name
+
+
+def test_every_script_the_guide_runs_exists():
+    import re
+
+    for path in re.findall(r"python3? (deploy/[\w/]+\.py|/opt/credlens/deploy/[\w/]+\.py)", GUIDE):
+        assert (ROOT / path.replace("/opt/credlens/", "")).exists(), path
+    for module in re.findall(r"-m ((?:src)\.[\w.]+)", GUIDE):
+        assert (ROOT / (module.replace(".", "/") + ".py")).exists(), module
+
+
+def test_the_guide_and_the_service_use_the_same_names():
+    assert "systemctl enable --now credlens-api" in GUIDE
+    assert "journalctl -u credlens-api" in GUIDE
+    wait = (DEPLOY / "wait_for_api.py").read_text(encoding="utf-8")
+    assert "journalctl -u credlens-api" in wait  # the hint the script prints is a real command
+    assert "Ubuntu 22.04" in GUIDE  # the Python version we tested on
+    assert "never run `python tasks.py train`" in GUIDE.lower().replace("**", "")
+
+
+def test_nothing_in_deploy_or_the_guide_holds_a_secret():
+    import re
+
+    texts = {"guide": GUIDE}
+    for path in DEPLOY.rglob("*"):
+        if path.is_file() and path.suffix in {".py", ".conf", ".service", ".template", ".html"}:
+            texts[path.name] = path.read_text(encoding="utf-8")
+    for name, text in texts.items():
+        # an address with a user name and a password in it, a key, or a token
+        assert not re.search(r"://[^/\s:@]+:[^@\s]+@", text), name
+        assert "BEGIN PRIVATE KEY" not in text and "ghp_" not in text, name
