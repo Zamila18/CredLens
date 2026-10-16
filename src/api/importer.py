@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import csv
 import io
+from collections.abc import Collection
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Any
@@ -52,6 +53,34 @@ MODELS = {
     "questionnaire": db.Questionnaire,
     "consents": db.Consent,
 }
+# Tables an upload may never fill. A consent is a merchant's own act, recorded by the consent
+# system; a file from the lender's data team cannot stand in for it, or an admin could unlock a
+# merchant's data by uploading a row (Phase 13 review, F1).
+NEVER_IMPORTED = {
+    "consents": (
+        "Consent records come from the consent system, not from a file. A merchant's consent "
+        "cannot be created by an upload."
+    ),
+}
+# Tables whose rows describe a merchant's history. For a merchant the scorer already knows, the
+# history comes from the source systems: a row added here would show on the timeline while the
+# score ignores it (F10). Only a merchant the scorer has never seen may get such rows.
+HISTORY_TABLES = ("purchases", "deliveries", "payments", "loans", "questionnaire")
+KNOWN_MERCHANT_MESSAGE = (
+    "This merchant's records come from the source systems; imports may only add new merchants. "
+    "Nothing was loaded."
+)
+
+
+class ImportNotAllowed(Exception):
+    """The upload touches records that an import may not change. Nothing is loaded."""
+
+    def __init__(self, message: str, merchants: list[str] | None = None) -> None:
+        super().__init__(message)
+        self.message = message
+        self.merchants = merchants or []
+
+
 KEY_COLUMN = {table: CONTRACT[table][0] for table in CONTRACT}
 KEY_COLUMN["payments"] = "payment_id"
 KEY_COLUMN["loans"] = "loan_id"
@@ -113,15 +142,6 @@ KINDS: dict[str, dict[str, str]] = {
         **dict.fromkeys(ANSWER_COLUMNS, "answer"),
         "answered_at": "date",
     },
-    "consents": {
-        "consent_id": "text",
-        "merchant_id": "text",
-        "purpose": "text",
-        "data_categories": "text",
-        "granted_at": "date",
-        "expires_at": "date",
-        "revoked_at": "date?",
-    },
 }
 
 TRUE_WORDS = {"true", "1", "yes"}
@@ -182,10 +202,6 @@ def _row_rules(table: str, values: dict[str, Any]) -> list[str]:
     problems = []
     if table == "deliveries" and values.get("status") not in DELIVERY_STATUSES:
         problems.append(f"status must be one of {', '.join(DELIVERY_STATUSES)}")
-    if table == "consents":
-        granted, expires = values.get("granted_at"), values.get("expires_at")
-        if granted and expires and expires <= granted:
-            problems.append("expires_at must be after granted_at")
     if table == "loans" and values.get("outcome_label") is not None:
         if values.get("label_observed_at") is None:
             problems.append("label_observed_at is empty but outcome_label is set")
@@ -210,13 +226,25 @@ def _max_lengths(table: str) -> dict[str, int | None]:
 
 
 def check_csv(
-    session: Session, table: str, raw: bytes
+    session: Session,
+    table: str,
+    raw: bytes,
+    scored_merchants: Collection[str] | None = None,
 ) -> tuple[ImportReport, list[dict[str, Any]]]:
     """Check an upload. Returns the report and the accepted rows (typed, ready to insert).
 
     Nothing is written. `loaded` is False and `dry_run` True in the report; the caller
     changes them if it loads the rows.
+
+    `scored_merchants` are the merchants the scorer already knows. A history table (purchases,
+    deliveries, payments, loans, questionnaire) must be given them: a row for one of them
+    raises `ImportNotAllowed`, for the whole file. A file whose columns are wrong is reported
+    as before, and is never looked at row by row.
     """
+    if table in NEVER_IMPORTED:
+        raise ImportNotAllowed(NEVER_IMPORTED[table])
+    if table in HISTORY_TABLES and scored_merchants is None:
+        raise ImportNotAllowed("Cannot tell which merchants are scored. Nothing was loaded.")
     report = ImportReport(
         table=table,
         dry_run=True,
@@ -266,6 +294,17 @@ def check_csv(
             record = _Row(reader.line_num, raw_row[key].strip() or None, values, problems)
         rows.append(record)
     report.rows_received = len(rows)
+
+    if table in HISTORY_TABLES:
+        known = sorted(
+            {
+                row.values["merchant_id"]
+                for row in rows
+                if row.values.get("merchant_id") in scored_merchants
+            }
+        )
+        if known:
+            raise ImportNotAllowed(KNOWN_MERCHANT_MESSAGE, known)
 
     _check_repeats_in_file(rows, key)
     _check_against_database(session, table, rows, key)

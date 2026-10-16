@@ -24,9 +24,10 @@ from src.model.score import band_lines
 from src.model.scoring import Scorer, UnknownMerchant
 
 
-def api_error(status_code: int, code: str, message: str) -> HTTPException:
-    """An HTTP error whose body is {"detail": {"code": ..., "message": ...}}."""
-    return HTTPException(status_code=status_code, detail={"code": code, "message": message})
+def api_error(status_code: int, code: str, message: str, **facts) -> HTTPException:
+    """An HTTP error whose body is {"detail": {"code": ..., "message": ..., ...facts}}."""
+    detail = {"code": code, "message": message, **facts}
+    return HTTPException(status_code=status_code, detail=detail)
 
 
 def utc_now() -> datetime:

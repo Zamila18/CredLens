@@ -206,7 +206,8 @@ Then start the API with `CREDLENS_DATA_MODE=lender_x`. The banner follows the mo
 `GET /health`); the selector and the model-card tab need row 8 above.
 
 Two limits to know: `python tasks.py data` generates only the synthetic data, so a lender's tables get into the
-database by an extension of the loader (step 6 above) or, to show the idea, by the admin import page; and rows
+database by an extension of the loader (step 6 above) or, to show the idea, by the admin import page (which
+may only add new merchants, and never consents); and rows
 imported through that page do not reach a score (the scorer reads the adapter's files, not the database).
 
 ## 6. What must be re-set and re-checked: nothing from the synthetic data carries over

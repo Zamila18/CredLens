@@ -35,6 +35,7 @@ A request with a wrong shape is the usual FastAPI 422.
 | 403 | `rows_not_shown` | Home Credit mode: totals only, no merchant pages |
 | 404 | `unknown_merchant`, `unknown_table` | |
 | 409 | `import_not_available` | a public data mode is active; the database holds only synthetic data |
+| 409 | `import_not_allowed` | an import of `consents`, or of history rows for a merchant the scorer already knows (see Import) |
 | 413 | `file_too_large` | import file over 10 MB |
 | 422 | (FastAPI) | override with no written reason, `approve`/`decline`, answer outside 1 to 5 ... |
 | 500 | `data_mismatch` | the scorer and the database hold different data: `python tasks.py data --reset-db` |
@@ -69,10 +70,19 @@ A request with a wrong shape is the usual FastAPI 422.
   and is itself audited.
 - **Import.** The request body is the CSV file itself (`Content-Type: text/csv`). Add `?dry_run=true`
   to only check. Import in this order: merchants, loans, purchases, deliveries, payments,
-  questionnaire, consents. An import never overwrites a row. **Imported rows never reach a score:**
+  questionnaire. An import never overwrites a row. **Imported rows never reach a score:**
   `python tasks.py train` and the scorer read the generated CSV files in `data/raw/synthetic_bd/`,
   not the database. The import page shows that a lender's file can be checked and stored; scoring
   from the database is a pilot step. Say so on the page.
+  **What an import may not do (409 `import_not_allowed`, nothing loaded, even with `dry_run`):**
+  `consents` can never be imported (a consent is the merchant's own act, recorded by the consent
+  system; an uploaded row used to unlock a merchant's profile), and purchases, deliveries, payments,
+  loans or questionnaire rows may not name a merchant the scorer already knows (their history comes
+  from the source systems; the score would ignore the row while the timeline showed it). The error
+  also lists the merchant ids it found (`detail.merchants`, at most 20). Only a merchant added by an
+  import of `merchants` can get such rows, and with no consent record (none can be imported) their
+  data stays hidden. Each refusal writes an audit entry `refused_import_<table>`. The page should not
+  offer `consents`. A history table needs the scorer: without it the answer is 503 `scorer_not_ready`.
 - **Model card.** Written per data mode by `python -m src.model.model_card --all-modes` into
   `reports/<mode>/model_card.json` (and `docs/model_card_<mode>.md`). `GET /model/card?mode=taiwan_cc`
   gives another mode's card, for the public data pages; without `mode`, the running mode's.
