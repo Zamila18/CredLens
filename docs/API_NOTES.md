@@ -82,4 +82,8 @@ A request with a wrong shape is the usual FastAPI 422.
   texts as sentences. If the card was written for an older model version, its first limitation
   says so: show it. A mode with no written card gets a placeholder with no numbers.
 - **Queue.** `low_score_warning` is in each row (null when there is no score).
+- **Band lines.** The score card and the model card carry `band_rules`
+  (`strong_min_score`, `min_coverage` as a share from 0 to 1, `low_score_warning_below`) for the
+  card's data mode, read from the config. Show them beside the band ("Strong: score 90 or more and
+  coverage 45% or more"). Take the band itself from the API; never work it out from these numbers.
 - **Not built:** a consent revoke endpoint (see Consent).

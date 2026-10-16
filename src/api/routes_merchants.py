@@ -25,7 +25,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.api.auth import EVERY_ROLE, CurrentUser, add_audit, require_roles
-from src.api.common import api_error, card_or_error
+from src.api.common import api_error, band_rules_for, card_or_error
 from src.api.profile import (
     QUESTIONNAIRE_CONSENT_CATEGORY,
     build_profile,
@@ -194,6 +194,7 @@ def merchant_score(
     403 `consent_required` when the merchant has no valid consent: nothing is computed.
     """
     card = card_or_error(scorer, merchant_id)
+    card["band_rules"] = band_rules_for(scorer.config, card["data_mode"])
     add_audit(session, user, "view_score", merchant_id)
     session.commit()
     return card

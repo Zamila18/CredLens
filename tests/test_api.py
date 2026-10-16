@@ -606,6 +606,47 @@ def test_a_decision_moves_the_merchant_to_decided_in_the_queue(api, merchants):
     assert (after.score, after.band) == (before.score, before.band)
 
 
+# --- the band lines are sent with the score and the model card ---------------------------
+
+
+def test_the_score_and_the_model_card_carry_the_band_lines_from_the_config(
+    api, api_world, merchants
+):
+    lines = api_world.config["score"]
+    expected = {
+        "strong_min_score": lines["band_strong_min_score"],
+        "min_coverage": lines["band_min_coverage"],
+        "low_score_warning_below": lines["low_score_warning_below"],
+    }
+    score = api.get(f"/merchants/{merchants['consenting'][0]}/score", headers=VIEWER).json()
+    assert score["band_rules"] == expected
+    for role in (OFFICER, ADMIN, VIEWER):
+        assert api.get("/model/card", headers=role).json()["band_rules"] == expected
+
+
+def test_a_mode_with_its_own_band_lines_sends_those(api, api_world, merchants):
+    """`score.by_mode` wins over the defaults, for the score card and for another mode's card."""
+    changed = copy.deepcopy(api_world.config)
+    changed["score"]["by_mode"] = {
+        "synthetic_bd": {"band_strong_min_score": 85},
+        "taiwan_cc": {"band_strong_min_score": 77, "band_min_coverage": 0.3},
+    }
+    scorer = copy.copy(api_world.services.scorer)
+    scorer.config = changed
+    app.state.services = Services(config=changed, engine=api_world.engine, scorer=scorer)
+    for merchant_id in merchants["consenting"][:40]:
+        score = api.get(f"/merchants/{merchant_id}/score", headers=OFFICER).json()
+        assert score["band_rules"]["strong_min_score"] == 85
+        if score["coverage"] >= score["band_rules"]["min_coverage"]:
+            assert score["band"] == ("Strong" if score["score"] >= 85 else "Review")
+    taiwan = api.get("/model/card?mode=taiwan_cc", headers=OFFICER).json()
+    assert taiwan["band_rules"]["strong_min_score"] == 77
+    assert taiwan["band_rules"]["min_coverage"] == 0.3
+    # a mode with no lines of its own gets the defaults
+    kiva = api.get("/model/card?mode=kiva_asia", headers=OFFICER).json()
+    assert kiva["band_rules"]["strong_min_score"] == changed["score"]["band_strong_min_score"]
+
+
 # --- model card and audit log -----------------------------------------------------------
 
 

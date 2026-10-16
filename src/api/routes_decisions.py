@@ -25,7 +25,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.api.auth import EVERY_ROLE, CurrentUser, add_audit, require_roles
-from src.api.common import api_error, card_or_error, utc_now
+from src.api.common import api_error, band_rules_for, card_or_error, utc_now
 from src.api.model_card_view import load_model_card
 from src.api.schemas import AuditEntry, DataMode, Decision, DecisionCreate, ModelCard
 from src.api.state import Services, get_scorer, get_services, get_session
@@ -118,8 +118,11 @@ def model_card(
     running = services.config["data"]["mode"]
     if mode is None or mode == running:
         version = services.scorer.model_version if services.scorer else None
-        return load_model_card(running, version)
-    return load_model_card(mode, None)
+        card = load_model_card(running, version)
+    else:
+        card = load_model_card(mode, None)
+    card.band_rules = band_rules_for(services.config, card.data_mode)
+    return card
 
 
 @router.get("/audit", response_model=list[AuditEntry])

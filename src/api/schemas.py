@@ -46,6 +46,21 @@ class Reason(BaseModel):
     )
 
 
+class BandRules(BaseModel):
+    """The lines that turn a score and a coverage into a band, for one data mode.
+
+    They are settings (config/default.yaml, `score`), sent so a screen can show the
+    numbers next to a band. A screen must still take the band itself from the API: it must
+    never work a band out from these.
+    """
+
+    strong_min_score: float = Field(description="Score at or above this is Strong ...")
+    min_coverage: float = Field(
+        ge=0, le=1, description="... but only when coverage is at least this (0 to 1)."
+    )
+    low_score_warning_below: float = Field(description="A score below this gets a warning.")
+
+
 class ScoreResponse(BaseModel):
     """GET /merchants/{id}/score"""
 
@@ -69,6 +84,9 @@ class ScoreResponse(BaseModel):
         "Show it above the reasons; it never recommends lending or not.",
     )
     summary_bn: str | None = Field(default=None, description="The same paragraph in Bangla.")
+    band_rules: BandRules | None = Field(
+        default=None, description="The band lines of this data mode, to show beside the band."
+    )
 
 
 class MerchantQueueItem(BaseModel):
@@ -220,6 +238,9 @@ class ModelCard(BaseModel):
     ablation: list[dict[str, float | str | None]] = []
     group_results: list[dict[str, float | str | None]] = []
     limitations: list[str]
+    band_rules: BandRules | None = Field(
+        default=None, description="The band lines of this data mode (set by the API)."
+    )
 
 
 class QuestionnaireCreate(BaseModel):

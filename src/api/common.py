@@ -18,7 +18,9 @@ from typing import Any
 
 from fastapi import HTTPException
 
+from src.api.schemas import BandRules
 from src.model.explain import ConsentRequired, RowsNotShown
+from src.model.score import band_lines
 from src.model.scoring import Scorer, UnknownMerchant
 
 
@@ -30,6 +32,16 @@ def api_error(status_code: int, code: str, message: str) -> HTTPException:
 def utc_now() -> datetime:
     """The current time in UTC, without a time zone, as stored in the database."""
     return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def band_rules_for(config: dict[str, Any], mode: str) -> BandRules:
+    """The band lines of a data mode, read from the config (never written in code here)."""
+    lines = band_lines(config, mode)
+    return BandRules(
+        strong_min_score=lines["band_strong_min_score"],
+        min_coverage=lines["band_min_coverage"],
+        low_score_warning_below=lines["low_score_warning_below"],
+    )
 
 
 def card_or_error(scorer: Scorer, merchant_id: str) -> dict[str, Any]:
