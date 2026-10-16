@@ -19,7 +19,7 @@ A check of the method on public data with real outcomes. This model is not for s
 ## Model
 
 - **Model in use:** LightGBM (boosted decision trees), calibration: Platt scaling.
-- **Why this model:** LightGBM adds +0.0158 AUC over the logistic regression (range +0.0135 to +0.0181; the whole range must reach +0.0100). Both checks pass. (The simpler model stays unless the other is clearly better.)
+- **Why this model:** LightGBM adds +0.0158 AUC over the logistic regression (range +0.0135 to +0.0181). It is used only if the whole range reaches +0.0100 and its Brier score is not worse. Both hold, so LightGBM is used. (The simpler model stays unless the other is clearly better.)
 - **Inputs** (each can only push the score the way its meaning says; how much data exists about a borrower is never an input):
   - One minus the loan-to-value, the part of the vehicle's price the borrower paid up front
   - Credit-bureau score at disbursement, for borrowers the bureau could score
