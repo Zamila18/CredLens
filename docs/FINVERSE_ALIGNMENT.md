@@ -14,7 +14,7 @@ Source: the team's Finverse result (data.org). Full rules are in section 13 of P
 | Data-sharing practice | ODI data practices guide and UK ICO data sharing code referenced | docs/data_inventory.md |
 | Starter kit contents | One-page schema map, Global Findex, IMF Financial Access Survey, national portals; Finverse regional sources (Data.gov.in, NDAP, SHRUG) as context | docs/starter_kit.md |
 | Core + Context | Reusable core, per-platform adapters, config | PROJECT_BRIEF section 15 |
-| Pilot plan | 4-week roadmap is the first small pilot of a 12 to 24 month two-track plan; pilot KPIs documented | docs |
+| Pilot plan | 4-week roadmap is the first small pilot of a 12 to 24 month two-track plan; pilot KPIs documented | docs/pilot_plan.md |
 | Skip what is not needed | No n8n, no RudderStack; Metabase optional | |
 
 Wording: no outcome claims for Kaleidofin; do not claim a Mifos X integration unless the spike works.

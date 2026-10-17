@@ -126,3 +126,4 @@ The full checklist is `docs/adapting.md`, section 8. The points that may never b
 | Hosting it | `docs/DEPLOY.md`, `docs/SERVER_FILES.md` |
 | Showing it to someone | `docs/LIVE_DEMO_GUIDE.md` |
 | What we may and may not claim | `docs/WORDING_AND_QA.md` |
+| The pilot and its KPIs | `docs/pilot_plan.md` |
