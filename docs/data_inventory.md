@@ -48,7 +48,23 @@ Sizes measured on the lead's laptop on Oct 18, 2026.
 | `audit_log` | Every read of a merchant, the queue, consents and the audit log; every decision, answer, import, refusal and consent request | The API, before anything is shown | **Append-only**, as above |
 | `users` | 4 demo users (officer-1, officer-2, admin-1, viewer-1) | The loader | A demo role switch, not a login |
 
-## 3. Rules that apply to all of it
+## 3. Who may view what, and how to request access
+
+| Who | May view | May do | How they get access |
+|---|---|---|---|
+| Credit officer (`officer-1`, `officer-2`) | Review queue, merchant pages of consenting merchants, decision log, portfolio, model card, consent list | Record decisions and questionnaire answers; ask a merchant for consent | In this prototype, the demo role switch. In a pilot: an account created by the lender's administrator |
+| Administrator (`admin-1`) | Everything officers see, plus the audit log | Import a lender's file (new merchants only) | As above |
+| Viewer (`viewer-1`), e.g. a manager or auditor | Everything officers see | Nothing: read-only | As above |
+| A merchant | Their own consent screen (phone demo) | Give, refuse or withdraw consent | In their own app; CredLens has no merchant login |
+| Anyone else | Public model cards and reports in the repository (totals only, no rows) | Nothing | The public repository |
+
+**The demo role switch is not a login**, so the hosted site must sit behind a password. **To request the
+raw public files**, download them from their own source under its terms (`docs/DATA_SOURCES.md`); the team
+does not pass them on. **To request a pilot dataset**, a lender signs a data-sharing agreement and collects
+each merchant's consent first (`docs/pilot_plan.md`). Every view of a merchant is recorded in the audit
+log, which only an administrator can read.
+
+## 4. Rules that apply to all of it
 
 1. **Purpose:** credit-readiness assessment, and nothing else (the consent's stated purpose).
 2. **Minimum data:** only the fields the features need are kept and shown. Group columns (town tier, shop
@@ -62,7 +78,7 @@ Sizes measured on the lead's laptop on Oct 18, 2026.
 7. **Keeping and deleting:** the prototype keeps everything it holds for the hackathon. The raw public files
    are deleted from the lead's laptop when the project ends; nothing else holds them.
 
-## 4. Practices this follows, and where to read them
+## 5. Practices this follows, and where to read them
 
 - UK Information Commissioner's Office, *Data sharing: a code of practice*:
   https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-sharing/data-sharing-a-code-of-practice/
