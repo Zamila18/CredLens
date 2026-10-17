@@ -176,3 +176,34 @@ def test_no_screen_text_says_approved_declined_or_eligible(api, api_world, conse
     joined = " ".join(texts).lower()
     for word in FORBIDDEN_WORDS:
         assert word not in joined, word
+
+
+def test_the_mifos_loader_that_says_approve_never_touches_a_score():
+    """`approve` in src/db/mifos_load.py is the Fineract API command that replays an old, already
+    issued synthetic loan on a local Mifos test server. It must not be reachable from a score:
+    the file imports only the standard library and `src.db.mifos_adapter`, nothing from
+    `src.model` or `src.api`, and its code never mentions a score, a probability or a band."""
+    import ast
+    import sys
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parent.parent / "src" / "db" / "mifos_load.py"
+    source = path.read_text(encoding="utf-8")
+    modules = set()
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Import):
+            modules.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.level == 0:
+            modules.add(node.module)
+    ours = {name for name in modules if name.split(".")[0] not in sys.stdlib_module_names}
+    assert ours == {"src.db.mifos_adapter"}, ours
+    assert not any(name.startswith(("src.model", "src.api")) for name in modules)
+    code = "\n".join(
+        line.split("#")[0] for line in source.splitlines() if not line.strip().startswith("#")
+    ).lower()
+    for word in ("score", "probability", "band", "scorer", "officer_action"):
+        assert word not in code, word
+    # the one place the word is used, and what it is
+    assert source.count("command=approve") == 1
+    notes = (path.parent.parent.parent / "docs" / "API_NOTES.md").read_text(encoding="utf-8")
+    assert "mifos_load.py" in notes and "Fineract API command" in notes

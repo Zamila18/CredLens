@@ -150,7 +150,10 @@ rm -f /opt/credlens/data/raw/synthetic_bd/strength_0.5/_latent_truth.csv
 You should see the table of row counts (`merchants 20,000`, `purchases ...`) and `users 4`. The last
 command deletes the generator's hidden-truth file, which must not stay on a server.
 
-### 8. Copy the model and the dashboard from your laptop
+### 8. Copy the dashboard from your laptop (the bundle also carries the model)
+
+The trained model is committed in git, so the clone of step 7 already has it. The bundle repeats the same
+two files: unpacking it puts the identical model in place, and step 3 refused to pack any other.
 
 On your **laptop** (PowerShell, in the project folder):
 
@@ -359,7 +362,7 @@ removes every decision and every audit entry. Back up first.
 | `502 Bad Gateway` (not the "starting" page) | Nginx's `credlens.conf` is not the file in use. `nginx -T | grep error_page` should show `/starting.html`. |
 | `nginx -t` fails | It prints the line number. The most likely cause is a typo in `server_name`. |
 | Certbot fails | The name does not point to this server yet, or port 80 is closed in the provider's firewall. |
-| The model card page shows a warning that the card describes another model version | The model files on the server are not the ones the cards were written for. Make a new bundle on the lead's laptop (step 3 refuses a mismatch) and copy it (step 8). |
+| The model card page shows a warning that the card describes another model version | The model files on the server are not the committed ones (someone ran `train` there, or copied another model). Put the committed model back: `sudo -u credlens git -C /opt/credlens git checkout -- src/model/artifacts/synthetic_bd/`, then `systemctl restart credlens-api`. |
 | The queue is empty or shows a "data mismatch" | The database and the generated files disagree. Back up, then `sudo -u credlens python3 tasks.py data --reset-db` (this removes decisions). |
 | `df -h` shows the disk full | Delete old backups in `/opt/credlens/data/backups`. |
 
@@ -381,9 +384,9 @@ has no password. Options: `--no-browser`, `--port 9000` (another port for the da
 
 1. `git switch main`, `git pull`, then `python tasks.py setup`.
 2. `python tasks.py data` (about 2 minutes).
-3. The trained model. On the lead's laptop it is already there. On any other laptop **do not run
-   `python tasks.py train`** (it makes a model the cards do not describe): copy the lead's folder
-   `src/model/artifacts/synthetic_bd/` into the same place.
+3. The trained model. It is committed in git, so `git pull` has it. **Do not run `python tasks.py train`**
+   (it makes a model the cards do not describe). If you did, put the committed one back:
+   `git checkout -- src/model/artifacts/synthetic_bd/`.
 4. The built dashboard: `cd web`, `npm ci`, `npm run build` (needs Node.js and internet, once). Or take the
    bundle from Part A step 3 and unpack it in the project folder: `tar -xzf credlens-upload.tar.gz`, which puts
    both the dashboard (`web/dist`) and the model in place.

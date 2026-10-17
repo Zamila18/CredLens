@@ -64,8 +64,8 @@ def files_to_pack(root: Path, allow_other_model: bool = False) -> list[Path]:
     if card != version and not allow_other_model:
         raise BundleError(
             f"The model here is {version} but the model card was written for {card}. "
-            "Pack the model the card describes (the lead's laptop), or pull the latest "
-            "reports, or, only if you are sure, use --allow-other-model."
+            "Put the committed model back (git checkout -- src/model/artifacts/synthetic_bd/), "
+            "or pull the latest reports, or, only if you are sure, use --allow-other-model."
         )
     files = sorted(path for path in dist.rglob("*") if path.is_file())
     folder = root / "src" / "model" / "artifacts" / MODE

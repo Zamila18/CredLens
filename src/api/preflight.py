@@ -154,9 +154,10 @@ def check_model(config: dict[str, Any], root: Path, server: bool) -> list[Check]
             Check(
                 FAIL,
                 "trained model",
-                f"missing in {folder}: {', '.join(missing)}. Copy the folder from the lead's "
-                "laptop. Do not run `train` on a server: the model card describes one "
-                "particular trained model. (On a laptop: python tasks.py train.)",
+                f"missing in {folder}: {', '.join(missing)}. The trained model is committed in "
+                "git: git pull, or git checkout -- src/model/artifacts/synthetic_bd/. "
+                "Do not run `train` on a server: the model card describes one "
+                "particular trained model.",
             )
         ]
     version = _model_version(folder)
@@ -171,8 +172,8 @@ def check_model(config: dict[str, Any], root: Path, server: bool) -> list[Check]
                 FAIL if server else WARN,
                 "model card matches the model",
                 f"the card was written for {card_version} but the model is {version}. The API "
-                "puts a warning above the card's limits. Copy the lead's model files "
-                "(src/model/artifacts/synthetic_bd/) so both are the same version.",
+                "puts a warning above the card's limits. Put the committed model back "
+                "(git checkout -- src/model/artifacts/synthetic_bd/) so both are the same version.",
             )
         )
     else:

@@ -90,6 +90,7 @@ def create_app(production: bool = False, cors_origins: list[str] | None = None) 
         allow_origins=cors_origins_from_environment() if cors_origins is None else cors_origins,
         allow_methods=["GET", "POST"],
         allow_headers=[TOKEN_HEADER, "Content-Type"],
+        expose_headers=["X-Total-Count"],
     )
     app.include_router(merchants_router)
     app.include_router(consents_router)

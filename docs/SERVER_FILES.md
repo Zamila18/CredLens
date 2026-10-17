@@ -19,22 +19,23 @@ cards** (totals and plain words, no rows), and those cards are in git.
 | The model cards of all five modes (`reports/<mode>/model_card.json`) | the repository | `git clone` (they are committed) | small |
 | The generated tables | `data/raw/synthetic_bd/strength_0.5/` (7 CSV files) | **`python tasks.py data`** on the server. The generator is seeded, so the server gets exactly the lead's data (Humayra's laptop and the lead's laptop gave the same queue: 2,197 Strong, 1,170 Review, 611 Needs more info, 200 without consent) | about 190 MB |
 | The database | `data/app.db` (SQLite) | made by the same `python tasks.py data` | about 330 MB |
-| **The trained model** | `src/model/artifacts/synthetic_bd/` (`model.joblib`, `metadata.json`) | **copied from the lead's laptop** (`scp`, see below). Not in git, and not trained on the server | 5 KB |
+| **The trained model** | `src/model/artifacts/synthetic_bd/` (`model.joblib`, `metadata.json`) | **`git clone`**: since Oct 16 the measured model is committed (`.gitignore` keeps this one folder; the public-data models stay out of git). Never trained on the server | 5 KB |
 | The secrets file | `.env` on the server only | written by hand from `deploy/env.template` (made in the deploy step) | tiny |
 
-### Why the model is copied and not trained on the server
+### Why the server never trains
 
 The model card, the test-month results (`reports/synthetic_bd/test_results.json`) and the audit all
 describe **one** trained model, named by its version, for example `synthetic_bd-20261015-005409-9db9d66`.
 `python tasks.py train` makes a new version every time it runs (the time is part of the name), and the test
 months may be looked at only once per model. A model trained on the server would be a different version
 from the one in the card, and the dashboard would warn that the card describes an older model. So the lead
-trains once, writes the card, and copies the two small model files. Training on the laptop is fine for
-development; just do not commit the changed `reports/` files.
+trains once, writes the card and commits the two small model files; every machine gets them with
+`git clone` or `git pull`.
 
-Copy command (from the lead's laptop, in the project folder; the guide gives the full steps):
+If a machine's model was changed by a `train` (the files show as modified in `git status`), put the
+committed one back, and never commit the changed one:
 
-    scp src/model/artifacts/synthetic_bd/model.joblib src/model/artifacts/synthetic_bd/metadata.json USER@SERVER:/opt/credlens/src/model/artifacts/synthetic_bd/
+    git checkout -- src/model/artifacts/synthetic_bd/
 
 ## What must NOT be on the server
 

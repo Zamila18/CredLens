@@ -35,9 +35,10 @@ A request with a wrong shape is the usual FastAPI 422.
 | 403 | `rows_not_shown` | Home Credit mode: totals only, no merchant pages |
 | 404 | `unknown_merchant`, `unknown_table` | |
 | 409 | `import_not_available` | a public data mode is active; the database holds only synthetic data |
+| 409 | `no_pending_loan` | a decision on a merchant whose latest loan already has an outcome: nothing is waiting for a decision. Hide the decision form for such a merchant |
 | 409 | `import_not_allowed` | an import of `consents`, or of history rows for a merchant the scorer already knows (see Import) |
 | 413 | `file_too_large` | import file over 10 MB |
-| 422 | (FastAPI) | override with no written reason, `approve`/`decline`, answer outside 1 to 5 ... |
+| 422 | (FastAPI) | override with no written reason, a reason over 2,000 characters, `approve`/`decline`, answer outside 1 to 5 ... |
 | 500 | `data_mismatch` | the scorer and the database hold different data: `python tasks.py data --reset-db` |
 | 503 | `scorer_not_ready`, `database_not_ready`, `not_started` | the message names the command to run |
 
@@ -112,4 +113,32 @@ A request with a wrong shape is the usual FastAPI 422.
   Vite dev server).
 - **Timeline.** Each event has `label` and `label_bn` (Bangla, Oct 16), for the dashboard's English/Bangla switch.
 - **Model card in Bangla.** Every sentence in `metrics` has a Bangla twin `<key>_bn` (for example `label_bn`, `what_this_shows_bn`, `group_findings_bn`, `intended_use_bn`), and `limitations_bn` holds the limitations in Bangla (written from `src/model/model_card_bn.py`). A stale-card warning comes first in both lists.
+- **Phase 13 changes (Oct 16), for the dashboard.**
+  - *New error codes:* `import_not_allowed` (409; see Import), `no_pending_loan` (409; a decision on a merchant
+    with no loan waiting), and the 422 for a written reason of more than 2,000 characters
+    (`detail[0].loc` ends in `reason_text`; the limit is `maxLength` of `reason_text` in `/openapi.json`, and
+    `api.reason_max_chars` in the config). Show a counter on the reason box.
+  - *A double click is one decision.* The same officer, merchant, action and reason again within
+    `api.duplicate_decision_seconds` (5) returns the earlier decision with HTTP **200** (a new one is **201**).
+    Treat both as saved.
+  - *`GET /decisions` can be paged.* `?limit=` and `?offset=` are optional; without them every decision is
+    returned, as before. The header `X-Total-Count` holds how many decisions match (`merchant_id` filter
+    included). A browser on another origin may read it (it is in `Access-Control-Expose-Headers`).
+  - *New audit actions* (they appear in `GET /audit`, `action`): `view_queue` (every read of the queue, no
+    merchant), `refused_score`, `refused_decision` and `refused_questionnaire` (an attempt on a merchant
+    without consent, or, for a decision, on a merchant with no loan waiting; the merchant is named),
+    `refused_import_<table>` (an import of consents, or of history rows for a scored merchant). Existing
+    actions: `view_profile`, `view_score`, `view_consent`, `view_consents`, `record_decision`,
+    `record_questionnaire`, `import_<table>`, `check_import_<table>`, `view_audit_log`. Show them in plain words.
+  - *Two writes can no longer fail with HTTP 500 when many people use the demo at once:* the database waits up to
+    30 seconds for its turn (`api.sqlite_busy_timeout_seconds`).
+- **Nothing approves or declines credit.** The word "approve" appears in `src/db/mifos_load.py`: it is the
+  Fineract API command used to replay old synthetic loans on a local Mifos test server, one loan after the
+  other as they were issued. CredLens itself never approves anything: that file imports only the standard
+  library and `src.db.mifos_adapter`, reads no score, and a test (`tests/test_no_autodecision.py`) checks it.
+- **Known limit: consent has two readers.** The scorer reads the consent records once, when the API starts
+  (from the generated files); the profile, the consent endpoints and the questionnaire read the database live.
+  They agree because nothing in the API can change a consent: there is no revoke endpoint, an import cannot add
+  a consent, and an import cannot add history for a merchant the scorer knows. A consent changed in the
+  database by another route would be seen by the profile at once and by the score only after a restart.
 - **Not built:** a consent revoke endpoint (see Consent).

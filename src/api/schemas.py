@@ -18,7 +18,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from src.config import VALID_MODES
+from src.config import VALID_MODES, load_config
 
 # The data modes of the project: one list (src/config.py), so a new mode needs no change here.
 DataMode = Literal[VALID_MODES]
@@ -27,6 +27,8 @@ Role = Literal["officer", "admin", "viewer"]
 OfficerAction = Literal["accept", "override_up", "override_down", "needs_more_info"]
 
 OVERRIDE_ACTIONS = ("override_up", "override_down")
+# The longest written reason on a decision (config: api.reason_max_chars). Longer is refused.
+REASON_MAX_CHARS = load_config(validate=False)["api"]["reason_max_chars"]
 
 
 class HealthResponse(BaseModel):
@@ -242,7 +244,12 @@ class DecisionCreate(BaseModel):
     """POST /merchants/{id}/decision. The officer decides; the system never does."""
 
     officer_action: OfficerAction
-    reason_text: str | None = None
+    reason_text: str | None = Field(
+        default=None,
+        max_length=REASON_MAX_CHARS,
+        description="The officer's written reason. Required for an override. "
+        "At most `api.reason_max_chars` characters (2,000).",
+    )
 
     @model_validator(mode="after")
     def override_needs_reason(self) -> DecisionCreate:
