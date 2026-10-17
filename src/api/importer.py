@@ -18,8 +18,9 @@ Rows that fail are listed with their line number and the reasons. Rows that pass
 in one transaction. Nothing is ever edited by hand. A production system would pull this
 data from the source systems on a schedule instead of taking a file.
 
-Only synthetic or fixture files belong here. A loaded row changes no score until the model
-is trained again and the API restarted.
+Only synthetic or fixture files belong here. Rows for NEW merchants (not in the original data)
+are scored after loading (src/api/imported.py): same model, same feature rules, no retraining.
+The original merchants' records come from the source systems and may not be added to.
 """
 
 from __future__ import annotations
@@ -53,19 +54,15 @@ MODELS = {
     "questionnaire": db.Questionnaire,
     "consents": db.Consent,
 }
-# Tables an upload may never fill. A consent is a merchant's own act, recorded by the consent
-# system; a file from the lender's data team cannot stand in for it, or an admin could unlock a
-# merchant's data by uploading a row (Phase 13 review, F1).
-NEVER_IMPORTED = {
-    "consents": (
-        "Consent records come from the consent system, not from a file. A merchant's consent "
-        "cannot be created by an upload."
-    ),
-}
-# Tables whose rows describe a merchant's history. For a merchant the scorer already knows, the
-# history comes from the source systems: a row added here would show on the timeline while the
-# score ignores it (F10). Only a merchant the scorer has never seen may get such rows.
-HISTORY_TABLES = ("purchases", "deliveries", "payments", "loans", "questionnaire")
+# Tables an upload may never fill (none at present; kept so a table can be closed in one place).
+NEVER_IMPORTED: dict[str, str] = {}
+# Tables whose rows belong to a merchant's history or permission. For a merchant of the original
+# data, these come from the source systems and the consent system: a history row added here
+# would show on the timeline while the score ignores it (F10), and a consent row would unlock a
+# merchant who never agreed (F1). So a row naming such a merchant refuses the whole file. A NEW
+# merchant (imported with `merchants`) may get all of them, consent included: that is a lender
+# bringing its own customers, with the consent records of its own consent system.
+HISTORY_TABLES = ("purchases", "deliveries", "payments", "loans", "questionnaire", "consents")
 KNOWN_MERCHANT_MESSAGE = (
     "This merchant's records come from the source systems; imports may only add new merchants. "
     "Nothing was loaded."
@@ -142,6 +139,15 @@ KINDS: dict[str, dict[str, str]] = {
         **dict.fromkeys(ANSWER_COLUMNS, "answer"),
         "answered_at": "date",
     },
+    "consents": {
+        "consent_id": "text",
+        "merchant_id": "text",
+        "purpose": "text",
+        "data_categories": "text",
+        "granted_at": "date",
+        "expires_at": "date",
+        "revoked_at": "date?",
+    },
 }
 
 TRUE_WORDS = {"true", "1", "yes"}
@@ -202,6 +208,10 @@ def _row_rules(table: str, values: dict[str, Any]) -> list[str]:
     problems = []
     if table == "deliveries" and values.get("status") not in DELIVERY_STATUSES:
         problems.append(f"status must be one of {', '.join(DELIVERY_STATUSES)}")
+    if table == "consents":
+        granted, expires = values.get("granted_at"), values.get("expires_at")
+        if granted and expires and expires <= granted:
+            problems.append("expires_at must be after granted_at")
     if table == "loans" and values.get("outcome_label") is not None:
         if values.get("label_observed_at") is None:
             problems.append("label_observed_at is empty but outcome_label is set")

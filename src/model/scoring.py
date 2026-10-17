@@ -37,7 +37,7 @@ from src.adapters import get_adapter
 from src.config import load_config
 from src.model.dataset import build_dataset
 from src.model.explain import calibrated_probability, refuse_hidden_rows, score_card
-from src.model.labels import LABELLED
+from src.model.labels import LABELLED, latest_date
 from src.model.score import score_table
 from src.model.train import load_model
 
@@ -53,6 +53,12 @@ QUEUE_COLUMNS = [
 ]
 
 
+def _latest_loans(dataset: pd.DataFrame) -> pd.DataFrame:
+    """The most recent loan of every merchant; ties broken by loan id so it is stable."""
+    ordered = dataset.sort_values(["cutoff_date", "loan_id"])
+    return ordered.groupby("merchant_id", sort=False).tail(1).set_index("merchant_id")
+
+
 class UnknownMerchant(KeyError):
     """Raised when a merchant id has no loan in the active data mode."""
 
@@ -62,6 +68,10 @@ class Scorer:
 
     Create one when the API starts and reuse it for every request. To pick up new data
     or a newly trained model, create a new one.
+
+    Merchants imported later (through the admin import) are scored with `set_imported`:
+    the same model and the same feature rules, applied to their own records, as of the
+    same "today" as the rest of the data. Nothing is retrained.
 
     Args:
         config: the validated config.
@@ -81,15 +91,48 @@ class Scorer:
         self.mode = mode or config["data"]["mode"]
         self.saved = saved if saved is not None else load_model(self.mode)
         tables = tables if tables is not None else get_adapter(config).load_all()
-        dataset = build_dataset(tables, config)
-        # The most recent loan of every merchant; ties broken by loan id so it is stable.
-        ordered = dataset.sort_values(["cutoff_date", "loan_id"])
-        self._latest = ordered.groupby("merchant_id", sort=False).tail(1).set_index("merchant_id")
+        # "Today" for the data. Imported merchants are judged as of the same day, so a
+        # consent or a loan reads the same way for them as for everyone else.
+        self.as_of = latest_date(tables)
+        # Every merchant of the original data, with or without a loan: their records come
+        # from the source systems, so an import may never add to them.
+        self._source_merchants = frozenset(tables["merchants"]["merchant_id"])
+        self._base = _latest_loans(build_dataset(tables, config, as_of=self.as_of))
+        self._latest = self._base
         self.model_version = self.saved["version_id"]
 
     def merchant_ids(self) -> list[str]:
         """Every merchant that can be looked up (has at least one loan)."""
         return list(self._latest.index)
+
+    def source_merchant_ids(self) -> frozenset[str]:
+        """Every merchant of the data the scorer was built from (not imported later)."""
+        return self._source_merchants
+
+    def imported_merchant_ids(self) -> list[str]:
+        """The merchants added by `set_imported`, in the order they were added."""
+        return [m for m in self._latest.index if m not in self._base.index]
+
+    def set_imported(self, tables: dict[str, pd.DataFrame] | None) -> list[str]:
+        """Score merchants that were imported after the scorer was built.
+
+        Args:
+            tables: the data-contract tables holding ONLY the imported merchants (all seven
+                tables; empty frames where there is nothing). None or no loans: none.
+
+        Replaces any earlier imported set. A merchant of the original data is never
+        replaced. Returns the imported merchants that can now be looked up (those with a
+        loan). The features are built from the merchant's own records only, so they are
+        the same as if the merchant had been in the original data.
+        """
+        if not tables or tables["loans"].empty:
+            self._latest = self._base
+            return []
+        refuse_hidden_rows(self.config, self.mode)
+        new = _latest_loans(build_dataset(tables, self.config, as_of=self.as_of, mode=self.mode))
+        new = new[~new.index.isin(list(self._source_merchants))]
+        self._latest = pd.concat([self._base, new])
+        return list(new.index)
 
     def feature_row(self, merchant_id: str) -> pd.Series:
         """The feature row a merchant is scored on: their most recent loan."""

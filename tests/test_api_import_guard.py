@@ -3,9 +3,11 @@
 Owner role: D (full-stack).
 Implements: docs/API_NOTES.md ("Import").
 
-F1: a consent can never be imported. Before the fix an admin could upload a `consents` row for a
-    merchant who had none, and the merchant's whole timeline appeared on the profile (0 events
-    became 79) while the queue and the score still said "no consent".
+F1: a consent for a merchant of the original data can never be imported. Before the fix an
+    admin could upload a `consents` row for a merchant who had none, and the merchant's whole
+    timeline appeared on the profile (0 events became 79) while the queue and the score still
+    said "no consent". Since Oct 17 a NEW merchant (added by the same import) may bring its
+    consent records: that is a lender bringing its own customers (live import demo).
 F10: purchases, deliveries, payments, loans or questionnaire rows for a merchant the scorer
     already knows put events on the timeline that the score ignores, so "the same numbers the
     score was computed from" stopped being true. Only a merchant the scorer has never seen may
@@ -30,7 +32,7 @@ from src.db.load import DEMO_USERS
 from tests.conftest import FIXTURES
 from tests.test_api import ADMIN, OFFICER, VIEWER, count
 
-HISTORY = ["purchases", "deliveries", "payments", "loans", "questionnaire"]
+HISTORY = ["purchases", "deliveries", "payments", "loans", "questionnaire", "consents"]
 MESSAGE = "imports may only add new merchants"
 CONSENT_HEADER = "consent_id,merchant_id,purpose,data_categories,granted_at,expires_at,revoked_at\n"
 
@@ -57,6 +59,12 @@ class Scorer:
 
     def merchant_ids(self):
         return self.known
+
+    def source_merchant_ids(self):
+        return frozenset(self.known)
+
+    def set_imported(self, tables):
+        return []
 
 
 @pytest.fixture()
@@ -89,21 +97,39 @@ def refused(response, code="import_not_allowed"):
     return response.json()["detail"]
 
 
-# --- F1: a consent is never imported -----------------------------------------------------
+# --- F1: a known merchant's consent is never imported ------------------------------------
 
 
 @pytest.mark.parametrize("params", ["", "?dry_run=true"])
-def test_consents_can_never_be_imported_not_even_to_check(site, params):
+def test_a_consent_for_a_known_merchant_is_refused_not_even_checked(site, params):
     serve, world = site
-    api = serve()
+    api = serve(known=["FIX-M001"])
     detail = refused(upload(api, "consents", fixture_csv("consents"), params))
-    assert "consent system" in detail["message"] and "not from a file" in detail["message"]
+    assert MESSAGE in detail["message"]
     assert count(world, db.Consent) == 0
+
+
+def test_a_consent_for_a_new_merchant_is_loaded(site):
+    serve, world = site
+    api = serve(known=["SOME-OTHER-MERCHANT"])
+    assert upload(api, "merchants", fixture_csv("merchants")).status_code == 200
+    row = "C-NEW-1,FIX-M001,credit_readiness,purchases,2025-01-01,2030-01-01,\n"
+    report = upload(api, "consents", CONSENT_HEADER + row).json()
+    assert report["loaded"] is True and count(world, db.Consent) == 1
+
+
+def test_a_consent_that_ends_before_it_starts_is_rejected(site):
+    serve, world = site
+    api = serve(known=["SOME-OTHER-MERCHANT"])
+    upload(api, "merchants", fixture_csv("merchants"))
+    row = "C-BAD,FIX-M001,credit_readiness,purchases,2026-01-01,2025-01-01,\n"
+    report = upload(api, "consents", CONSENT_HEADER + row).json()
+    assert report["rows_accepted"] == 0 and count(world, db.Consent) == 0
 
 
 def test_a_refused_consent_import_is_in_the_audit_log_and_loads_nothing(site):
     serve, world = site
-    api = serve()
+    api = serve(known=["FIX-M001"])
     upload(api, "consents", CONSENT_HEADER + "C1,FIX-M001,x,purchases,2025-01-01,2030-01-01,\n")
     assert count(world, db.AuditEntry, db.AuditEntry.action == "refused_import_consents") == 1
     assert count(world, db.AuditEntry, db.AuditEntry.action == "import_consents") == 0

@@ -51,6 +51,7 @@ def every_endpoint(merchant_id: str) -> list[tuple[str, str, dict]]:
         ("GET", "/audit", {}),
         ("POST", "/admin/import/loans", {"content": b"loan_id\nL-X\n"}),
         ("POST", "/admin/import/loans?dry_run=true", {"content": b""}),
+        ("POST", "/admin/import-bundle?dry_run=true", {"content": b"not a zip"}),
     ]
 
 
@@ -110,10 +111,14 @@ def test_a_decision_is_only_ever_an_officers_reading(api, api_world, consenting)
             "officer_id",
             "model_version",
             "score_shown",
+            "band_shown",
+            "coverage_shown",
             "officer_action",
             "reason_text",
             "decided_at",
         }
+        # band and coverage are a copy of what was on screen, like the score: never a verdict
+        assert (stored["band_shown"], stored["coverage_shown"]) == (card["band"], card["coverage"])
 
 
 def test_override_requires_a_written_reason(api, api_world, consenting):

@@ -1,0 +1,5 @@
+consent_id,merchant_id,purpose,data_categories,granted_at,expires_at,revoked_at
+D-C000016,D00002,credit_readiness_assessment,purchases|deliveries|payments|questionnaire,2026-06-16,2028-06-16,
+D-C000020,D00005,credit_readiness_assessment,purchases|deliveries|payments|questionnaire,2025-06-25,2027-06-25,
+D-C000028,D00001,credit_readiness_assessment,purchases|deliveries|payments|questionnaire,2025-10-14,2027-10-14,
+D-C000296,D00003,credit_readiness_assessment,purchases|deliveries|payments|questionnaire,2025-11-24,2027-11-24,

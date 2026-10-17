@@ -27,8 +27,9 @@ from src.db.load import DEMO_USERS
 from tests.conftest import FIXTURES
 from tests.test_api import ADMIN, OFFICER, count
 
-# every table an upload may fill, in the order they must be imported ("consents" is never one)
-ORDER = ["merchants", "loans", "purchases", "deliveries", "payments", "questionnaire"]
+# every table an upload may fill, in the order they must be imported (consents only for new
+# merchants, so they come last)
+ORDER = ["merchants", "loans", "purchases", "deliveries", "payments", "questionnaire", "consents"]
 MODEL_OF = importer.MODELS
 
 
@@ -41,7 +42,15 @@ def empty(tmp_path):
     with engine.begin() as connection:
         connection.execute(insert(db.User.__table__), DEMO_USERS)
     # a scorer that knows no merchant: every merchant in these files is new to it
-    nobody = type("Scorer", (), {"merchant_ids": lambda self: []})()
+    nobody = type(
+        "Scorer",
+        (),
+        {
+            "merchant_ids": lambda self: [],
+            "source_merchant_ids": lambda self: frozenset(),
+            "set_imported": lambda self, tables: [],
+        },
+    )()
     app.state.services = Services(config=load_config(), engine=engine, scorer=nobody)
     world = type("World", (), {"engine": engine})
     try:
@@ -98,7 +107,7 @@ def test_the_fixture_files_import_in_order_and_are_reported(empty):
         assert (report.rows_received, report.rows_accepted, report.rows_rejected) == (rows, rows, 0)
         assert report.loaded and not report.dry_run and report.file_error is None
         assert report.rejections == []
-        assert "trained again" in report.note
+        assert "nothing was retrained" in report.note
         assert count(world, MODEL_OF[table]) == rows, table
     # each import left its own audit entry
     for table in ORDER:

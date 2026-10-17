@@ -1,7 +1,7 @@
 # HANDOVER.md: where the project stands and what each person does next
 
 Kept up to date at the end of every phase, so a handover can happen at any time.
-Last updated: Phase 9 reviewed and fixed, Phase 10 ready to start (Oct 15, 2026).
+Last updated: live import demo added, dashboard redesign in progress (Oct 17, 2026).
 
 ## 1. What is finished and tested
 
@@ -29,6 +29,7 @@ Last updated: Phase 9 reviewed and fixed, Phase 10 ready to start (Oct 15, 2026)
 | 11 (part 3). Model cards | One card per data mode from the reports: use, data and terms, label, split, inputs in words, results with ranges, bands, what it shows and does not, ablation, group findings, limits. JSON for `GET /model/card` (any mode with `?mode=`), a page in `docs/model_card_<mode>.md`. Public-data cards say the model is a method check, not for scoring | `python -m src.model.model_card --all-modes` (seconds) |
 | 11 (part 4). Test period | Each model measured once on its held-back test period, every look in the ledger first, a second look refused without a written reason. Test AUC: synthetic 0.728 (not a clean holdout: looked at in Phase 1), Taiwan 0.752, India 0.599 (calibration off after a drop in repayment), Home Credit 0.723, Kiva 0.435 (wrong way round). On every model card | `python -m src.model.final_test --mode MODE` (refuses a second look) |
 | 10. Dashboard (Dipto) | React dashboard in `web/` against the API: review queue, merchant page (score dial with coverage and band, plain summary, reasons, evidence and timeline, consent, decision form, questionnaire form), decision log, model card with a tab per data source (`?mode=`), audit log, data import, consent page and the Bangla phone consent demo, portfolio. Every number comes from the API. Reviewed by the lead on Oct 16: scores, bands, coverage and model-card AUCs match the model and the reports; an officer's decision reaches the log and the audit; public modes checked live | `python tasks.py api`, then in `web/`: `npm ci` and `npm run dev` (http://localhost:5173) |
+| Live import (Oct 17) | New merchants in an imported file are scored by the saved model (nothing retrained) and appear in the review queue; `POST /admin/import-bundle` checks a zip of the contract files in one transaction; a new merchant may bring its consent; decisions keep `band_shown` and `coverage_shown`. Demo file: `data/demo/credlens_demo_bundle.zip`, expected results in `data/demo/EXPECTED.md` | `python -m pytest tests/test_live_import.py`; `python -m src.synth.demo_batch` |
 
 Not built yet: deployment (12). Phases 10 and 11 are complete. Since Oct 16 the language switch (sidebar, "Language · ভাষা") changes the whole dashboard and the model cards; the Bangla needs a native-speaker review before the demo.
 
@@ -66,7 +67,8 @@ Dipto and Humayra meet at the API. If a page needs a field or endpoint that is m
 | 3 | Done (Oct 15): Phase 11 part 4, the test period, once per model | `src/model/final_test.py`, `reports/` |
 | 4 | Documents and checks (moved from Dipto): Findex codebook check, CGAP Kaleidofin case, first pass of the Bangla review (a native speaker confirms), `docs/starter_kit.md`, `docs/data_inventory.md`, slides text | `docs/`, `config/calibration/` |
 | 5 | Remove the two stale Phase 7 skip placeholders in `tests/test_adapters.py` | `tests/` |
-| 6 | When everything else is done: buy the Hostinger VPS and deploy by following Humayra's `docs/DEPLOY.md` | the server |
+| 6 | In progress (Oct 17): live import demo (done) and the dashboard redesign from `web/design-reference/CredLens_Final_Designs/` | `src/api/`, `src/synth/demo_batch.py`, `web/` |
+| 7 | When everything else is done: buy the Hostinger VPS and deploy by following Humayra's `docs/DEPLOY.md` | the server |
 
 Phase 11 stays with the lead: the public data modes need the raw files, which exist only on the lead's laptop and may not be shared.
 
