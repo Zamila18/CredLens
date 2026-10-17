@@ -156,6 +156,20 @@ function TableReport({ report }: { report: ImportReport }) {
   )
 }
 
+/** Before the first check: the four boxes, empty, so the page shows what will appear. */
+function WaitingTiles({ busy }: { busy: boolean }) {
+  const t = useT()
+  const dash = busy ? '…' : '—'
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label={t('No file checked yet', 'এখনও কোনো ফাইল যাচাই হয়নি')}>
+      <Tile icon={<FileText size={30} className="text-info" />} tone="border-[#CFE0F2] bg-info-panel" label={t('Rows received', 'যত সারি এসেছে')} value={dash} help={t('Rows read from the file.', 'ফাইল থেকে পড়া সারি।')} />
+      <Tile icon={<CircleCheck size={30} className="text-band-strong" />} tone="border-mint-line bg-mint-2" label={t('Rows accepted', 'যত সারি নেওয়া হয়েছে')} value={dash} help={t('Rows that pass the checks.', 'যে সারি যাচাই পেরোয়।')} />
+      <Tile icon={<CircleAlert size={30} className="text-error" />} tone="border-[#F3D0D0] bg-error-panel" label={t('Rows rejected', 'যত সারি নেওয়া হয়নি')} value={dash} help={t('Each one is listed with its reason.', 'প্রতিটির কারণসহ তালিকা দেখানো হবে।')} />
+      <Tile icon={<Database size={30} className="text-ink-2" />} tone="border-line bg-ground" label={t('Loaded', 'লোড হয়েছে')} value={dash} help={t('Nothing loads until you untick “Check only”.', '“শুধু যাচাই” না তুললে কিছুই লোড হয় না।')} />
+    </div>
+  )
+}
+
 /** The bundle's report: one row per file, the rejected rows, and the new merchants. */
 function BundleResult({ report }: { report: BundleReport }) {
   const t = useT()
@@ -469,6 +483,7 @@ export function ImportPage() {
         {error && <ErrorCallout error={error} />}
         {report && <TableReport report={report} />}
         {bundle && <BundleResult report={bundle} />}
+        {!report && !bundle && !error && <WaitingTiles busy={busy} />}
         <span className="text-sm text-body">{t('Every import and every check writes an audit entry.', 'প্রতিটি আমদানি ও যাচাই অডিটে লেখা হয়।')}</span>
         <div className="flex items-start gap-3 rounded-[12px] border border-mint-line bg-mint-2 p-4">
           <Info size={24} className="mt-0.5 shrink-0 text-band-strong" aria-hidden="true" />

@@ -34,6 +34,6 @@
 - [x] Downloads done and checked: Taiwan, Home Credit, India L&T, Findex country file, World Bank informal-sector indicators.
 - [x] Bangladesh Bank merchant payments read for Jan 2023 to Feb 2025.
 - [ ] Kiva archive (`kiva_ds_json.zip`, about 1.16 GB, from the Internet Archive) into `data/raw/kiva/`. Do not unzip.
-- [ ] Confirm the Findex column definitions in the codebook before quoting the Bangladesh figures on a slide (`config/calibration/findex_bangladesh.csv`).
+- [x] Confirm the Findex column definitions in the codebook before quoting the Bangladesh figures on a slide (`config/calibration/findex_bangladesh.csv`). Done Oct 17 against the official Findex 2025 glossary; all seven confirmed. They describe all adults, not merchants, and the generator does not use them.
 - [ ] Ask ShopUp: what counts as "late" for Baki, and what share of Baki credit is repaid on time?
 - [ ] Do not say "unexplored" in the pitch (docs/WORDING_AND_QA.md).

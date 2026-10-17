@@ -79,13 +79,13 @@ function HeroCard({ item }: { item: QueueItem }) {
   return (
     <Link
       to={`/merchants/${item.merchant_id}`}
-      className="flex w-full flex-col gap-1.5 rounded-[14px] sm:w-[220px] border border-card-line bg-white/95 p-4 text-ink no-underline shadow-[0_8px_24px_rgba(17,27,66,.12)] hover:text-ink"
+      className="flex w-full flex-col gap-1 rounded-[14px] border border-card-line bg-white/95 p-3.5 sm:w-[200px] text-ink no-underline shadow-[0_8px_24px_rgba(17,27,66,.12)] hover:text-ink"
       aria-label={t(`Open merchant ${item.merchant_id}`, `মার্চেন্ট ${item.merchant_id} খুলুন`)}
     >
       <span className="font-mono text-sm font-semibold">{item.merchant_id}</span>
       <span className="text-[13px] text-body">{t('Readiness score', 'প্রস্তুতির স্কোর')}</span>
       <span className="flex items-center gap-3">
-        <span className="font-display text-[44px] leading-[48px] font-bold tabular">{item.score}</span>
+        <span className="font-display text-[36px] leading-[40px] font-bold tabular">{item.score}</span>
         <BandChip band={item.band ?? null} lowScoreWarning={item.low_score_warning} size="md" />
       </span>
       <CoverageBar coverage={item.coverage} band={item.band ?? null} wide />
@@ -110,37 +110,37 @@ export function HomePage() {
   const number = (n: number) => (queue.data ? count(n) : loading)
 
   return (
-    <div className="box-border flex w-full max-w-[1240px] flex-col gap-9 px-4 pt-5 pb-10 sm:px-8">
+    <div className="box-border flex w-full max-w-[1240px] flex-col gap-9 px-4 pt-4 pb-10 sm:px-8">
       {/* Hero */}
-      <section className="mint-wash grid overflow-hidden rounded-[16px] border border-card-line lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-        <div className="flex flex-col justify-center gap-5 p-6 sm:p-9">
-          <span className="font-display text-[22px] font-bold text-ink">CredLens</span>
-          <h1 className="m-0 text-[34px] leading-[40px] font-bold tracking-[-0.02em] sm:text-[42px] sm:leading-[48px]">
+      <section className="mint-wash grid overflow-hidden rounded-[16px] border border-card-line lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="flex flex-col justify-center gap-3 p-5 sm:px-8 sm:py-6">
+          <span className="font-display text-lg font-bold text-ink">CredLens</span>
+          <h1 className="m-0 text-[28px] leading-[34px] font-bold tracking-[-0.02em] sm:text-[34px] sm:leading-[40px]">
             {t('See a small shop’s readiness, with reasons.', 'ছোট দোকানের প্রস্তুতি দেখুন, কারণসহ।')}
           </h1>
-          <p className="m-0 max-w-[520px] text-[17px] leading-[26px] text-body">
+          <p className="m-0 max-w-[500px] text-[15px] leading-[23px] text-body">
             {t(
               'Mokam purchases, REDX deliveries and Baki repayments, joined so your officers can decide with confidence.',
               'Mokam-এর কেনাকাটা, REDX-এর ডেলিভারি আর বাকির পরিশোধ একসাথে, যাতে আপনার কর্মকর্তারা আত্মবিশ্বাসের সাথে সিদ্ধান্ত নিতে পারেন।',
             )}
           </p>
-          <div className="flex flex-wrap gap-3">
+          <div className="mt-1 flex flex-wrap gap-3">
             {withQueue && (
               <Link
                 to="/queue"
-                className="inline-flex min-h-12 items-center rounded-[10px] bg-lens-dark px-5 text-[15px] font-semibold text-white no-underline hover:bg-lens-hover hover:text-white"
+                className="inline-flex min-h-11 items-center rounded-[10px] bg-lens-dark px-5 text-[15px] font-semibold text-white no-underline hover:bg-lens-hover hover:text-white"
               >
                 {t('Open the review queue', 'পর্যালোচনার তালিকা খুলুন')}
               </Link>
             )}
             <Link
               to="/model"
-              className="inline-flex min-h-12 items-center rounded-[10px] border border-lens-dark bg-white px-5 text-[15px] font-semibold text-lens-dark no-underline hover:bg-mint-2"
+              className="inline-flex min-h-11 items-center rounded-[10px] border border-lens-dark bg-white px-5 text-[15px] font-semibold text-lens-dark no-underline hover:bg-mint-2"
             >
               {t('See how the model was tested', 'মডেল কীভাবে পরীক্ষা হয়েছে দেখুন')}
             </Link>
           </div>
-          <p className="m-0 text-sm text-body">
+          <p className="m-0 text-[13px] text-body">
             {t('The score suggests. You decide, and the record keeps why.', 'স্কোর পরামর্শ দেয়। সিদ্ধান্ত আপনার, আর খাতায় থাকে কেন।')}
           </p>
         </div>
@@ -170,7 +170,7 @@ export function HomePage() {
         </div>
           {/* On a phone the card sits under the picture; from tablet width up, on it. */}
           {hero && (
-            <div className="p-4 sm:absolute sm:right-6 sm:bottom-6 sm:p-0">
+            <div className="p-4 sm:absolute sm:right-4 sm:bottom-4 sm:p-0">
               <HeroCard item={hero} />
             </div>
           )}

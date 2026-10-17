@@ -1,8 +1,8 @@
 indicator,source_column,survey_year,share_of_adults,status
-has_account,account_t_d,2024,0.433,column meaning inferred from its name; confirm in the Findex codebook
-has_financial_institution_account,fiaccount_t_d,2024,0.329,column meaning inferred from its name; confirm in the Findex codebook
-has_mobile_money_account,mobileaccount_t_d,2024,0.208,column meaning inferred from its name; confirm in the Findex codebook
-borrowed_any_money_past_year,borrow_any_t_d,2024,0.703,column meaning inferred from its name; confirm in the Findex codebook
-saved_any_money_past_year,save_any_t_d,2024,0.204,column meaning inferred from its name; confirm in the Findex codebook
-made_digital_merchant_payment,merchant_pay,2024,0.028,exact definition unknown and the 2021 value is identical (0.028); confirm in the codebook before use
-borrowed_from_formal_institution,,2024,,not found: the column is coded and needs the codebook
+has_account,account_t_d,2024,0.433,confirmed in the Findex 2025 glossary (account.t.d): account at a bank or similar institution or personally used mobile money in the past year
+has_financial_institution_account,fiaccount_t_d,2024,0.329,confirmed in the Findex 2025 glossary (fiaccount.t.d): account at a bank or similar financial institution
+has_mobile_money_account,mobileaccount_t_d,2024,0.208,confirmed in the Findex 2025 glossary (mobileaccount.t.d): personally used a mobile money service in the past year
+borrowed_any_money_past_year,borrow_any_t_d,2024,0.703,confirmed in the Findex 2025 glossary (borrow.any.t.d): borrowed any money from any source for any reason in the past year
+saved_any_money_past_year,save_any_t_d,2024,0.204,confirmed in the Findex 2025 glossary (save.any.t.d): saved or set aside any money in any way in the past year
+made_digital_merchant_payment,merchant_pay,2024,0.028,confirmed in the Findex 2025 glossary (merchant.pay): used a card or mobile phone to pay in a shop or online; 2021 was 0.0278 and 2024 0.0276 (they only round the same)
+borrowed_from_formal_institution,fin22a_22a1_22g_d,2024,0.131,confirmed in the Findex 2025 glossary (fin22a.22a1.22g.d): borrowed from a bank or similar institution or using a credit card or mobile money in the past year
