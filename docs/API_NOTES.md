@@ -18,7 +18,7 @@ them at `http://localhost:8000/openapi.json` and `/docs`. This page holds what t
 | Endpoint | officer | admin | viewer |
 |---|---|---|---|
 | `GET /merchants`, `/merchants/{id}`, `/merchants/{id}/score`, `/merchants/{id}/consent`, `/decisions`, `/model/card` | yes | yes | yes |
-| `POST /merchants/{id}/decision`, `POST /merchants/{id}/questionnaire` | yes | no | no |
+| `POST /merchants/{id}/decision`, `POST /merchants/{id}/questionnaire`, `POST /merchants/{id}/consent-request` | yes | no | no |
 | `GET /audit`, `POST /admin/import/{table}`, `POST /admin/import-bundle` | no | yes | no |
 
 ## Errors
@@ -35,6 +35,7 @@ A request with a wrong shape is the usual FastAPI 422.
 | 403 | `rows_not_shown` | Home Credit mode: totals only, no merchant pages |
 | 404 | `unknown_merchant`, `unknown_table` | |
 | 409 | `import_not_available` | a public data mode is active; the database holds only synthetic data |
+| 409 | `consent_already_valid` | a consent request for a merchant whose consent is already valid: nothing to ask for |
 | 409 | `no_pending_loan` | a decision on a merchant whose latest loan already has an outcome: nothing is waiting for a decision. Hide the decision form for such a merchant |
 | 409 | `import_not_allowed` | an import of history or consent rows for a merchant of the original data (see Import) |
 | 413 | `file_too_large` | import file over 10 MB |
@@ -58,6 +59,11 @@ A request with a wrong shape is the usual FastAPI 422.
   describes; it never recommends lending or not. `banner` is not in the response; take it from
   `GET /health`. `code` in a reason is for
   logs; never show it. `baseline_score + shown contributions + other_contribution = score`.
+  Since Oct 18 the card also has `inputs` (every model input in model order: `group`, `label`,
+  `has_data`, `points`, the sentence and `detail` when there is one; `baseline_score` + all `points`
+  = the exact score, and an input with no data has 0 points) and `coverage_items` (the coverage
+  checklist: `item`, `weight`, `present`; coverage = the sum of the present weights). Show every input
+  instead of "everything else", and the checklist beside the coverage.
 - **Decision.** The score and model version are taken from the scorer on the server; whatever the
   request says about them is ignored.
 - **Questionnaire.** Saving twice replaces the earlier answers (the audit log keeps who saved and when).
@@ -164,4 +170,13 @@ A request with a wrong shape is the usual FastAPI 422.
     scored (see Import). New error code `bad_bundle` (422); new audit actions `import_bundle`,
     `check_import_bundle`, `refused_import_bundle`.
   - The local database needs the new decision columns: `python tasks.py data --reset-db` once.
+- **Oct 18 changes, for the dashboard.**
+  - *Every input on the score card:* `inputs` and `coverage_items` (see Score).
+  - *Ask for consent:* `POST /merchants/{id}/consent-request` (officers only, no body) records that an
+    officer asked a merchant without a valid consent for one: an audit entry `request_consent`, and the
+    answer `ConsentRequestOut` (`requested_by`, `requested_at` in UTC, `note`). It never creates, changes or
+    revokes a consent and scores nothing; only the merchant can grant consent, in their own app.
+    `GET /merchants/{id}/consent` lists the requests, newest first, in `consent_requests`. A merchant whose
+    consent is already valid gets 409 `consent_already_valid`. No database change: requests live in the
+    audit log.
 - **Not built:** a consent revoke endpoint (see Consent).

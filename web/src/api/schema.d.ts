@@ -99,6 +99,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/merchants/{merchant_id}/consent-request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request Consent
+         * @description Ask a merchant without a valid consent for one. Officers only.
+         *
+         *     This records the request (an audit entry `request_consent`) and nothing else: it never
+         *     creates, changes or revokes a consent, and it scores nothing. Only the merchant can
+         *     grant consent, in their own app; the consent system's record then reaches CredLens
+         *     like any other record. A merchant whose consent is already valid is refused with 409
+         *     `consent_already_valid`.
+         */
+        post: operations["request_consent_merchants__merchant_id__consent_request_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/merchants/{merchant_id}/questionnaire": {
         parameters: {
             query?: never;
@@ -472,6 +498,29 @@ export interface components {
             status: "valid" | "expired" | "revoked" | "not_started";
         };
         /**
+         * ConsentRequestOut
+         * @description POST /merchants/{id}/consent-request: an officer asked the merchant for consent.
+         */
+        ConsentRequestOut: {
+            /** Merchant Id */
+            merchant_id: string;
+            /**
+             * Requested By
+             * @description The officer's demo user id.
+             */
+            requested_by: string;
+            /**
+             * Requested At
+             * @description When, in UTC (ISO 8601, no zone suffix).
+             */
+            requested_at: string;
+            /**
+             * Note
+             * @description What happens next, in plain words.
+             */
+            note: string;
+        };
+        /**
          * ConsentView
          * @description GET /merchants/{id}/consent: the merchant's consent as the data stands today.
          */
@@ -500,6 +549,30 @@ export interface components {
             records: {
                 [key: string]: string | null;
             }[];
+            /**
+             * Consent Requests
+             * @description Officers' requests for consent, newest first (Oct 17). A request never grants consent: only the merchant can, in their own app.
+             * @default []
+             */
+            consent_requests: components["schemas"]["ConsentRequestOut"][];
+        };
+        /**
+         * CoverageItem
+         * @description One item of the coverage checklist.
+         */
+        CoverageItem: {
+            /**
+             * Item
+             * @description Checklist item, e.g. 'deliveries_present'.
+             */
+            item: string;
+            /**
+             * Weight
+             * @description Its share of coverage (weights sum to 1).
+             */
+            weight: number;
+            /** Present */
+            present: boolean;
         };
         /**
          * Decision
@@ -656,6 +729,49 @@ export interface components {
             loaded: boolean;
             /** Note */
             note: string;
+        };
+        /**
+         * InputPoints
+         * @description One model input on a score card, whether or not it is among the top reasons.
+         */
+        InputPoints: {
+            /**
+             * Code
+             * @description Feature name. For logs and tests; never shown to officers.
+             */
+            code: string;
+            /**
+             * Group
+             * @description Where the data comes from: purchases, payments, deliveries.
+             */
+            group: string;
+            /**
+             * Label
+             * @description Short English name of the input, e.g. 'Returns'.
+             */
+            label: string;
+            /**
+             * Has Data
+             * @description False: the merchant has no data for this input.
+             */
+            has_data: boolean;
+            /**
+             * Points
+             * @description Score points this input added (+) or removed (-).
+             */
+            points: number;
+            /**
+             * Sentence En
+             * @description The plain reason sentence, when one is true for the merchant.
+             */
+            sentence_en?: string | null;
+            /** Sentence Bn */
+            sentence_bn?: string | null;
+            /**
+             * Detail
+             * @description The merchant's number against the average, e.g. 'Returns 5.9% vs 6.8%'.
+             */
+            detail?: string | null;
         };
         /**
          * MerchantProfile
@@ -979,6 +1095,18 @@ export interface components {
             summary_bn?: string | null;
             /** @description The band lines of this data mode, to show beside the band. */
             band_rules?: components["schemas"]["BandRules"] | null;
+            /**
+             * Inputs
+             * @description Every model input with its points, in model order (Oct 17). baseline_score + the sum of all points = the score before rounding. An input the merchant has no data for has 0 points: missing data never lowers a score.
+             * @default []
+             */
+            inputs: components["schemas"]["InputPoints"][];
+            /**
+             * Coverage Items
+             * @description The coverage checklist behind `coverage` (Oct 17): coverage is the sum of the weights of the items that are present.
+             * @default []
+             */
+            coverage_items: components["schemas"]["CoverageItem"][];
         };
         /**
          * TimelineEvent
@@ -1145,6 +1273,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConsentView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    request_consent_merchants__merchant_id__consent_request_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Demo-Token"?: string | null;
+            };
+            path: {
+                merchant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentRequestOut"];
                 };
             };
             /** @description Validation Error */

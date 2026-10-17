@@ -131,6 +131,7 @@ def test_openapi_spec_is_published():
         "/merchants/{merchant_id}",
         "/merchants/{merchant_id}/score",
         "/merchants/{merchant_id}/consent",
+        "/merchants/{merchant_id}/consent-request",
         "/consents",
         "/merchants/{merchant_id}/decision",
         "/merchants/{merchant_id}/questionnaire",

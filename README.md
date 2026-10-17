@@ -11,28 +11,29 @@ Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2
 
 ## Status
 
-**Phases 0 to 8 are done (Oct 14, 2026): scaffold, synthetic data, database, features and labels, two models with a rule for choosing between them, calibration, score, coverage and bands, the reasons behind a score, adapters for four public data sources, and training runs on all of them. The API endpoints and the dashboard are being built now.**
+**The build is complete except hosting (Oct 18, 2026).** Phases 0 to 11 and 13 are done: synthetic data, database, features and labels, two models with a rule for choosing between them, calibration, score, coverage and bands, exact reasons, four public data sources, the ablation and group audit, model cards, the held-back test period, the API, and the React dashboard (redesigned on Oct 17 from the approved designs, English and Bangla, phone layouts). A live import scores a lender's file of new merchants with the saved model. Hosting on Hostinger (Phase 12) is next.
 
-| Works now | Not built yet |
+| Works now | Not done yet |
 |---|---|
-| Project structure, config loading and checks | |
-| Data contract and adapter interface; adapters and features for all four public sources (Taiwan, India, Home Credit, Kiva) | |
-| Synthetic data generator: 20,000 merchants, three delivery signal strengths | API endpoints for the queue, profile, score, decisions and audit (Phase 9) |
-| Database (SQLite locally): tables, loader, backup; append-only decisions and audit log | React dashboard (Phase 10) |
+| Project structure, config loading and checks | Hosting on the Hostinger VPS (follow [docs/DEPLOY.md](docs/DEPLOY.md)); the site must sit behind a password |
+| Data contract and adapter interface; adapters and features for all four public sources (Taiwan, India, Home Credit, Kiva) | Native-speaker review of the Bangla |
+| Synthetic data generator: 20,000 merchants, three delivery signal strengths | Backup video, slides, rehearsal |
+| Database (SQLite locally, PostgreSQL path checked): tables, loader, backup; append-only decisions and audit log | |
 | Mifos X: the export was loaded into a running Mifos X (Apache Fineract in Docker): 50 merchants, 85 loans, 73 repayments, nothing refused, loan statuses matched for all 85 ([tools/mifos/](tools/mifos/README.md)) | |
-| Features built only from data before each loan, labels from the 30-day rule, and a leakage guard | Ablation, group audit, model cards, final check on the held-back test months (Phase 11) |
-| Logistic regression and LightGBM, trained on 12 months and measured on the next 3; the simple model stays unless the other is clearly better | Supabase database and hosting (Phase 12) |
-| Calibration check; score, coverage, band and low-score warning | |
-| Reasons: three up and three down, in English and Bangla, with numbers that add up to the score (exact SHAP values) | |
-| Scoring service for the API: review queue and score card, nothing scored without consent | |
-| Training runs on all five data modes, with an honest reading of each: [reports/REAL_LABEL_RESULTS.md](reports/REAL_LABEL_RESULTS.md) | |
-| API contract, sample responses, `GET /health` | |
-| Ablation A to D with the negative control ([reports/ablation/](reports/ablation/ABLATION.md)); PostgreSQL path checked | |
+| Features built only from data before each loan, labels from the 30-day rule, and a leakage guard | |
+| Logistic regression and LightGBM, trained on 12 months and measured on the next 3; the simple model stays unless the other is clearly better | |
+| Calibration; score, coverage, band and low-score warning | |
+| Reasons in English and Bangla, with numbers that add up to the score (exact Shapley values); every input and the coverage checklist on the score card | |
+| Ablation A to D with the negative control ([reports/ablation/](reports/ablation/ABLATION.md)) | |
 | Group audit on every data mode, with a planted-gap test ([reports/FAIRNESS.md](reports/FAIRNESS.md)) | |
 | One model card per data mode ([docs/model_card_synthetic_bd.md](docs/model_card_synthetic_bd.md) and the others), served by `GET /model/card` | |
 | The held-back test period, once per model, with a ledger of every look ([reports/REAL_LABEL_RESULTS.md](reports/REAL_LABEL_RESULTS.md)) | |
-| English/Bangla switch for the whole dashboard and the model cards (Bangla awaiting a native-speaker review) | |
-| Lint, 783 tests and CI | |
+| API: queue, profile, score, consent, decisions, questionnaire, model card, audit, import; demo roles; consent before scoring; every read audited ([docs/API_NOTES.md](docs/API_NOTES.md)) | |
+| Dashboard: Home, review queue, merchant page, decision log, portfolio, model card, consent, phone consent demo, audit log, data import | |
+| Live import of a lender's file of new merchants, scored by the saved model; officers can ask a merchant without consent for it | |
+| Starter kit and data inventory ([docs/starter_kit.md](docs/starter_kit.md), [docs/data_inventory.md](docs/data_inventory.md)); acceptance checklist with evidence ([docs/ACCEPTANCE_CHECKLIST.md](docs/ACCEPTANCE_CHECKLIST.md)) | |
+| How to run and show it: [docs/LIVE_DEMO_GUIDE.md](docs/LIVE_DEMO_GUIDE.md) | |
+| Lint, 1,021 tests and CI | |
 
 ### Where the model stands (synthetic data, validation months, seed 42)
 

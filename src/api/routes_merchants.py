@@ -34,6 +34,7 @@ from src.api.profile import (
 )
 from src.api.schemas import (
     Band,
+    ConsentRequestOut,
     ConsentView,
     MerchantProfile,
     MerchantQueueItem,
@@ -241,7 +242,66 @@ def merchant_consent(
         as_of=as_of.isoformat(),
         data_categories=sorted(categories),
         records=records,
+        consent_requests=_consent_requests(session, merchant_id),
     )
+
+
+REQUEST_NOTE = (
+    "Request recorded. In production the merchant gets it in their own app; only the "
+    "merchant can grant consent. Nothing is scored until they do."
+)
+# How many earlier requests the consent view lists.
+MAX_LISTED_REQUESTS = 10
+
+
+def _consent_requests(session: Session, merchant_id: str) -> list[ConsentRequestOut]:
+    """The officers' requests for this merchant's consent, newest first, from the audit log."""
+    rows = session.scalars(
+        select(db.AuditEntry)
+        .where(db.AuditEntry.merchant_id == merchant_id, db.AuditEntry.action == "request_consent")
+        .order_by(db.AuditEntry.id.desc())
+        .limit(MAX_LISTED_REQUESTS)
+    ).all()
+    return [
+        ConsentRequestOut(
+            merchant_id=merchant_id,
+            requested_by=row.actor,
+            requested_at=row.timestamp.isoformat(timespec="seconds"),
+            note=REQUEST_NOTE,
+        )
+        for row in rows
+    ]
+
+
+@router.post(
+    "/merchants/{merchant_id}/consent-request", response_model=ConsentRequestOut, status_code=201
+)
+def request_consent(
+    merchant_id: str,
+    user: CurrentUser = Depends(OFFICER_ONLY),
+    services: Services = Depends(get_services),
+    session: Session = Depends(get_session),
+) -> ConsentRequestOut:
+    """Ask a merchant without a valid consent for one. Officers only.
+
+    This records the request (an audit entry `request_consent`) and nothing else: it never
+    creates, changes or revokes a consent, and it scores nothing. Only the merchant can
+    grant consent, in their own app; the consent system's record then reaches CredLens
+    like any other record. A merchant whose consent is already valid is refused with 409
+    `consent_already_valid`.
+    """
+    _refuse_hidden_rows(services)
+    _known_merchant(session, merchant_id)
+    valid, _ = consent_state(session, merchant_id, services.data_today(session))
+    if valid:
+        raise api_error(
+            409,
+            "consent_already_valid",
+            f"Merchant {merchant_id} already has a valid consent; there is nothing to ask for.",
+        )
+    add_audit(session, user, "request_consent", merchant_id)
+    session.commit()
+    return _consent_requests(session, merchant_id)[0]
 
 
 @router.post("/merchants/{merchant_id}/questionnaire", response_model=QuestionnaireSummary)
