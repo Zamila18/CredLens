@@ -1,6 +1,7 @@
 /**
- * All the pages and their addresses (DESIGN_SPEC.md section 1).
- * Every page sits inside the app shell (sidebar + banner).
+ * All the pages and their addresses (CredLens_Final_Designs/CLAUDE_CODE_INSTRUCTIONS.md,
+ * section 2). Every page sits inside the app shell (sidebar + banner).
+ * Home is `/`; the review queue moved to `/queue` (Oct 17).
  */
 import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router'
@@ -13,6 +14,7 @@ import { ConsentDemoPage } from '@/pages/ConsentDemoPage'
 import { ConsentPage } from '@/pages/ConsentPage'
 import { DecisionsPage } from '@/pages/DecisionsPage'
 import { DevStates } from '@/pages/DevStates'
+import { HomePage } from '@/pages/HomePage'
 import { ImportPage } from '@/pages/ImportPage'
 import { MerchantPage } from '@/pages/merchant/MerchantPage'
 import { ModelCardPage } from '@/pages/model/ModelCardPage'
@@ -33,7 +35,8 @@ export default function App() {
     <SessionProvider>
       <Routes>
         <Route element={<AppShell />}>
-          <Route index element={<QueuePage />} />
+          <Route index element={<HomePage />} />
+          <Route path="queue" element={<QueuePage />} />
           <Route path="merchants/:merchantId" element={<MerchantPage />} />
           <Route path="decisions" element={<DecisionsPage />} />
           <Route

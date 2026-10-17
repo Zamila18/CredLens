@@ -112,6 +112,9 @@ export const VALUE_TEXT: Record<string, Pair> = {
   apparel: { en: 'apparel', bn: 'কাপড়ের দোকান' },
   electronics: { en: 'electronics', bn: 'ইলেকট্রনিক্স' },
   other: { en: 'other', bn: 'অন্যান্য' },
+  // Yes/no columns (trade licence) as the group audit writes them.
+  True: { en: 'yes', bn: 'আছে' },
+  False: { en: 'no', bn: 'নেই' },
 }
 
 export function valueText(value: string | null | undefined, lang: Lang): string {

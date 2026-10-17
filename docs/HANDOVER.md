@@ -67,7 +67,7 @@ Dipto and Humayra meet at the API. If a page needs a field or endpoint that is m
 | 3 | Done (Oct 15): Phase 11 part 4, the test period, once per model | `src/model/final_test.py`, `reports/` |
 | 4 | Documents and checks (moved from Dipto): Findex codebook check, CGAP Kaleidofin case, first pass of the Bangla review (a native speaker confirms), `docs/starter_kit.md`, `docs/data_inventory.md`, slides text | `docs/`, `config/calibration/` |
 | 5 | Remove the two stale Phase 7 skip placeholders in `tests/test_adapters.py` | `tests/` |
-| 6 | In progress (Oct 17): live import demo (done) and the dashboard redesign from `web/design-reference/CredLens_Final_Designs/` | `src/api/`, `src/synth/demo_batch.py`, `web/` |
+| 6 | Done (Oct 17): live import demo and the dashboard redesign from `web/design-reference/CredLens_Final_Designs/` (every page, English and Bangla, 390 px phones, fonts bundled). The hand test and judges' script: `docs/LIVE_DEMO_GUIDE.md` | `src/api/`, `src/synth/demo_batch.py`, `web/`, `docs/` |
 | 7 | When everything else is done: buy the Hostinger VPS and deploy by following Humayra's `docs/DEPLOY.md` | the server |
 
 Phase 11 stays with the lead: the public data modes need the raw files, which exist only on the lead's laptop and may not be shared.

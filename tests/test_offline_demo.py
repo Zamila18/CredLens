@@ -217,14 +217,16 @@ def test_only_get_and_post_are_allowed_on_the_dashboard(site):
 # --- the real dashboard build and the helpers --------------------------------------------
 
 
-def test_the_real_index_page_loses_only_the_font_lines():
+def test_the_real_index_page_needs_no_cleaning_any_more():
+    """Since Oct 17 the fonts are bundled with the app (web/src/fonts.ts): the real page
+    loads nothing from Google, so the offline demo leaves it exactly as it is."""
     index = ROOT / "web" / "index.html"
     text = index.read_text(encoding="utf-8")
+    assert "fonts.g" not in text
     cleaned = offline_demo.local_index(text)
-    assert "fonts.g" in text and "fonts.g" not in cleaned
     for kept in ('<div id="root">', 'type="module"', "<title>", 'rel="icon"'):
         assert kept in cleaned
-    assert cleaned.count("<link") == text.count("<link") - 3  # two preconnects, one stylesheet
+    assert cleaned.count("<link") == text.count("<link")
 
 
 def test_the_script_names_what_is_missing(tmp_path):

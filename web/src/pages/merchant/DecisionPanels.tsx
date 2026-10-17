@@ -1,11 +1,13 @@
 /**
- * "Your decision" (Merchant.dc.html) and this merchant's decision history.
+ * "Your decision" and this merchant's decision history (approved design: 03-merchant-desktop.png).
  *
- * - Officers only. Admin and viewer see a read-only note and the history.
- * - "Record decision" stays disabled until an action is chosen and, for an override,
- *   the written reason is not blank. The API checks the same rule again.
- * - The score and model version are taken by the server, not from this form.
+ * - Officers only. Admin and viewer see a read-only note naming who they are, and the history.
+ * - "Record decision" stays disabled until an action is chosen and, for an override, the
+ *   written reason is not blank (whitespace does not count). The API checks the same rules
+ *   again, including the 2,000-character limit (`api.reason_max_chars`).
+ * - The score, band, coverage and model version are taken by the server, not from this form.
  * - Decisions are append-only: to change course, the officer records a new one.
+ * - No form when nothing is waiting for a decision (the API would answer no_pending_loan).
  */
 import { useState } from 'react'
 
@@ -15,19 +17,21 @@ import { invalidate } from '@/api/useApi'
 import { useSession } from '@/app/session-context'
 import { ActionCard } from '@/components/ActionCard'
 import { ActionChip } from '@/components/ActionChip'
+import { BandChip, Chip } from '@/components/BandChip'
 import { ErrorCallout } from '@/components/ErrorCallout'
-import { Card } from '@/components/Page'
+import { Section } from '@/components/Page'
 import { Button } from '@/components/ui/button'
 import { ACTIONS, isOverride } from '@/lib/actions'
-import { fmtDateTime } from '@/lib/format'
+import { fmtBdTime, pct } from '@/lib/format'
 import { ACTION_TEXT, pick, useLang, useT, type T } from '@/lib/i18n'
+
+/** The API's limit on a written reason (config `api.reason_max_chars`). */
+export const REASON_MAX = 2000
 
 function reasonPlaceholder(action: OfficerAction | null, t: T) {
   if (isOverride(action)) return t('What did you see that the score did not?', 'স্কোরে যা ধরা পড়েনি, আপনি কী দেখলেন?')
-  if (action === 'needs_more_info') {
-    return t('What is missing? e.g. Waiting for delivery records.', 'কী নেই? যেমন: ডেলিভারির রেকর্ডের অপেক্ষা।')
-  }
-  return t('Anything the next officer should know', 'পরের কর্মকর্তার যা জানা দরকার')
+  if (action === 'needs_more_info') return t('What is missing? e.g. Waiting for delivery records.', 'কী নেই? যেমন: ডেলিভারির রেকর্ডের অপেক্ষা।')
+  return t('Add a note about your decision (optional).', 'আপনার সিদ্ধান্ত নিয়ে একটি নোট লিখুন (ঐচ্ছিক)।')
 }
 
 export function DecisionForm({ merchantId, score, onRecorded }: { merchantId: string; score: Score; onRecorded: () => void }) {
@@ -41,7 +45,8 @@ export function DecisionForm({ merchantId, score, onRecorded }: { merchantId: st
 
   const override = isOverride(action)
   const blank = reason.trim() === ''
-  const disabled = !action || (override && blank) || saving
+  const tooLong = reason.trim().length > REASON_MAX
+  const disabled = !action || (override && blank) || tooLong || saving
 
   async function record() {
     if (!action) return
@@ -71,45 +76,39 @@ export function DecisionForm({ merchantId, score, onRecorded }: { merchantId: st
     setError(null)
   }
 
-
   return (
-    <Card className="flex flex-col gap-4 p-5">
-      <div className="flex flex-col gap-1">
-        <h2 className="m-0 text-lg font-semibold">{t('Your decision', 'আপনার সিদ্ধান্ত')}</h2>
-        <p className="m-0 text-[13px] text-muted">
-          {t('The score suggests. You decide, and the record keeps why.', 'স্কোর পরামর্শ দেয়। সিদ্ধান্ত আপনার, আর রেকর্ডে কারণ থাকে।')}
-        </p>
-      </div>
-
+    <Section
+      id="decision"
+      title={t('Your decision', 'আপনার সিদ্ধান্ত')}
+      answer={t('The score suggests. You decide, and the record keeps why.', 'স্কোর পরামর্শ দেয়। সিদ্ধান্ত আপনার, আর রেকর্ডে কারণ থাকে।')}
+    >
       {recorded ? (
-        <div className="flex flex-col gap-2.5 rounded-panel bg-strong-selected p-4" role="status">
-          <div className="flex items-center gap-2 font-semibold text-lens-dark">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#0B4A3D" strokeWidth="2" aria-hidden="true">
-              <path d="M3.5 9.5l3.5 3.5 7.5-8" />
-            </svg>
+        <div className="flex flex-col gap-2.5 rounded-[12px] border border-mint-line bg-mint-2 p-4" role="status">
+          <span className="text-base font-semibold text-lens-dark">
             {t('Recorded:', 'রাখা হয়েছে:')} {pick(ACTION_TEXT[recorded.officer_action].label, lang)}
-          </div>
-          <span className="text-sm">{recorded.reason_text ? `“${recorded.reason_text}”` : t('No note added.', 'কোনো নোট নেই।')}</span>
-          <span className="font-mono text-xs text-ink-3">
-            {recorded.officer_id} · {t('score shown', 'দেখানো স্কোর')} {recorded.score_shown} · {t('model', 'মডেল')}{' '}
-            {recorded.model_version} · {t('audit entry written', 'অডিটে লেখা হয়েছে')}
           </span>
-          <span className="text-[13px] text-ink-3">
-            {t(
-              'Decisions are append-only. To change course, record a new decision.',
-              'সিদ্ধান্ত শুধু যোগ করা যায়, বদলানো যায় না। মত বদলালে নতুন সিদ্ধান্ত রাখুন।',
-            )}
+          <span className="text-[15px]">{recorded.reason_text ? `“${recorded.reason_text}”` : t('No note added.', 'কোনো নোট নেই।')}</span>
+          <span className="text-[13px] text-body">
+            {recorded.officer_id} · {fmtBdTime(recorded.decided_at)} {t('(Bangladesh time)', '(বাংলাদেশ সময়)')} · {t('score shown', 'দেখানো স্কোর')}{' '}
+            {recorded.score_shown}
+            {recorded.band_shown && ` · ${recorded.band_shown}`}
+            {recorded.coverage_shown != null && ` · ${pct(recorded.coverage_shown)} ${t('coverage', 'কভারেজ')}`} · {t('model', 'মডেল')}{' '}
+            <span className="font-mono">{recorded.model_version}</span>
+          </span>
+          <span className="text-[13px] text-body">
+            {t('Decisions are append-only. To change course, record a new decision.', 'সিদ্ধান্ত শুধু যোগ করা যায়, বদলানো যায় না। মত বদলালে নতুন সিদ্ধান্ত রাখুন।')}
           </span>
           <Button variant="outline" size="sm" className="self-start" onClick={again}>
             {t('Record another decision', 'আরেকটি সিদ্ধান্ত রাখুন')}
           </Button>
         </div>
       ) : (
-        <div className="flex flex-col gap-3.5">
-          <div role="radiogroup" aria-label={t('Action', 'পদক্ষেপ')} className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-2.5">
+        <div className="flex flex-col gap-4">
+          <div role="radiogroup" aria-label={t('Action', 'পদক্ষেপ')} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {ACTIONS.map((a) => (
               <ActionCard
                 key={a.value}
+                action={a.value}
                 label={pick(ACTION_TEXT[a.value].label, lang)}
                 hint={pick(ACTION_TEXT[a.value].hint, lang)}
                 selected={action === a.value}
@@ -117,11 +116,9 @@ export function DecisionForm({ merchantId, score, onRecorded }: { merchantId: st
               />
             ))}
           </div>
-          <label className="flex flex-col gap-1.5 text-[13px] font-semibold">
+          <label className="flex flex-col gap-1.5 text-sm font-semibold text-ink">
             <span>
-              {override
-                ? t('Written reason (required for an override)', 'লিখিত কারণ (পরিবর্তনের জন্য বাধ্যতামূলক)')
-                : t('Note (optional)', 'নোট (ঐচ্ছিক)')}
+              {override ? t('Written reason (required for an override)', 'লিখিত কারণ (পরিবর্তনের জন্য বাধ্যতামূলক)') : t('Note (optional)', 'নোট (ঐচ্ছিক)')}
             </span>
             <textarea
               rows={3}
@@ -129,18 +126,28 @@ export function DecisionForm({ merchantId, score, onRecorded }: { merchantId: st
               onChange={(e) => setReason(e.target.value)}
               placeholder={reasonPlaceholder(action, t)}
               aria-required={override}
-              className="resize-y rounded-[10px] border-[1.5px] border-button-line p-3 font-sans text-sm font-normal text-ink"
+              aria-invalid={tooLong || undefined}
+              className="resize-y rounded-[10px] border border-control-line p-3 font-sans text-[15px] font-normal text-ink"
             />
+            <span className={tooLong ? 'self-end text-xs font-medium text-error' : 'self-end text-xs font-normal text-muted-2'}>
+              {reason.trim().length.toLocaleString('en-US')} / {REASON_MAX.toLocaleString('en-US')}
+            </span>
           </label>
           {override && blank && (
             <span className="text-[13px] text-amber-text">
               {t('An override needs a written reason before it can be recorded.', 'পরিবর্তন রাখার আগে লিখিত কারণ দিতে হবে।')}
             </span>
           )}
+          {tooLong && (
+            <span className="text-[13px] text-error">
+              {t(`A reason may be at most ${REASON_MAX.toLocaleString('en-US')} characters.`, `কারণ সর্বোচ্চ ${REASON_MAX.toLocaleString('en-US')} অক্ষরের হতে পারে।`)}
+            </span>
+          )}
           {error && <ErrorCallout error={error} />}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="font-mono text-xs text-muted-2">
-              {t('Saved with: score', 'সাথে রাখা হবে: স্কোর')} {score.score} · {t('model', 'মডেল')} {score.model_version}
+            <span className="text-[13px] text-body">
+              {t('Saved with score', 'সাথে রাখা হবে: স্কোর')} {score.score} · {score.band} · {pct(score.coverage)} {t('coverage', 'কভারেজ')} ·{' '}
+              {t('model', 'মডেল')} <span className="font-mono">{score.model_version}</span>
             </span>
             <Button size="lg" disabled={disabled} onClick={record}>
               {saving ? t('Recording…', 'রাখা হচ্ছে…') : t('Record decision', 'সিদ্ধান্ত রাখুন')}
@@ -148,69 +155,95 @@ export function DecisionForm({ merchantId, score, onRecorded }: { merchantId: st
           </div>
         </div>
       )}
-    </Card>
+    </Section>
   )
 }
 
-/** For admin and viewer: who may record, and why the form is not here. */
+/** For admin and viewer: who may record, and why the form is not here. Names the actual demo user. */
 export function ReadOnlyDecisionNote() {
   const { user } = useSession()
   const t = useT()
   return (
-    <Card className="flex flex-col gap-1 p-5">
-      <h2 className="m-0 text-lg font-semibold">{t('Decision', 'সিদ্ধান্ত')}</h2>
-      <p className="m-0 text-sm text-ink-3">
-        {t('Only officers record decisions. You are signed in as', 'শুধু কর্মকর্তারা সিদ্ধান্ত রাখেন। আপনি আছেন')}{' '}
-        <span className="font-mono">{user}</span>
-        {t(
-          ', so this page is read-only. Switch the demo role to an officer to record one.',
-          ' হিসেবে, তাই এই পাতা শুধু দেখার জন্য। সিদ্ধান্ত রাখতে ডেমো ভূমিকা কর্মকর্তা করুন।',
-        )}
+    <Section id="decision" title={t('Your decision', 'আপনার সিদ্ধান্ত')}>
+      <p className="m-0 text-[15px] text-body">
+        {t('Only officers record decisions. You are using the demo role', 'শুধু কর্মকর্তারা সিদ্ধান্ত রাখেন। আপনি ডেমো ভূমিকায় আছেন')}{' '}
+        <span className="font-mono font-semibold text-ink">{user}</span>
+        {t(', so this page is read-only. Switch the demo role to an officer to record one.', ', তাই এই পাতা শুধু দেখার জন্য। সিদ্ধান্ত রাখতে ডেমো ভূমিকা কর্মকর্তা করুন।')}
       </p>
-    </Card>
+    </Section>
   )
 }
 
-/** Every decision recorded on this merchant, newest first. */
+/** When the merchant's latest loan already has an outcome: nothing is waiting for a decision. */
+export function NoPendingLoanNote() {
+  const t = useT()
+  return (
+    <Section id="decision" title={t('Your decision', 'আপনার সিদ্ধান্ত')}>
+      <p className="m-0 text-[15px] text-body">
+        {t(
+          'No loan is waiting for a decision on this merchant: the latest loan already has an outcome. The form appears when a new loan is waiting.',
+          'এই মার্চেন্টের কোনো ঋণ সিদ্ধান্তের অপেক্ষায় নেই: সর্বশেষ ঋণের ফলাফল জানা। নতুন ঋণ অপেক্ষায় থাকলে ফর্ম দেখা যাবে।',
+        )}
+      </p>
+    </Section>
+  )
+}
+
+/** Every decision recorded on this merchant, newest first, with what was on screen then. */
 export function DecisionHistory({ decisions, error }: { decisions?: Decision[]; error?: ApiError }) {
   const t = useT()
   const rows = [...(decisions ?? [])].sort((a, b) => b.decided_at.localeCompare(a.decided_at))
   return (
-    <Card className="flex flex-col gap-3 p-5">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="m-0 text-lg font-semibold">{t('Decisions on this merchant', 'এই মার্চেন্টের সিদ্ধান্ত')}</h2>
-        <span className="text-xs text-muted-2">{t('Append-only', 'শুধু যোগ করা যায়')}</span>
-      </div>
+    <Section
+      id="history"
+      title={t('Decisions on this merchant', 'এই মার্চেন্টের সিদ্ধান্ত')}
+      aside={
+        <Chip tone="strong" className="px-3 py-1 text-[13px]">
+          {t('Append-only', 'শুধু যোগ করা যায়')}
+        </Chip>
+      }
+    >
       {error ? (
         <ErrorCallout error={error} />
       ) : !decisions ? (
-        <p className="m-0 text-sm text-muted">{t('Loading…', 'আসছে…')}</p>
+        <p className="m-0 text-sm text-body">{t('Loading…', 'আসছে…')}</p>
       ) : rows.length === 0 ? (
-        <p className="m-0 text-sm text-ink-3">{t('No decisions recorded yet.', 'এখনও কোনো সিদ্ধান্ত রাখা হয়নি।')}</p>
+        <div className="rounded-[12px] border border-line bg-ground px-4 py-3">
+          <p className="m-0 text-[15px] font-semibold text-ink">{t('No decisions recorded yet.', 'এখনও কোনো সিদ্ধান্ত রাখা হয়নি।')}</p>
+          <p className="m-0 text-[13px] text-body">
+            {t('Decisions are append-only. To change course, record a new decision.', 'সিদ্ধান্ত শুধু যোগ করা যায়। মত বদলালে নতুন সিদ্ধান্ত রাখুন।')}
+          </p>
+        </div>
       ) : (
         <ol className="m-0 flex list-none flex-col p-0">
           {rows.map((d) => (
-            <li key={d.decision_id} className="flex flex-col gap-1.5 border-t border-line-soft py-3">
+            <li key={d.decision_id} className="flex flex-col gap-1.5 border-t border-line py-3 first:border-t-0">
               <div className="flex flex-wrap items-center gap-2.5">
-                <span className="font-mono text-[13px] text-ink-3 tabular">{fmtDateTime(d.decided_at, true)}</span>
-                <ActionChip action={d.officer_action} />
-                <span className="font-mono text-[13px] tabular">
-                  {t('score shown', 'দেখানো স্কোর')} {d.score_shown}
+                <span className="text-sm text-ink-2 tabular">
+                  {fmtBdTime(d.decided_at)} <span className="text-muted-2">{t('BD time', 'বাংলাদেশ সময়')}</span>
                 </span>
+                <ActionChip action={d.officer_action} />
+                <span className="text-sm text-ink tabular">
+                  {t('score', 'স্কোর')} <b>{d.score_shown}</b>
+                </span>
+                {d.band_shown && <BandChip band={d.band_shown} />}
+                {d.coverage_shown != null && (
+                  <span className="text-sm text-body tabular">
+                    {pct(d.coverage_shown)} {t('coverage', 'কভারেজ')}
+                  </span>
+                )}
               </div>
-              <span className="text-sm leading-5">
+              <span className="text-[15px] leading-[22px] text-ink">
                 {d.reason_text ??
-                  (d.officer_action === 'accept'
-                    ? t('No note. Accepting needs none.', 'কোনো নোট নেই। মেনে নিতে নোট লাগে না।')
-                    : t('No note.', 'কোনো নোট নেই।'))}
+                  (d.officer_action === 'accept' ? t('No note. Accepting needs none.', 'কোনো নোট নেই। মেনে নিতে নোট লাগে না।') : t('No note.', 'কোনো নোট নেই।'))}
               </span>
-              <span className="font-mono text-xs text-muted-2">
-                {d.officer_id} · {d.model_version}
+              <span className="text-xs text-muted-2">
+                {d.officer_id} · <span className="font-mono">{d.model_version}</span>
               </span>
             </li>
           ))}
         </ol>
       )}
-    </Card>
+    </Section>
   )
 }

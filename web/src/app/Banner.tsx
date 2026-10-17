@@ -6,7 +6,6 @@
  */
 import type { Health, ModelCard } from '@/api/types'
 import { useApi } from '@/api/useApi'
-import { InfoIcon } from '@/components/icons'
 import { BANNER_BN, useLang, useT } from '@/lib/i18n'
 
 const DECISION_SUPPORT = 'Decision support only.'
@@ -28,9 +27,11 @@ export function Banner() {
   const t = useT()
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-banner-line bg-banner px-4 py-2.5 text-[13px] sm:px-8">
+    <div
+      role="note"
+      className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1.5 rounded-[10px] border border-banner-line bg-banner px-4 py-2.5 text-sm"
+    >
       <div className="flex items-center gap-2.5 text-banner-text">
-        <InfoIcon className="shrink-0" />
         {health.data ? (
           (() => {
             const [first, rest] =
@@ -38,8 +39,8 @@ export function Banner() {
                 ? splitBanner(BANNER_BN[health.data.data_mode], DECISION_SUPPORT_BN, '। ')
                 : splitBanner(health.data.banner, DECISION_SUPPORT, '. ')
             return (
-              <span>
-                <span className="font-semibold">{first}</span> <span>{rest}</span>
+              <span className="font-semibold">
+                {first} {rest}
               </span>
             )
           })()
@@ -55,7 +56,7 @@ export function Banner() {
         )}
       </div>
       {health.data && (
-        <div className="font-mono text-xs text-muted-2">
+        <div className="font-mono text-xs break-all text-muted-2">
           data_mode {health.data.data_mode}
           {card.data && ` · model ${card.data.model_version}`}
         </div>

@@ -1,13 +1,15 @@
 /**
- * Left column of the merchant page (Merchant.dc.html): "Evidence, last 90 days" and the
+ * Merchant page (approved design: 03-merchant-desktop.png): "Evidence, last 90 days" and the
  * unified timeline. The 90-day numbers are the ones the score was computed from.
  * A stream that is null has no records in that source: it says so instead of zeros.
+ * Nothing here is invented: dates, amounts and labels come from GET /merchants/{id}.
  */
+import { ShoppingBasket, Truck, Wallet } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
 import type { MerchantProfile, TimelineEvent } from '@/api/types'
 import { FilterChip } from '@/components/Filters'
-import { Card } from '@/components/Page'
+import { Section } from '@/components/Page'
 import { count, fmtDate, pct, taka } from '@/lib/format'
 import { useLang, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -16,35 +18,53 @@ function plural(n: number, one: string, many: string) {
   return `${count(n)} ${n === 1 ? one : many}`
 }
 
-function StreamCard({ color, name, source, children }: { color: string; name: string; source: string; children: ReactNode }) {
+/** Stream colours: Mokam blue, REDX violet, Baki amber, loans ink (each also named in words). */
+const STREAM_COLOR = { purchase: '#2F6FB0', delivery: '#6555A6', payment: '#B7791F', loan: '#111B42' } as const
+
+function StreamCard({
+  icon,
+  color,
+  name,
+  source,
+  tone,
+  children,
+}: {
+  icon: ReactNode
+  color: string
+  name: string
+  source: string
+  tone: string
+  children: ReactNode
+}) {
   return (
-    <Card className="flex flex-col gap-3 p-4">
-      <div className="flex items-center gap-2">
-        <span className="size-2.5 rounded-[3px]" style={{ background: color }} aria-hidden="true" />
-        <span className="text-sm font-semibold">{name}</span>
-        <span className="text-xs text-muted-2">{source}</span>
+    <div className={cn('flex flex-col gap-3 rounded-[12px] border p-4', tone)}>
+      <div className="flex items-center gap-2 text-sm font-semibold" style={{ color }}>
+        {icon}
+        <span>
+          {name} · {source}
+        </span>
       </div>
       {children}
-    </Card>
+    </div>
   )
 }
 
 function Headline({ value, caption }: { value: string; caption: string }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="font-mono text-2xl font-semibold tabular">{value}</span>
-      <span className="text-[13px] text-muted">{caption}</span>
+      <span className="font-display text-[30px] leading-9 font-bold text-ink tabular">{value}</span>
+      <span className="text-sm text-body">{caption}</span>
     </div>
   )
 }
 
 function Facts({ rows }: { rows: [string, string][] }) {
   return (
-    <dl className="m-0 grid grid-cols-[1fr_auto] gap-x-3 gap-y-1.5 text-[13px]">
+    <dl className="m-0 grid grid-cols-2 gap-3 border-t border-line pt-3">
       {rows.map(([k, v]) => (
-        <div key={k} className="contents">
-          <dt className="text-muted">{k}</dt>
-          <dd className="m-0 font-mono tabular">{v}</dd>
+        <div key={k} className="flex flex-col gap-0.5">
+          <dt className="text-[13px] text-muted-2">{k}</dt>
+          <dd className="m-0 text-lg font-semibold text-ink tabular">{v}</dd>
         </div>
       ))}
     </dl>
@@ -53,107 +73,176 @@ function Facts({ rows }: { rows: [string, string][] }) {
 
 function NoRecords() {
   const t = useT()
-  return <span className="text-[13px] text-muted">{t('No records in this source', 'এই উৎসে কোনো রেকর্ড নেই')}</span>
+  return <span className="text-sm text-body">{t('No records in this source.', 'এই উৎসে কোনো রেকর্ড নেই।')}</span>
+}
+
+/** The parcels donut: delivered, returned, failed (and anything else) as shares of 90 days. */
+function ParcelDonut({ parcels, delivered, returned, failed }: { parcels: number; delivered: number; returned: number; failed: number }) {
+  const t = useT()
+  const size = 96
+  const stroke = 12
+  const r = (size - stroke) / 2
+  const c = 2 * Math.PI * r
+  const parts = [
+    { share: delivered, color: '#16845B' },
+    { share: returned, color: '#D9A441' },
+    { share: failed, color: '#8E9AAD' },
+  ]
+  let offset = 0
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#E6EEF0" strokeWidth={stroke} />
+        {parts.map((p) => {
+          const length = c * Math.max(0, p.share)
+          const circle = (
+            <circle
+              key={p.color}
+              cx={size / 2}
+              cy={size / 2}
+              r={r}
+              fill="none"
+              stroke={p.color}
+              strokeWidth={stroke}
+              strokeDasharray={`${length.toFixed(1)} ${c.toFixed(1)}`}
+              strokeDashoffset={(-offset).toFixed(1)}
+              transform={`rotate(-90 ${size / 2} ${size / 2})`}
+            />
+          )
+          offset += length
+          return circle
+        })}
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="font-display text-2xl leading-none font-bold text-ink tabular">{count(parcels)}</span>
+        <span className="text-xs text-body">{t('parcels', 'পার্সেল')}</span>
+      </div>
+    </div>
+  )
+}
+
+function Legend({ color, children }: { color: string; children: ReactNode }) {
+  return (
+    <li className="flex items-center gap-2 text-sm text-ink-2">
+      <span className="size-2.5 shrink-0 rounded-full" style={{ background: color }} aria-hidden="true" />
+      {children}
+    </li>
+  )
 }
 
 export function EvidenceCards({ profile }: { profile: MerchantProfile }) {
   const t = useT()
   const { purchases, deliveries, payments } = profile
   return (
-    <section aria-labelledby="ev" className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 id="ev" className="m-0 text-lg font-semibold">
-          {t('Evidence, last 90 days', 'প্রমাণ, গত ৯০ দিন')}
-        </h2>
-        <span className="text-[13px] text-muted-2">
-          {t('The same numbers the score was computed from', 'যে সংখ্যা থেকে স্কোর হিসাব হয়েছে, সেগুলোই')}
-        </span>
-      </div>
-      {!profile.consent_valid ? (
-        <Card className="p-4 text-sm text-ink-3">
-          {t(
-            'Without a valid consent no purchase, delivery or payment records are shown.',
-            'বৈধ অনুমতি ছাড়া কেনাকাটা, ডেলিভারি বা পেমেন্টের কোনো রেকর্ড দেখানো হয় না।',
+    <Section
+      id="evidence"
+      title={t('Evidence, last 90 days', 'প্রমাণ, গত ৯০ দিন')}
+      answer={t('The same numbers the score was computed from.', 'যে সংখ্যা থেকে স্কোর হিসাব হয়েছে, সেগুলোই।')}
+    >
+      <div className="grid gap-4 md:grid-cols-3">
+        <StreamCard
+          icon={<ShoppingBasket size={18} aria-hidden="true" />}
+          color={STREAM_COLOR.purchase}
+          name={t('Purchases', 'কেনাকাটা')}
+          source="Mokam"
+          tone="border-[#D5E4F3] bg-info-panel/60"
+        >
+          {purchases ? (
+            <>
+              <Headline
+                value={taka(purchases.value_bdt_90d)}
+                caption={t(
+                  `stock bought in ${plural(purchases.n_purchases_90d, 'purchase', 'purchases')}`,
+                  `${count(purchases.n_purchases_90d)} বার মাল কেনা হয়েছে`,
+                )}
+              />
+              <Facts
+                rows={[
+                  [t('Categories', 'পণ্যের ধরন'), count(purchases.n_categories)],
+                  [t('Weeks active', 'সক্রিয় সপ্তাহ'), count(purchases.weeks_active)],
+                ]}
+              />
+            </>
+          ) : (
+            <NoRecords />
           )}
-        </Card>
-      ) : (
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-3">
-          <StreamCard color="#0E5A4A" name={t('Purchases', 'কেনাকাটা')} source="Mokam">
-            {purchases ? (
-              <>
-                <Headline
-                  value={taka(purchases.value_bdt_90d)}
-                  caption={t(
-                    `stock bought in ${plural(purchases.n_purchases_90d, 'purchase', 'purchases')}`,
-                    `${count(purchases.n_purchases_90d)} বার মাল কেনা হয়েছে`,
-                  )}
+        </StreamCard>
+
+        <StreamCard
+          icon={<Truck size={18} aria-hidden="true" />}
+          color={STREAM_COLOR.delivery}
+          name={t('Deliveries', 'ডেলিভারি')}
+          source="REDX"
+          tone="border-peri-chip bg-peri-panel/60"
+        >
+          {deliveries ? (
+            <>
+              <div className="flex flex-wrap items-center gap-4">
+                <ParcelDonut
+                  parcels={deliveries.n_parcels_90d}
+                  delivered={deliveries.delivered_rate ?? 0}
+                  returned={deliveries.return_rate ?? 0}
+                  failed={deliveries.failed_rate ?? 0}
                 />
-                <Facts
-                  rows={[
-                    [t('Categories', 'পণ্যের ধরন'), count(purchases.n_categories)],
-                    [t('Weeks active', 'সক্রিয় সপ্তাহ'), count(purchases.weeks_active)],
-                  ]}
-                />
-              </>
-            ) : (
-              <NoRecords />
-            )}
-          </StreamCard>
-          <StreamCard color="#4A5A8C" name={t('Deliveries', 'ডেলিভারি')} source="REDX">
-            {deliveries ? (
-              <>
-                <Headline
-                  value={t(plural(deliveries.n_parcels_90d, 'parcel', 'parcels'), `${count(deliveries.n_parcels_90d)} পার্সেল`)}
-                  caption={t(`${pct(deliveries.delivered_rate)} delivered`, `${pct(deliveries.delivered_rate)} পৌঁছেছে`)}
-                />
-                <Facts
-                  rows={[
-                    [t('Returned', 'ফেরত'), pct(deliveries.return_rate)],
-                    [t('Failed', 'পৌঁছানো যায়নি'), pct(deliveries.failed_rate)],
-                    [t('COD passed back on time', 'ক্যাশ অন ডেলিভারির টাকা সময়মতো ফেরত'), pct(deliveries.cod_remit_ontime_rate)],
-                  ]}
-                />
-              </>
-            ) : (
-              <NoRecords />
-            )}
-          </StreamCard>
-          <StreamCard color="#B5650D" name={t('Payments', 'পেমেন্ট')} source="Baki">
-            {payments ? (
-              <>
-                <Headline
-                  value={t(`${pct(payments.ontime_rate)} on time`, `${pct(payments.ontime_rate)} সময়মতো`)}
-                  caption={t(
-                    `across ${plural(payments.n_payments, 'repayment', 'repayments')}`,
-                    `${count(payments.n_payments)}টি পরিশোধের মধ্যে`,
-                  )}
-                />
-                <Facts
-                  rows={[
-                    [
-                      t('Average days late', 'গড়ে কত দিন দেরি'),
-                      payments.avg_days_late == null ? '—' : payments.avg_days_late.toFixed(1),
-                    ],
-                  ]}
-                />
-              </>
-            ) : (
-              <NoRecords />
-            )}
-          </StreamCard>
-        </div>
-      )}
-    </section>
+                <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
+                  <Legend color="#16845B">{t(`${pct(deliveries.delivered_rate, 1)} delivered`, `${pct(deliveries.delivered_rate, 1)} পৌঁছেছে`)}</Legend>
+                  <Legend color="#D9A441">{t(`${pct(deliveries.return_rate, 1)} returned`, `${pct(deliveries.return_rate, 1)} ফেরত`)}</Legend>
+                  <Legend color="#8E9AAD">{t(`${pct(deliveries.failed_rate, 1)} failed`, `${pct(deliveries.failed_rate, 1)} পৌঁছানো যায়নি`)}</Legend>
+                </ul>
+              </div>
+              <div className="flex flex-col gap-1 border-t border-line pt-3">
+                <span className="text-[13px] text-muted-2">{t('COD passed back on time', 'ক্যাশ অন ডেলিভারির টাকা সময়মতো ফেরত')}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-lg font-semibold text-ink tabular">{pct(deliveries.cod_remit_ontime_rate, 1)}</span>
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-track" aria-hidden="true">
+                    <span className="block h-2 rounded-full bg-band-strong" style={{ width: pct(deliveries.cod_remit_ontime_rate) === '—' ? 0 : pct(deliveries.cod_remit_ontime_rate) }} />
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <NoRecords />
+          )}
+        </StreamCard>
+
+        <StreamCard
+          icon={<Wallet size={18} aria-hidden="true" />}
+          color={STREAM_COLOR.payment}
+          name={t('Payments', 'পেমেন্ট')}
+          source="Baki"
+          tone="border-amber-chip bg-amber-panel"
+        >
+          {payments ? (
+            <>
+              <Headline
+                value={pct(payments.ontime_rate)}
+                caption={t(
+                  `on time across ${plural(payments.n_payments, 'repayment', 'repayments')}`,
+                  `${count(payments.n_payments)}টি পরিশোধের মধ্যে সময়মতো`,
+                )}
+              />
+              <Facts
+                rows={[
+                  [t('Average days late', 'গড়ে কত দিন দেরি'), payments.avg_days_late == null ? '—' : payments.avg_days_late.toFixed(1)],
+                ]}
+              />
+            </>
+          ) : (
+            <NoRecords />
+          )}
+        </StreamCard>
+      </div>
+    </Section>
   )
 }
 
 type Stream = TimelineEvent['stream']
 
-const STREAM_META: Record<Stream, { color: string; source: string; sourceBn: string }> = {
-  purchase: { color: '#0E5A4A', source: 'Mokam · stock purchase', sourceBn: 'Mokam · মাল কেনা' },
-  delivery: { color: '#4A5A8C', source: 'REDX · delivery', sourceBn: 'REDX · ডেলিভারি' },
-  payment: { color: '#B5650D', source: 'Baki · repayment', sourceBn: 'Baki · পরিশোধ' },
-  loan: { color: '#13201C', source: 'Loan', sourceBn: 'ঋণ' },
+const STREAM_META: Record<Stream, { tag: string; tagBn: string; chip: string }> = {
+  purchase: { tag: 'Mokam · Purchase', tagBn: 'Mokam · কেনা', chip: 'border-[#CFE0F2] bg-info-panel text-[#245C93]' },
+  delivery: { tag: 'REDX · Delivery', tagBn: 'REDX · ডেলিভারি', chip: 'border-peri-chip bg-peri-panel text-peri-text' },
+  payment: { tag: 'Baki · Payment', tagBn: 'Baki · পেমেন্ট', chip: 'border-amber-chip bg-amber-panel text-amber-text' },
+  loan: { tag: 'Baki · Loan', tagBn: 'Baki · ঋণ', chip: 'border-line bg-neutral-chip text-ink-2' },
 }
 
 const STREAM_FILTERS: { value: Stream | 'all'; label: string; labelBn: string }[] = [
@@ -165,7 +254,7 @@ const STREAM_FILTERS: { value: Stream | 'all'; label: string; labelBn: string }[
 ]
 
 /** How many events to show before "Show all". */
-const FIRST_EVENTS = 25
+const FIRST_EVENTS = 12
 
 export function Timeline({ events }: { events: TimelineEvent[] }) {
   const t = useT()
@@ -178,43 +267,49 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
   const shown = showAll ? matching : matching.slice(0, FIRST_EVENTS)
 
   return (
-    <Card className="flex flex-col gap-4 p-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="m-0 text-lg font-semibold">{t('Unified timeline', 'একসাথে সময়রেখা')}</h2>
-        <div role="group" aria-label={t('Show stream', 'কোন ধারা দেখাবে')} className="flex flex-wrap gap-1.5">
-          {STREAM_FILTERS.map((f) => (
-            <FilterChip key={f.value} on={stream === f.value} onClick={() => setStream(f.value)}>
-              {t(f.label, f.labelBn)}
-            </FilterChip>
-          ))}
-        </div>
+    <Section
+      id="timeline"
+      title={t('Unified timeline', 'একসাথে সময়রেখা')}
+      answer={t('Every purchase, parcel, payment and loan in one line, newest first.', 'সব কেনাকাটা, পার্সেল, পেমেন্ট আর ঋণ এক সারিতে, নতুনটা আগে।')}
+    >
+      <div role="group" aria-label={t('Show stream', 'কোন ধারা দেখাবে')} className="flex flex-wrap gap-2">
+        {STREAM_FILTERS.map((f) => (
+          <FilterChip key={f.value} on={stream === f.value} onClick={() => setStream(f.value)}>
+            {t(f.label, f.labelBn)}
+          </FilterChip>
+        ))}
       </div>
       {matching.length === 0 ? (
-        <p className="m-0 border-t border-line-soft pt-3 text-sm text-muted">
-          {events.length === 0
-            ? t('No events to show.', 'দেখানোর মতো কোনো ঘটনা নেই।')
-            : t('No events in this stream.', 'এই ধারায় কোনো ঘটনা নেই।')}
+        <p className="m-0 border-t border-line pt-3 text-sm text-body">
+          {events.length === 0 ? t('No events to show.', 'দেখানোর মতো কোনো ঘটনা নেই।') : t('No events in this stream.', 'এই ধারায় কোনো ঘটনা নেই।')}
         </p>
       ) : (
-        <ol className="m-0 flex list-none flex-col p-0">
+        <ol className="relative m-0 flex list-none flex-col p-0">
           {shown.map((e, i) => {
             const meta = STREAM_META[e.stream]
             return (
               <li
                 key={`${e.date}-${i}`}
-                className="grid grid-cols-[96px_20px_minmax(0,1fr)_auto] items-start gap-3 border-t border-line-soft py-2.5"
+                className="grid grid-cols-[88px_16px_minmax(0,1fr)] items-start gap-x-3 gap-y-1 border-t border-line py-3 sm:grid-cols-[104px_16px_150px_minmax(0,1fr)_auto]"
               >
-                <span className="pt-px font-mono text-[13px] text-muted tabular">{fmtDate(e.date)}</span>
-                <span
-                  aria-hidden="true"
-                  className={cn('mt-[5px] block size-2.5', e.stream === 'loan' ? 'rotate-45 rounded-[2px]' : 'rounded-full')}
-                  style={{ background: meta.color }}
-                />
-                <span className="flex flex-col gap-0.5">
-                  <span className="text-sm font-medium">{lang === 'bn' && e.label_bn ? e.label_bn : e.label}</span>
-                  <span className="text-xs text-muted-2">{t(meta.source, meta.sourceBn)}</span>
+                <span className="flex flex-col">
+                  <span className="text-xs text-muted-2">{t('Date', 'তারিখ')}</span>
+                  <span className="text-sm text-ink tabular">{fmtDate(e.date)}</span>
                 </span>
-                <span className="font-mono text-sm font-medium tabular">{taka(e.amount_bdt)}</span>
+                <span aria-hidden="true" className="mt-2 block size-3 rounded-full border-2 border-white shadow-[0_0_0_1px_#DCE7EB]" style={{ background: STREAM_COLOR[e.stream] }} />
+                <span className={cn('hidden self-start justify-self-start rounded-md border px-2 py-0.5 text-xs font-medium sm:inline-flex', meta.chip)}>
+                  {t(meta.tag, meta.tagBn)}
+                </span>
+                <span className="col-start-3 flex flex-col gap-0.5 sm:col-start-auto">
+                  <span className="text-[15px] font-medium text-ink">{lang === 'bn' && e.label_bn ? e.label_bn : e.label}</span>
+                  <span className="text-xs text-muted-2 sm:hidden">{t(meta.tag, meta.tagBn)}</span>
+                </span>
+                {e.amount_bdt != null && (
+                  <span className="col-start-3 flex flex-col sm:col-start-auto sm:items-end">
+                    <span className="text-xs text-muted-2">{t('Amount', 'পরিমাণ')}</span>
+                    <span className="text-[15px] font-semibold text-ink tabular">{taka(e.amount_bdt)}</span>
+                  </span>
+                )}
               </li>
             )
           })}
@@ -224,13 +319,11 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
         <button
           type="button"
           onClick={() => setShowAll((v) => !v)}
-          className="min-h-10 cursor-pointer self-start rounded-lg border border-button-line bg-card px-3.5 font-sans text-[13px] font-semibold text-lens hover:bg-open-hover"
+          className="min-h-10 cursor-pointer self-start rounded-[10px] border border-lens bg-card px-4 font-sans text-sm font-semibold text-lens-dark hover:bg-mint-2"
         >
-          {showAll
-            ? t('Show fewer', 'কম দেখান')
-            : t(`Show all ${count(matching.length)} events`, `সব ${count(matching.length)}টি ঘটনা দেখান`)}
+          {showAll ? t('Show fewer', 'কম দেখান') : t(`Show all ${count(matching.length)} events`, `সব ${count(matching.length)}টি ঘটনা দেখান`)}
         </button>
       )}
-    </Card>
+    </Section>
   )
 }
