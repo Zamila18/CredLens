@@ -24,6 +24,26 @@ export function fmtDateTime(iso: string | null | undefined, withYear = false): s
   return time ? `${day} · ${time.slice(0, 5)}` : day
 }
 
+/**
+ * A UTC time from the API (no zone suffix, e.g. decided_at "2026-10-16T08:35:00") in
+ * Bangladesh time (UTC+06:00, no daylight saving): "16 Oct 2026, 14:35".
+ */
+export function fmtBdTime(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const utc = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(iso) ? iso : `${iso}Z`)
+  if (Number.isNaN(utc.getTime())) return iso
+  const bd = new Date(utc.getTime() + 6 * 60 * 60 * 1000)
+  const hh = String(bd.getUTCHours()).padStart(2, '0')
+  const mm = String(bd.getUTCMinutes()).padStart(2, '0')
+  return `${bd.getUTCDate()} ${MONTHS[bd.getUTCMonth()]} ${bd.getUTCFullYear()}, ${hh}:${mm}`
+}
+
+/** The day (YYYY-MM-DD) of a UTC time in Bangladesh time, for grouping decisions by day. */
+export function bdDay(iso: string): string {
+  const utc = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(iso) ? iso : `${iso}Z`)
+  return new Date(utc.getTime() + 6 * 60 * 60 * 1000).toISOString().slice(0, 10)
+}
+
 /** 148000 -> "৳1,48,000" (lakh grouping: last three digits, then pairs). */
 export function taka(n: number | null | undefined): string {
   if (n === null || n === undefined || Number.isNaN(n)) return ''

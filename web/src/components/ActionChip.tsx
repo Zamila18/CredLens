@@ -1,13 +1,13 @@
-/** ActionChip: an officer action as a pill (Decisions.dc.html colours). */
+/** ActionChip: an officer action as a pill (approved design: raise blue, lower amber, more info violet). */
 import type { OfficerAction } from '@/api/types'
 import { ACTION_TEXT, pick, useLang } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 const TONE: Record<OfficerAction, string> = {
   accept: 'bg-strong-chip text-lens-dark',
-  override_up: 'bg-amber-chip text-amber-text',
+  override_up: 'bg-info-panel text-info',
   override_down: 'bg-amber-chip text-amber-text',
-  needs_more_info: 'bg-peri-chip text-peri-text shadow-[inset_0_0_0_1.5px_#8A97BF]',
+  needs_more_info: 'bg-peri-chip text-peri-text',
 }
 
 export function ActionChip({ action }: { action: OfficerAction }) {

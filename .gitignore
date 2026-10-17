@@ -5,6 +5,8 @@ data/*.log
 data/backups/
 data/exports/
 *.zip
+# Kept: the live import demo file (five synthetic merchants, written by src/synth/demo_batch.py)
+!data/demo/credlens_demo_bundle.zip
 *.tar.gz
 *.parquet
 

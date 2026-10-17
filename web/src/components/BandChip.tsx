@@ -7,7 +7,7 @@ import type { ReactNode } from 'react'
 import type { Band } from '@/api/types'
 import { BAND_TEXT, pick, useLang } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { bandChipClass } from './band'
+import { BAND_DOT, bandChipClass } from './band'
 
 type Props = {
   band: Band | null
@@ -35,6 +35,7 @@ export function BandChip({ band, lowScoreWarning, noneLabel, size = 'sm', classN
         className,
       )}
     >
+      {band && <span className={cn('size-2 shrink-0 rounded-full', BAND_DOT[band])} aria-hidden="true" />}
       {label}
     </span>
   )

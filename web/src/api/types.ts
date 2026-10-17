@@ -25,6 +25,7 @@ export type QuestionnaireCreate = S['QuestionnaireCreate']
 export type AuditEntry = S['AuditEntry']
 export type ModelCard = S['ModelCard']
 export type ImportReport = S['ImportReport']
+export type BundleReport = S['BundleReport']
 
 /** The demo users from the API's users table. A demo role switch, not a login. */
 export const DEMO_USERS = ['officer-1', 'officer-2', 'admin-1', 'viewer-1'] as const

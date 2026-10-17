@@ -18,7 +18,8 @@ export interface paths {
          *     `status` is "decided" when an officer has recorded a decision on the merchant (the
          *     decisions table has no loan id, so one decision covers the merchant), else "pending".
          *     Pending merchants come first. A merchant without consent is listed with no score,
-         *     coverage or band.
+         *     coverage or band. The queue shows the score and band of thousands of merchants, so every
+         *     read writes an audit entry `view_queue` (before the list is returned).
          */
         get: operations["review_queue_merchants_get"];
         put?: never;
@@ -122,6 +123,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/consents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Consents
+         * @description Consent records ordered by merchant id, then grant date. Every role. Audited.
+         *
+         *     `merchant_id` narrows to one merchant, `status` to one status. `counts` gives the
+         *     number of records per status for the merchant filter, for the tiles above the table.
+         */
+        get: operations["list_consents_consents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/merchants/{merchant_id}/decision": {
         parameters: {
             query?: never;
@@ -135,8 +159,15 @@ export interface paths {
          * Record Decision
          * @description Record an officer's decision on a merchant. Officer only; a viewer can never POST.
          *
-         *     The score shown and the model version come from the Scorer. A merchant without a
-         *     valid consent has no score, so no decision can be recorded (403 `consent_required`).
+         *     The score shown and the model version come from the Scorer. Refused, and the refusal written
+         *     to the audit log as `refused_decision`:
+         *     - no valid consent: no score, so no decision (403 `consent_required`);
+         *     - no loan waiting: the merchant's latest loan already has an outcome, so there is nothing
+         *       to decide (409 `no_pending_loan`).
+         *
+         *     Pressing the button twice: when the same officer records the same action with the same
+         *     reason on the same merchant again within `api.duplicate_decision_seconds` (5), the earlier
+         *     decision is returned (HTTP 200, not 201) and nothing is added.
          */
         post: operations["record_decision_merchants__merchant_id__decision_post"];
         delete?: never;
@@ -155,6 +186,9 @@ export interface paths {
         /**
          * Decision History
          * @description Decision history, newest first; `merchant_id` narrows it to one merchant.
+         *
+         *     Without `limit` every decision is returned, as before. With `limit` and `offset` a page is;
+         *     the header `X-Total-Count` always holds how many decisions match (all pages together).
          */
         get: operations["decision_history_decisions_get"];
         put?: never;
@@ -233,6 +267,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/import-bundle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Bundle
+         * @description Check a zip of contract CSVs together and load the rows that pass. Admin only; audited.
+         *
+         *     The files are taken in contract order (merchants, loans, purchases, deliveries, payments,
+         *     questionnaire, consents) in ONE transaction: each file is checked against what the files
+         *     before it would add. With `dry_run=true`, or when any file is refused as a whole, nothing
+         *     is kept. After a load, the new merchants are scored (same model, nothing retrained).
+         */
+        post: operations["import_bundle_admin_import_bundle_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -245,6 +304,28 @@ export interface paths {
          * @description Say the API is up, which data mode is active, and the banner to display.
          */
         get: operations["health_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ready
+         * @description 200 when the database is open and the scorer is built; 503 and the reason if not.
+         *
+         *     Needs no token. Says nothing that is not already public: no paths, no addresses.
+         */
+        get: operations["ready_ready_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -277,6 +358,118 @@ export interface components {
             merchant_id?: string | null;
             /** Timestamp */
             timestamp: string;
+        };
+        /**
+         * BandRules
+         * @description The lines that turn a score and a coverage into a band, for one data mode.
+         *
+         *     They are settings (config/default.yaml, `score`), sent so a screen can show the
+         *     numbers next to a band. A screen must still take the band itself from the API: it must
+         *     never work a band out from these.
+         */
+        BandRules: {
+            /**
+             * Strong Min Score
+             * @description Score at or above this is Strong ...
+             */
+            strong_min_score: number;
+            /**
+             * Min Coverage
+             * @description ... but only when coverage is at least this (0 to 1).
+             */
+            min_coverage: number;
+            /**
+             * Low Score Warning Below
+             * @description A score below this gets a warning.
+             */
+            low_score_warning_below: number;
+        };
+        /**
+         * BundleReport
+         * @description POST /admin/import-bundle: a zip of contract CSVs, checked (and loaded) together.
+         */
+        BundleReport: {
+            /**
+             * Dry Run
+             * @description True: the files were only checked, nothing was loaded.
+             */
+            dry_run: boolean;
+            /**
+             * Loaded
+             * @description True when the accepted rows of every file were written.
+             */
+            loaded: boolean;
+            /**
+             * Tables
+             * @description One report per file, in contract order.
+             */
+            tables: components["schemas"]["ImportReport"][];
+            /**
+             * New Merchants
+             * @description Merchants of this bundle that can now be scored (after a load).
+             * @default []
+             */
+            new_merchants: string[];
+            /** Note */
+            note: string;
+        };
+        /**
+         * ConsentList
+         * @description GET /consents: one page of consent records and how many there are.
+         */
+        ConsentList: {
+            /**
+             * As Of
+             * @description The day the statuses are worked out for: the last day in the data.
+             */
+            as_of: string;
+            /**
+             * Total
+             * @description Records matching the filters, over all pages.
+             */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /**
+             * Counts
+             * @description Records per status for the merchant filter (the status filter is ignored).
+             */
+            counts: {
+                [key: string]: number;
+            };
+            /** Items */
+            items: components["schemas"]["ConsentListItem"][];
+        };
+        /**
+         * ConsentListItem
+         * @description One consent record in GET /consents.
+         */
+        ConsentListItem: {
+            /** Consent Id */
+            consent_id: string;
+            /** Merchant Id */
+            merchant_id: string;
+            /** Purpose */
+            purpose: string;
+            /**
+             * Data Categories
+             * @description What the consent covers, e.g. purchases.
+             */
+            data_categories: string[];
+            /** Granted At */
+            granted_at: string;
+            /** Expires At */
+            expires_at: string;
+            /** Revoked At */
+            revoked_at?: string | null;
+            /**
+             * Status
+             * @description As of the last day in the data: valid, expired, revoked, or not_started (granted after that day).
+             * @enum {string}
+             */
+            status: "valid" | "expired" | "revoked" | "not_started";
         };
         /**
          * ConsentView
@@ -324,13 +517,26 @@ export interface components {
             /** Score Shown */
             score_shown: number;
             /**
+             * Band Shown
+             * @description The band shown with the score; empty on older decisions.
+             */
+            band_shown?: ("Strong" | "Review" | "Needs more info") | null;
+            /**
+             * Coverage Shown
+             * @description The coverage shown with the score (0 to 1).
+             */
+            coverage_shown?: number | null;
+            /**
              * Officer Action
              * @enum {string}
              */
             officer_action: "accept" | "override_up" | "override_down" | "needs_more_info";
             /** Reason Text */
             reason_text?: string | null;
-            /** Decided At */
+            /**
+             * Decided At
+             * @description When, in UTC (ISO 8601, no zone suffix).
+             */
             decided_at: string;
         };
         /**
@@ -343,7 +549,10 @@ export interface components {
              * @enum {string}
              */
             officer_action: "accept" | "override_up" | "override_down" | "needs_more_info";
-            /** Reason Text */
+            /**
+             * Reason Text
+             * @description The officer's written reason. Required for an override. At most `api.reason_max_chars` characters (2,000).
+             */
             reason_text?: string | null;
         };
         /**
@@ -555,6 +764,8 @@ export interface components {
             }[];
             /** Limitations */
             limitations: string[];
+            /** @description The band lines of this data mode (set by the API). */
+            band_rules?: components["schemas"]["BandRules"] | null;
             /**
              * Limitations Bn
              * @description The same limitations in Bangla, for the language switch.
@@ -642,6 +853,35 @@ export interface components {
              * @constant
              */
             directional: true;
+        };
+        /**
+         * ReadyResponse
+         * @description GET /ready: can the API answer yet? (503 with the same body when it cannot.)
+         */
+        ReadyResponse: {
+            /** Ready */
+            ready: boolean;
+            /**
+             * Scorer
+             * @description The scorer has been built.
+             */
+            scorer: boolean;
+            /**
+             * Database
+             * @description The database is open and has its tables.
+             */
+            database: boolean;
+            /**
+             * Model Version
+             * @description The model the scores come from.
+             */
+            model_version?: string | null;
+            /**
+             * Problems
+             * @description Plain reasons, when not ready.
+             * @default []
+             */
+            problems: string[];
         };
         /**
          * Reason
@@ -737,6 +977,8 @@ export interface components {
              * @description The same paragraph in Bangla.
              */
             summary_bn?: string | null;
+            /** @description The band lines of this data mode, to show beside the band. */
+            band_rules?: components["schemas"]["BandRules"] | null;
         };
         /**
          * TimelineEvent
@@ -953,6 +1195,42 @@ export interface operations {
             };
         };
     };
+    list_consents_consents_get: {
+        parameters: {
+            query?: {
+                merchant_id?: string | null;
+                status?: ("valid" | "expired" | "revoked" | "not_started") | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: {
+                "X-Demo-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     record_decision_merchants__merchant_id__decision_post: {
         parameters: {
             query?: never;
@@ -994,6 +1272,10 @@ export interface operations {
         parameters: {
             query?: {
                 merchant_id?: string | null;
+                /** @description At most this many; default: all */
+                limit?: number | null;
+                /** @description Skip this many of the newest */
+                offset?: number;
             };
             header?: {
                 "X-Demo-Token"?: string | null;
@@ -1126,6 +1408,39 @@ export interface operations {
             };
         };
     };
+    import_bundle_admin_import_bundle_post: {
+        parameters: {
+            query?: {
+                dry_run?: boolean;
+            };
+            header?: {
+                "X-Demo-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BundleReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     health_health_get: {
         parameters: {
             query?: never;
@@ -1142,6 +1457,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthResponse"];
+                };
+            };
+        };
+    };
+    ready_ready_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadyResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadyResponse"];
                 };
             };
         };

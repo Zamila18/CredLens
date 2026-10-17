@@ -80,6 +80,12 @@ def build_services(config: dict[str, Any] | None = None) -> Services:
             services.data_today(session)
     try:
         services.scorer = Scorer(config)
+        if services.database_error is None:
+            # Merchants imported before a restart are scored again (src/api/imported.py).
+            from src.api.imported import refresh_imported
+
+            with Session(engine) as session:
+                refresh_imported(services, session)
     except Exception as error:  # noqa: BLE001 - the API must still start so /health works
         log.exception("The scorer could not be built")
         services.scorer_error = (

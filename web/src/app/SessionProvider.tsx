@@ -18,7 +18,15 @@ setDemoUser(initialUser)
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<DemoUser>(initialUser)
-  const [lang, setLangState] = useState<Lang>(() => readChoice<Lang>(LANG_KEY, ['en', 'bn'], 'en'))
+  // `?lang=bn` (or `?lang=en`) in a link opens the dashboard in that language and keeps it.
+  const [lang, setLangState] = useState<Lang>(() => {
+    const asked = new URLSearchParams(window.location.search).get('lang')
+    if (asked === 'en' || asked === 'bn') {
+      saveChoice(LANG_KEY, asked)
+      return asked
+    }
+    return readChoice<Lang>(LANG_KEY, ['en', 'bn'], 'en')
+  })
 
   // The whole page follows the language switch: screen readers and the Bangla font
   // (index.css, html[lang='bn']) read it from <html lang>.

@@ -1,117 +1,138 @@
 /*
- * CredLens design tokens (web/design-reference/DESIGN_SPEC.md, section 2).
+ * CredLens design tokens (web/design-reference/CredLens_Final_Designs/00-design-system.png,
+ * CLAUDE_CODE_INSTRUCTIONS.md section 3: the approved mint theme).
  *
  * Tailwind v4 reads its theme from CSS: every --color-* below becomes a class,
  * for example --color-lens gives bg-lens, text-lens and border-lens.
- * shadcn/ui components use the generic names (--primary, --border, ...); those
- * point at our tokens too, so no component keeps the shadcn default look.
+ * The older token names (lens, amber, peri, ...) are kept and point at the new palette,
+ * so every component follows the theme; the new names (accent, mint, ...) are added.
+ * shadcn/ui components use the generic names (--primary, --border, ...); those point at
+ * our tokens too.
  *
- * Rule from the design: no red anywhere. "Needs more info" is periwinkle, never
- * an alarm colour.
+ * Colour rules: red is only for real errors, never for thin evidence or a consent choice.
+ * "Needs more info" is violet. Every colour is paired with a written label.
+ *
+ * Fonts are bundled with the app (src/fonts.ts, @fontsource packages): nothing is loaded
+ * from Google or any other site, so they work offline and after deploy.
  */
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
 @theme {
-  /* Fonts */
-  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  /* Fonts. Noto Sans Bengali sits in every stack, so Bangla letters always use it. */
+  --font-sans: 'Inter', 'Noto Sans Bengali', system-ui, sans-serif;
+  --font-display: 'DM Sans', 'Noto Sans Bengali', 'Inter', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
-  --font-bn: 'Noto Sans Bengali', 'IBM Plex Sans', sans-serif;
+  --font-bn: 'Noto Sans Bengali', 'Inter', sans-serif;
+
+  /* The approved palette (design sheet, section 1) */
+  --color-page: #f6fafa;
+  --color-body: #40516c;
+  --color-accent-strong: #008a6c;
+  --color-mint: #dff7ef;
+  --color-mint-2: #eefaf6;
+  --color-mint-line: #bfe8da;
+  --color-band-strong: #16845b;
+  --color-band-review: #b7791f;
+  --color-band-nmi: #6555a6;
+  --color-error: #c63535;
+  --color-error-panel: #fdf1f1;
+  --color-info: #2f6fb0;
+  --color-info-panel: #eef5fc;
 
   /* Text */
-  --color-ink: #13201c;
-  --color-ink-2: #2e3934;
-  --color-ink-3: #3c4843; /* body copy on cards */
-  --color-muted: #4c5853;
-  --color-muted-2: #55625c;
+  --color-ink: #111b42;
+  --color-ink-2: #1f2a52;
+  --color-ink-3: #40516c; /* body copy on cards */
+  --color-muted: #4f5f78;
+  --color-muted-2: #5d6b82;
 
-  /* Sidebar */
-  --color-night: #0f1d19;
-  --color-night-2: #182b25;
-  --color-night-line: #2f453e;
-  --color-night-active: #1f3b33;
-  --color-night-text: #c9d6d0;
-  --color-night-soft: #9db2aa;
-  --color-night-label: #8fa59c;
-  --color-night-hi: #e7ece8;
+  /* Sidebar: light, like the page (the dark names stay for old components) */
+  --color-night: #ffffff;
+  --color-night-2: #f1f7f7;
+  --color-night-line: #dce7eb;
+  --color-night-active: #dff7ef;
+  --color-night-text: #40516c;
+  --color-night-soft: #5d6b82;
+  --color-night-label: #5d6b82;
+  --color-night-hi: #111b42;
 
   /* Surfaces */
-  --color-ground: #f4f5f1;
-  --color-banner: #e9ece4;
-  --color-banner-line: #daded5;
-  --color-banner-text: #2b3631;
+  --color-ground: #f6fafa;
+  --color-banner: #e3f3f0;
+  --color-banner-line: #cbe5df;
+  --color-banner-text: #111b42;
   --color-card: #ffffff;
-  --color-card-line: #e1e4dd;
-  --color-line: #e6e8e2;
-  --color-line-soft: #eef0ea;
-  --color-control-line: #d5d9d0;
-  --color-button-line: #cfd6cc;
-  --color-seg: #eceee8;
-  --color-track: #e3e6df;
-  --color-row-hover: #fafbf8;
+  --color-card-line: #dce7eb;
+  --color-line: #e2ebee;
+  --color-line-soft: #edf3f5;
+  --color-control-line: #cbd9de;
+  --color-button-line: #b9d3cb;
+  --color-seg: #eaf2f2;
+  --color-track: #e2eaed;
+  --color-row-hover: #f6fbfa;
 
-  /* Strong / primary */
-  --color-lens: #0e5a4a;
-  --color-lens-dark: #0b4a3d;
-  --color-lens-hover: #08392f;
-  --color-strong-chip: #dcefe6;
-  --color-strong-panel: #f2f8f5;
-  --color-strong-selected: #eef6f2;
-  --color-open-hover: #eef5f1;
+  /* Strong / primary. Buttons use a darker accent so white text keeps 4.5:1 contrast. */
+  --color-lens: #00735a;
+  --color-lens-dark: #00614c;
+  --color-lens-hover: #004f3e;
+  --color-strong-chip: #dff7ef;
+  --color-strong-panel: #f0fbf7;
+  --color-strong-selected: #e6f8f1;
+  --color-open-hover: #e6f8f1;
 
   /* Review */
-  --color-amber: #b5650d;
-  --color-amber-text: #7a4304;
-  --color-amber-chip: #fbebd2;
-  --color-amber-panel: #fcf4e7;
-  --color-amber-deep: #5e3403;
-  --color-marigold: #e0a44a;
+  --color-amber: #b7791f;
+  --color-amber-text: #7f5210;
+  --color-amber-chip: #fbefd9;
+  --color-amber-panel: #fdf7ec;
+  --color-amber-deep: #5f3d0b;
+  --color-marigold: #d9a441;
 
   /* Needs more info */
-  --color-peri: #8a97bf;
-  --color-peri-text: #33406a;
-  --color-peri-chip: #e8ecf6;
-  --color-peri-panel: #eef0f7;
-  --color-peri-head: #262f52;
-  --color-peri-body: #2b3352;
-  --color-peri-number: #6d79a0;
-  --color-slate: #4a5a8c;
-  --color-slate-2: #5a6894;
+  --color-peri: #8d80c4;
+  --color-peri-text: #4a3d8a;
+  --color-peri-chip: #ece9f8;
+  --color-peri-panel: #f4f2fb;
+  --color-peri-head: #2f2668;
+  --color-peri-body: #3a3175;
+  --color-peri-number: #6f63ad;
+  --color-slate: #6555a6;
+  --color-slate-2: #7a6db5;
 
   /* Others */
-  --color-rust: #8a3a10;
-  --color-coverage: #2d4f45;
-  --color-neutral-chip: #ecede9;
-  --color-neutral-text: #4a524e;
-  --color-disabled: #b9c2bd;
+  --color-rust: #c63535;
+  --color-coverage: #00735a;
+  --color-neutral-chip: #edf2f4;
+  --color-neutral-text: #46546b;
+  --color-disabled: #b4c3c8;
 
   /* Radii */
-  --radius-card: 16px;
+  --radius-card: 14px;
   --radius-panel: 12px;
 }
 
 /* shadcn/ui names, mapped onto the CredLens tokens. */
 :root {
   --radius: 0.625rem;
-  --background: #f4f5f1;
-  --foreground: #13201c;
+  --background: #f6fafa;
+  --foreground: #111b42;
   --card: #ffffff;
-  --card-foreground: #13201c;
+  --card-foreground: #111b42;
   --popover: #ffffff;
-  --popover-foreground: #13201c;
-  --primary: #0e5a4a;
+  --popover-foreground: #111b42;
+  --primary: #00735a;
   --primary-foreground: #ffffff;
-  --secondary: #eceee8;
-  --secondary-foreground: #13201c;
-  --muted: #eceee8;
-  --muted-foreground: #4c5853;
-  --accent: #eef6f2;
-  --accent-foreground: #0b4a3d;
-  /* "destructive" is rust, never red. */
-  --destructive: #8a3a10;
-  --border: #e1e4dd;
-  --input: #d5d9d0;
-  --ring: #0e5a4a;
+  --secondary: #eaf2f2;
+  --secondary-foreground: #111b42;
+  --muted: #eaf2f2;
+  --muted-foreground: #4f5f78;
+  --accent: #dff7ef;
+  --accent-foreground: #00614c;
+  --destructive: #c63535;
+  --border: #dce7eb;
+  --input: #cbd9de;
+  --ring: #00735a;
 }
 
 @theme inline {
@@ -148,9 +169,16 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
-  /* Bangla chosen in the sidebar: the whole page uses the Bangla font. */
+  /* Headings in DM Sans (Bangla letters fall through to Noto Sans Bengali). */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    color: var(--color-ink);
+  }
+  /* Bangla needs taller lines, so vowel signs are never clipped. */
   html[lang='bn'] body {
-    font-family: var(--font-bn);
+    line-height: 1.6;
   }
   a {
     color: var(--color-lens);
@@ -158,10 +186,18 @@
   a:hover {
     color: var(--color-lens-hover);
   }
-  /* Visible keyboard focus, in lens green. */
+  /* Visible keyboard focus. */
   :focus-visible {
     outline: 2px solid var(--color-lens);
     outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
@@ -170,7 +206,46 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The dashed periwinkle fill used for thin files (Needs more info). */
+/* The dashed violet fill used for thin files (Needs more info). */
 @utility stripes-nmi {
-  background: repeating-linear-gradient(90deg, #5a6894 0 4px, #e3e6df 4px 6px);
+  background: repeating-linear-gradient(90deg, #6555a6 0 4px, #e2eaed 4px 6px);
+}
+
+/* The soft mint wash of the approved headers and hero. */
+@utility mint-wash {
+  background: linear-gradient(135deg, #e6f6f1 0%, #f3faf8 55%, #eaf4f2 100%);
+}
+
+/*
+ * Home hero illustration (1586 x 992; the sign board is centred at 1248, 212 and is 325
+ * wide). The picture fills its box (cover). The crop keeps the shop in view and the whole
+ * board inside the box, and the shop's name sits on the board, at every size. All of it
+ * is worked out by the browser from the box size (container units), so it never goes stale.
+ */
+.hero-art {
+  container-type: size;
+}
+.hero-art-layer {
+  position: absolute;
+  inset: 0;
+  --s: max(calc(100cqw / 1586), calc(100cqh / 992));
+  --preferred: calc((100cqw - 1586 * var(--s)) * 0.6);
+  --most: calc(100cqw - 12px - 1410.5 * var(--s));
+  --least: calc(12px - 1085.5 * var(--s));
+  --shift: max(min(var(--preferred), var(--most)), min(var(--least), 0px), calc(100cqw - 1586 * var(--s)));
+}
+.hero-art-layer > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--shift) 50%;
+}
+.hero-art-sign {
+  position: absolute;
+  left: calc(var(--shift) + 1248 * var(--s));
+  top: calc((100cqh - 992 * var(--s)) / 2 + 212 * var(--s));
+  transform: translate(-50%, -50%);
+  font-size: calc(55 * var(--s));
 }

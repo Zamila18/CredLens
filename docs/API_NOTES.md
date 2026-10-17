@@ -19,7 +19,7 @@ them at `http://localhost:8000/openapi.json` and `/docs`. This page holds what t
 |---|---|---|---|
 | `GET /merchants`, `/merchants/{id}`, `/merchants/{id}/score`, `/merchants/{id}/consent`, `/decisions`, `/model/card` | yes | yes | yes |
 | `POST /merchants/{id}/decision`, `POST /merchants/{id}/questionnaire` | yes | no | no |
-| `GET /audit`, `POST /admin/import/{table}` | no | yes | no |
+| `GET /audit`, `POST /admin/import/{table}`, `POST /admin/import-bundle` | no | yes | no |
 
 ## Errors
 
@@ -36,8 +36,9 @@ A request with a wrong shape is the usual FastAPI 422.
 | 404 | `unknown_merchant`, `unknown_table` | |
 | 409 | `import_not_available` | a public data mode is active; the database holds only synthetic data |
 | 409 | `no_pending_loan` | a decision on a merchant whose latest loan already has an outcome: nothing is waiting for a decision. Hide the decision form for such a merchant |
-| 409 | `import_not_allowed` | an import of `consents`, or of history rows for a merchant the scorer already knows (see Import) |
+| 409 | `import_not_allowed` | an import of history or consent rows for a merchant of the original data (see Import) |
 | 413 | `file_too_large` | import file over 10 MB |
+| 422 | `bad_bundle` | the bundle upload is not a zip, holds no contract CSV, or has a file named after no contract table |
 | 422 | (FastAPI) | override with no written reason, a reason over 2,000 characters, `approve`/`decline`, answer outside 1 to 5 ... |
 | 500 | `data_mismatch` | the scorer and the database hold different data: `python tasks.py data --reset-db` |
 | 503 | `scorer_not_ready`, `database_not_ready`, `not_started` | the message names the command to run |
@@ -71,19 +72,32 @@ A request with a wrong shape is the usual FastAPI 422.
   and is itself audited.
 - **Import.** The request body is the CSV file itself (`Content-Type: text/csv`). Add `?dry_run=true`
   to only check. Import in this order: merchants, loans, purchases, deliveries, payments,
-  questionnaire. An import never overwrites a row. **Imported rows never reach a score:**
-  `python tasks.py train` and the scorer read the generated CSV files in `data/raw/synthetic_bd/`,
-  not the database. The import page shows that a lender's file can be checked and stored; scoring
-  from the database is a pilot step. Say so on the page.
+  questionnaire, consents. An import never overwrites a row.
+  **Imported merchants are scored (Oct 17).** After every import that loads rows, the API reads every
+  merchant that is not in the original data from the database and scores it with the saved model and
+  the same feature rules, as of the same "today" as the rest of the data. Nothing is retrained. A new
+  merchant with a loan waiting and a valid consent appears in the review queue with a score, reasons
+  and a band; one without consent is listed with no score. This also runs when the API starts, so
+  imported merchants survive a restart.
+  **Bundle import:** `POST /admin/import-bundle?dry_run=` (admin only, audited) takes a zip of contract
+  CSVs (`Content-Type: application/zip`; files named `merchants.csv`, `loans.csv`, ...; a folder inside
+  the zip is fine). The files are checked in the order above in ONE transaction, each against what the
+  files before it would add. With `dry_run=true`, or when any file is refused as a whole (wrong
+  columns), nothing is kept. The answer is `BundleReport`: `dry_run`, `loaded`, `tables` (one
+  `ImportReport` per file), `new_merchants` (merchants of the bundle that can now be scored; link each
+  to its page) and `note`. A bad upload (not a zip, no contract CSV, an unknown file name) is 422
+  `bad_bundle`. The demo file is `data/demo/credlens_demo_bundle.zip` (`python -m src.synth.demo_batch`;
+  `data/demo/EXPECTED.md` says what each merchant should show).
   **What an import may not do (409 `import_not_allowed`, nothing loaded, even with `dry_run`):**
-  `consents` can never be imported (a consent is the merchant's own act, recorded by the consent
-  system; an uploaded row used to unlock a merchant's profile), and purchases, deliveries, payments,
-  loans or questionnaire rows may not name a merchant the scorer already knows (their history comes
-  from the source systems; the score would ignore the row while the timeline showed it). The error
-  also lists the merchant ids it found (`detail.merchants`, at most 20). Only a merchant added by an
-  import of `merchants` can get such rows, and with no consent record (none can be imported) their
-  data stays hidden. Each refusal writes an audit entry `refused_import_<table>`. The page should not
-  offer `consents`. A history table needs the scorer: without it the answer is 503 `scorer_not_ready`.
+  purchases, deliveries, payments, loans, questionnaire or consents rows may not name a merchant of the
+  original data (their history and consent come from the source systems and the consent system; an
+  uploaded consent row used to unlock a merchant's profile, F1, and an uploaded history row showed on
+  the timeline while the score ignored it, F10). In a bundle, one such row refuses the whole bundle.
+  The error lists the merchant ids it found (`detail.merchants`, at most 20). A merchant added by the
+  import itself may get all of these rows, consent included: that is a lender bringing its own
+  customers with its own consent records. Each refusal writes an audit entry `refused_import_<table>`
+  (`refused_import_bundle` for a bundle). A history table needs the scorer: without it the answer is
+  503 `scorer_not_ready`.
 - **Model card.** Written per data mode by `python -m src.model.model_card --all-modes` into
   `reports/<mode>/model_card.json` (and `docs/model_card_<mode>.md`). `GET /model/card?mode=taiwan_cc`
   gives another mode's card, for the public data pages; without `mode`, the running mode's.
@@ -138,7 +152,16 @@ A request with a wrong shape is the usual FastAPI 422.
   library and `src.db.mifos_adapter`, reads no score, and a test (`tests/test_no_autodecision.py`) checks it.
 - **Known limit: consent has two readers.** The scorer reads the consent records once, when the API starts
   (from the generated files); the profile, the consent endpoints and the questionnaire read the database live.
-  They agree because nothing in the API can change a consent: there is no revoke endpoint, an import cannot add
-  a consent, and an import cannot add history for a merchant the scorer knows. A consent changed in the
+  They agree because nothing in the API can change a consent: there is no revoke endpoint, and an import cannot add
+  a consent or history for a merchant of the original data. Imported merchants are read from the database by
+  both readers. A consent changed in the
   database by another route would be seen by the profile at once and by the score only after a restart.
+- **Oct 17 changes, for the dashboard.**
+  - *Decisions keep what was on screen:* `band_shown` and `coverage_shown` (0 to 1) beside `score_shown`.
+    Empty on decisions recorded before Oct 17. Show all three in the decision log.
+  - *`decided_at` is UTC* with no zone suffix. Show it in Bangladesh time (UTC+06:00).
+  - *Live import:* `POST /admin/import-bundle`, consents for new merchants, and imported merchants
+    scored (see Import). New error code `bad_bundle` (422); new audit actions `import_bundle`,
+    `check_import_bundle`, `refused_import_bundle`.
+  - The local database needs the new decision columns: `python tasks.py data --reset-db` once.
 - **Not built:** a consent revoke endpoint (see Consent).

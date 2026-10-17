@@ -1,0 +1,7 @@
+merchant_id,onboarded_at,district,town_tier,shop_type,has_trade_license,consent_data_use,questionnaire_done
+D00002,2026-06-16,Rangpur,city,grocery,True,True,True
+D00005,2025-06-25,Pabna,small_town,other,True,True,False
+D00001,2025-10-14,Feni,small_town,electronics,False,True,True
+D00004,2026-01-03,Pabna,small_town,electronics,True,False,True
+D00003,2025-11-24,Pabna,small_town,apparel,False,True,False
+M000031,2026-01-27,Sylhet,city,grocery,False,True,False

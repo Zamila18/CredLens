@@ -138,6 +138,7 @@ def test_openapi_spec_is_published():
         "/model/card",
         "/audit",
         "/admin/import/{table}",
+        "/admin/import-bundle",
     }
 
 

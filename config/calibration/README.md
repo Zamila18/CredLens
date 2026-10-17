@@ -24,7 +24,7 @@ realistic proportions and seasonality for the synthetic data (docs/GENERATOR_SPE
 | Source | World Bank, Global Findex Database 2025, country-level file `GlobalFindexDatabase2025.csv` |
 | Link | https://www.worldbank.org/en/publication/globalfindex/download-data |
 | Read by | Claude Code on Oct 12, 2026, from the file the lead downloaded into `data/raw/findex/` |
-| Open point | The CSV has column codes and no labels. Five indicators were matched by self-describing column names; they must be confirmed against the Findex codebook before being quoted in slides. "Borrowed from a formal institution" was not found |
+| Definitions | Confirmed on Oct 17, 2026 against the official glossary `GlobalFindex2025-glossary.xlsx` (https://thedocs.worldbank.org/en/doc/be6615202d1f08a25855c8ac2d615122-0050012025/related/GlobalFindex2025-glossary.xlsx). The glossary writes the codes with dots (`account.t.d`); the CSV uses underscores (`account_t_d`). All seven rows are confirmed, including "borrowed from a formal institution" (`fin22a_22a1_22g_d`), which was not found on Oct 12. Values re-read from the file on Oct 17: unchanged |
 
 These describe all adults, not merchants. Use them as loose priors and context, not as facts
 about shop owners.

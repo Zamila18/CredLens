@@ -243,6 +243,10 @@ class Decision(Base):
     officer_id: Mapped[str] = mapped_column(ForeignKey("users.user_id"))
     model_version: Mapped[str] = mapped_column(String(64))
     score_shown: Mapped[int] = mapped_column(Integer)
+    # The band and the coverage that were on screen with the score (Oct 17). A score is never
+    # shown without them, so the decision log shows all three. Empty on older decisions.
+    band_shown: Mapped[str | None] = mapped_column(String(32))
+    coverage_shown: Mapped[float | None] = mapped_column(Float)
     officer_action: Mapped[str] = mapped_column(String(32))
     reason_text: Mapped[str | None] = mapped_column(Text)
     decided_at: Mapped[datetime] = mapped_column(DateTime, index=True)

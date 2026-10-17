@@ -267,9 +267,15 @@ class Decision(BaseModel):
     officer_id: str
     model_version: str
     score_shown: int = Field(ge=0, le=100)
+    band_shown: Band | None = Field(
+        default=None, description="The band shown with the score; empty on older decisions."
+    )
+    coverage_shown: float | None = Field(
+        default=None, ge=0, le=1, description="The coverage shown with the score (0 to 1)."
+    )
     officer_action: OfficerAction
     reason_text: str | None = None
-    decided_at: str
+    decided_at: str = Field(description="When, in UTC (ISO 8601, no zone suffix).")
 
 
 class AuditEntry(BaseModel):
@@ -328,6 +334,18 @@ class ImportRejection(BaseModel):
     line: int = Field(description="Line number in the file. The header is line 1.")
     record_id: str | None = Field(default=None, description="The row's id, when it has one.")
     reasons: list[str]
+
+
+class BundleReport(BaseModel):
+    """POST /admin/import-bundle: a zip of contract CSVs, checked (and loaded) together."""
+
+    dry_run: bool = Field(description="True: the files were only checked, nothing was loaded.")
+    loaded: bool = Field(description="True when the accepted rows of every file were written.")
+    tables: list[ImportReport] = Field(description="One report per file, in contract order.")
+    new_merchants: list[str] = Field(
+        default=[], description="Merchants of this bundle that can now be scored (after a load)."
+    )
+    note: str
 
 
 class ImportReport(BaseModel):
