@@ -1,0 +1,121 @@
+{
+  "desktop_target_css_px": 1440,
+  "mobile_target_css_px": 390,
+  "image_count": 19,
+  "images": [
+    {
+      "file": "00-design-system.png",
+      "width_px": 1039,
+      "height_px": 1514,
+      "sha256": "26561876519cb9ac435f6b94b5b8d4bc537aca21d63cf0045ddef5c91671cb96"
+    },
+    {
+      "file": "01-home-bangla.png",
+      "width_px": 1229,
+      "height_px": 1280,
+      "sha256": "10c563453895d2c1c3aee1692932525a37d536f4669167357d2814e2cc21cf49"
+    },
+    {
+      "file": "01-home-desktop.png",
+      "width_px": 1229,
+      "height_px": 1280,
+      "sha256": "1a751eeaa7bb49fb937325b22be17b5dad864e94fbe8d391c8b8c9079c18edfa"
+    },
+    {
+      "file": "02-review-queue-desktop.png",
+      "width_px": 1347,
+      "height_px": 1167,
+      "sha256": "b5eb9dd396bda7ec1f307e9f95c82892fa3bf1c42283edcfc615aece0a2a42e5"
+    },
+    {
+      "file": "03-merchant-desktop.png",
+      "width_px": 777,
+      "height_px": 2024,
+      "sha256": "6c5a3f78c734771b52c69b6250e7870cdc614f6073ee2439c042462b4aacec2b"
+    },
+    {
+      "file": "04-decision-log-desktop.png",
+      "width_px": 1272,
+      "height_px": 1237,
+      "sha256": "71fa63778265b809757de3d667752711bc0a1246940c4152d16504554fb81d37"
+    },
+    {
+      "file": "05-portfolio-desktop.png",
+      "width_px": 941,
+      "height_px": 1672,
+      "sha256": "d94f1a9c345293f407e0f616f1a969293f9a02cb96c24dee28139c302fe2d0f5"
+    },
+    {
+      "file": "06-model-card-desktop.png",
+      "width_px": 850,
+      "height_px": 1851,
+      "sha256": "991b707464b2b6916f248ea3b59168f0040face122a78ace5531feb39c3bb9b5"
+    },
+    {
+      "file": "07-consent-desktop.png",
+      "width_px": 1054,
+      "height_px": 1492,
+      "sha256": "f9b136a435739a78bd917996341a7ffe8fc929d2d3bf3a95dd05c1330dd22d5c"
+    },
+    {
+      "file": "08-consent-desktop.png",
+      "width_px": 897,
+      "height_px": 1752,
+      "sha256": "9908c53f35ed63cfa9cfcb3cf0837a892ffd84b57a9c843276290b1b756edfca"
+    },
+    {
+      "file": "08-consent-page-1-ask.png",
+      "width_px": 1024,
+      "height_px": 1536,
+      "sha256": "a61f1b979a0411fd9fb3e8550eafd9aec92d6e9d97e6c33bd6ca8b90b699d464"
+    },
+    {
+      "file": "08-consent-page-2-questions.png",
+      "width_px": 1024,
+      "height_px": 1536,
+      "sha256": "df8319912cac6ac827a12ddc5a39e836f244b81f33e8d902d6749d76eb9bbbd9"
+    },
+    {
+      "file": "08-consent-page-3-given.png",
+      "width_px": 1024,
+      "height_px": 1536,
+      "sha256": "5d0817b5246359cc1bbfb477e496851ccea2ddd9b9c8e244e1cb0f47a0a2af4b"
+    },
+    {
+      "file": "08-consent-page-4-not-now.png",
+      "width_px": 1024,
+      "height_px": 1536,
+      "sha256": "fa0412f149480c46f1e3fe68ee9bf58071f5a44cc11b68ddc2a4c35c1db55c0c"
+    },
+    {
+      "file": "08-consent-page-5-withdrawn.png",
+      "width_px": 1024,
+      "height_px": 1536,
+      "sha256": "f594b16dfa8121c28d5568264a5417ac3be75bedfdbe6454b0d63875ce9a54fd"
+    },
+    {
+      "file": "08-consent-phone-ask.png",
+      "width_px": 897,
+      "height_px": 1754,
+      "sha256": "dae6619cb1b662830204a597fc6ab613a8bc6591ab383733dc6126e36580bde2"
+    },
+    {
+      "file": "09-audit-log-desktop.png",
+      "width_px": 1536,
+      "height_px": 1024,
+      "sha256": "f23fb9ede075f8170695f625f558b1e672ff3dec4d93aa3802157042a4d8c1e8"
+    },
+    {
+      "file": "10-data-import-desktop.png",
+      "width_px": 1402,
+      "height_px": 1122,
+      "sha256": "d5ba38a299e1bb33a476214cefd2de4c9da6e0adffa489e2c449a2a29a9315e1"
+    },
+    {
+      "file": "11-interface-states-desktop.png",
+      "width_px": 1122,
+      "height_px": 1402,
+      "sha256": "f0a7c6cb3542e6254826151d3d72d26c29855b3e01ff70d7e0abcf2e5f1739d0"
+    }
+  ]
+}
