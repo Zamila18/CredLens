@@ -27,7 +27,8 @@ from src.db.load import DEMO_USERS
 from tests.conftest import FIXTURES
 from tests.test_api import ADMIN, OFFICER, count
 
-ORDER = ["merchants", "loans", "purchases", "deliveries", "payments", "questionnaire", "consents"]
+# every table an upload may fill, in the order they must be imported ("consents" is never one)
+ORDER = ["merchants", "loans", "purchases", "deliveries", "payments", "questionnaire"]
 MODEL_OF = importer.MODELS
 
 
@@ -39,7 +40,9 @@ def empty(tmp_path):
     engine = db.make_engine(url)
     with engine.begin() as connection:
         connection.execute(insert(db.User.__table__), DEMO_USERS)
-    app.state.services = Services(config=load_config(), engine=engine)
+    # a scorer that knows no merchant: every merchant in these files is new to it
+    nobody = type("Scorer", (), {"merchant_ids": lambda self: []})()
+    app.state.services = Services(config=load_config(), engine=engine, scorer=nobody)
     world = type("World", (), {"engine": engine})
     try:
         yield TestClient(app), world
@@ -300,7 +303,7 @@ def test_loan_values_are_checked(empty, table, row, fragment):
     assert fragment in report.rejections[0].reasons[0]
 
 
-def test_deliveries_questionnaire_and_consents_are_checked(empty):
+def test_deliveries_and_questionnaire_values_are_checked(empty):
     api, world = empty
     load_fixtures(api, ["merchants"])
     deliveries = report_of(
@@ -331,17 +334,6 @@ def test_deliveries_questionnaire_and_consents_are_checked(empty):
     )
     assert (questionnaire.rows_accepted, questionnaire.rows_rejected) == (1, 2)
     assert all("from 1 to 5" in r.reasons[0] for r in questionnaire.rejections)
-    consents = report_of(
-        upload(
-            api,
-            "consents",
-            "consent_id,merchant_id,purpose,data_categories,granted_at,expires_at,revoked_at\n"
-            "C1,FIX-M001,credit,purchases,2025-01-01,2024-01-01,\n"
-            "C2,FIX-M001,credit,purchases,2025-01-01,2027-01-01,\n",
-        )
-    )
-    assert consents.rows_accepted == 1
-    assert "expires_at must be after granted_at" in consents.rejections[0].reasons[0]
     with Session(world.engine) as session:
         assert session.get(db.Merchant, "FIX-M003").questionnaire_done is True
         assert session.get(db.Merchant, "FIX-M001").questionnaire_done is True

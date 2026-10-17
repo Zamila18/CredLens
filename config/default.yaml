@@ -145,6 +145,11 @@ database:
   url_env: DATABASE_URL          # Supabase Postgres connection string lives in this environment variable (.env, never committed)
   default_url: sqlite:///data/app.db   # used when the variable is not set: local development, tests, CI
 
+api:                             # the API and the database calls it makes (src/api/, src/db/models.py)
+  sqlite_busy_timeout_seconds: 30   # a database call waits this long for another writer before it fails; without it, 24 callers at once got "database is locked" (Phase 13 review)
+  reason_max_chars: 2000            # the longest written reason on a decision; a longer one is refused (422)
+  duplicate_decision_seconds: 5     # the same officer, the same merchant and the same action again within this many seconds: the earlier decision is returned, none is added
+
 labels:
   good_if_days_late_at_most: 30
   min_loan_age_days: 60          # younger loans are excluded (outcome unknown)

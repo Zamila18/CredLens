@@ -24,15 +24,17 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from src.api import model_card_view
-from src.api.main import app
+from src.api.main import app, create_app
 from src.api.schemas import (
     AuditEntry,
+    ConsentList,
     Decision,
     HealthResponse,
     MerchantProfile,
     MerchantQueueItem,
     ModelCard,
     QuestionnaireSummary,
+    ReadyResponse,
     ScoreResponse,
 )
 from src.api.state import Services
@@ -124,10 +126,12 @@ def test_openapi_spec_is_published():
     paths = response.json()["paths"]
     assert set(paths) == {
         "/health",
+        "/ready",
         "/merchants",
         "/merchants/{merchant_id}",
         "/merchants/{merchant_id}/score",
         "/merchants/{merchant_id}/consent",
+        "/consents",
         "/merchants/{merchant_id}/decision",
         "/merchants/{merchant_id}/questionnaire",
         "/decisions",
@@ -160,6 +164,7 @@ def role_cases(merchant_id: str) -> list[tuple]:
         ("GET", "/decisions", {}, everyone),
         ("GET", "/model/card", {}, everyone),
         ("GET", f"/merchants/{merchant_id}/consent", {}, everyone),
+        ("GET", "/consents?limit=5", {}, everyone),
         ("GET", "/audit", {}, {"admin"}),
         (
             "POST",
@@ -606,6 +611,249 @@ def test_a_decision_moves_the_merchant_to_decided_in_the_queue(api, merchants):
     assert (after.score, after.band) == (before.score, before.band)
 
 
+# --- the band lines are sent with the score and the model card ---------------------------
+
+
+def test_the_score_and_the_model_card_carry_the_band_lines_from_the_config(
+    api, api_world, merchants
+):
+    lines = api_world.config["score"]
+    expected = {
+        "strong_min_score": lines["band_strong_min_score"],
+        "min_coverage": lines["band_min_coverage"],
+        "low_score_warning_below": lines["low_score_warning_below"],
+    }
+    score = api.get(f"/merchants/{merchants['consenting'][0]}/score", headers=VIEWER).json()
+    assert score["band_rules"] == expected
+    for role in (OFFICER, ADMIN, VIEWER):
+        assert api.get("/model/card", headers=role).json()["band_rules"] == expected
+
+
+def test_a_mode_with_its_own_band_lines_sends_those(api, api_world, merchants):
+    """`score.by_mode` wins over the defaults, for the score card and for another mode's card."""
+    changed = copy.deepcopy(api_world.config)
+    changed["score"]["by_mode"] = {
+        "synthetic_bd": {"band_strong_min_score": 85},
+        "taiwan_cc": {"band_strong_min_score": 77, "band_min_coverage": 0.3},
+    }
+    scorer = copy.copy(api_world.services.scorer)
+    scorer.config = changed
+    app.state.services = Services(config=changed, engine=api_world.engine, scorer=scorer)
+    for merchant_id in merchants["consenting"][:40]:
+        score = api.get(f"/merchants/{merchant_id}/score", headers=OFFICER).json()
+        assert score["band_rules"]["strong_min_score"] == 85
+        if score["coverage"] >= score["band_rules"]["min_coverage"]:
+            assert score["band"] == ("Strong" if score["score"] >= 85 else "Review")
+    taiwan = api.get("/model/card?mode=taiwan_cc", headers=OFFICER).json()
+    assert taiwan["band_rules"]["strong_min_score"] == 77
+    assert taiwan["band_rules"]["min_coverage"] == 0.3
+    # a mode with no lines of its own gets the defaults
+    kiva = api.get("/model/card?mode=kiva_asia", headers=OFFICER).json()
+    assert kiva["band_rules"]["strong_min_score"] == changed["score"]["band_strong_min_score"]
+
+
+# --- the consent list -------------------------------------------------------------------
+
+
+def get_consents(api, params: str = "", headers=OFFICER) -> ConsentList:
+    response = api.get(f"/consents{params}", headers=headers)
+    assert response.status_code == 200, response.text
+    return ConsentList.model_validate(response.json())
+
+
+def test_the_consent_list_pages_through_every_record_for_every_role(api, api_world):
+    rows = count(api_world, db.Consent)
+    for headers in (OFFICER, ADMIN, VIEWER):
+        first = get_consents(api, "", headers)
+        assert first.total == rows == sum(first.counts.values())
+        assert (first.limit, first.offset) == (100, 0) and len(first.items) == 100
+    seen: list[str] = []
+    offset = 0
+    while offset < rows:
+        page = get_consents(api, f"?limit=500&offset={offset}")
+        assert page.offset == offset and 0 < len(page.items) <= 500
+        seen += [item.consent_id for item in page.items]
+        offset += 500
+    assert len(seen) == len(set(seen)) == rows
+    assert get_consents(api, f"?offset={rows}").items == []
+    ordered = [(i.merchant_id, i.granted_at) for i in get_consents(api, "?limit=500").items]
+    assert ordered == sorted(ordered)
+
+
+def test_each_consent_record_has_what_the_page_needs(api, api_world):
+    consents = api_world.tables["consents"].set_index("consent_id")
+    for item in get_consents(api, "?limit=50").items:
+        row = consents.loc[item.consent_id]
+        assert item.merchant_id == row["merchant_id"] and item.purpose == row["purpose"]
+        assert "|".join(item.data_categories) == row["data_categories"]
+        assert item.data_categories and "questionnaire" in item.data_categories
+        assert item.granted_at == str(row["granted_at"])
+        assert item.expires_at == str(row["expires_at"])
+        revoked = str(row["revoked_at"])
+        assert item.revoked_at == (None if revoked in ("nan", "None", "") else revoked)
+
+
+def test_the_consent_status_is_the_rule_the_scorer_uses(api, api_world, queue):
+    """A merchant with a valid record is exactly a merchant the queue scores."""
+    everything = get_consents(api, "?limit=500").total
+    assert everything > 500
+    valid_merchants: set[str] = set()
+    offset = 0
+    while offset < everything:
+        for item in get_consents(api, f"?limit=500&offset={offset}").items:
+            if item.status == "valid":
+                valid_merchants.add(item.merchant_id)
+        offset += 500
+    in_queue = queue.set_index("merchant_id")["consent_valid"]
+    assert {m for m in in_queue.index if in_queue[m]} == valid_merchants & set(in_queue.index)
+    assert not {m for m in in_queue.index if not in_queue[m]} & valid_merchants
+
+
+def test_the_consent_list_filters_by_status_and_merchant(api, queue):
+    everything = get_consents(api)
+    assert everything.counts["valid"] > 0
+    assert sum(everything.counts[s] > 0 for s in ("expired", "revoked", "not_started")) >= 1, (
+        "the data must hold some consent that is not valid"
+    )
+    for status in ("valid", "expired", "revoked", "not_started"):
+        chosen = get_consents(api, f"?status={status}&limit=500")
+        assert chosen.total == everything.counts[status]
+        assert chosen.counts == everything.counts  # the tiles ignore the status filter
+        assert all(item.status == status for item in chosen.items)
+    merchant_id = queue["merchant_id"].iloc[0]
+    one = get_consents(api, f"?merchant_id={merchant_id}")
+    assert one.items and all(item.merchant_id == merchant_id for item in one.items)
+    assert one.total == len(one.items) == sum(one.counts.values())
+    detail = api.get(f"/merchants/{merchant_id}/consent", headers=OFFICER).json()
+    assert [i.consent_id for i in one.items] == [r["consent_id"] for r in detail["records"]]
+    assert (any(i.status == "valid" for i in one.items)) == detail["valid"]
+    none = get_consents(api, "?merchant_id=NOBODY")
+    assert none.total == 0 and none.items == [] and set(none.counts.values()) == {0}
+
+
+@pytest.mark.parametrize(
+    "bad", ["limit=0", "limit=501", "offset=-1", "status=revoked-ish", "limit=x"]
+)
+def test_the_consent_list_refuses_a_bad_request(api, api_world, bad):
+    before = count(api_world, db.AuditEntry, db.AuditEntry.action == "view_consents")
+    assert api.get(f"/consents?{bad}", headers=OFFICER).status_code == 422
+    assert count(api_world, db.AuditEntry, db.AuditEntry.action == "view_consents") == before
+
+
+def test_reading_the_consent_list_is_audited_and_changes_nothing(api, api_world, merchants):
+    merchant_id = merchants["consenting"][15]
+    consents_before = count(api_world, db.Consent)
+    loans = loans_snapshot(api_world)
+    for params, wanted_merchant in (("", None), (f"?merchant_id={merchant_id}", merchant_id)):
+        condition = (
+            db.AuditEntry.action == "view_consents",
+            db.AuditEntry.merchant_id == wanted_merchant
+            if wanted_merchant
+            else db.AuditEntry.merchant_id.is_(None),
+        )
+        before = count(api_world, db.AuditEntry, *condition)
+        get_consents(api, params, VIEWER)
+        assert count(api_world, db.AuditEntry, *condition) == before + 1
+    assert count(api_world, db.Consent) == consents_before
+    assert loans_snapshot(api_world) == loans
+
+
+def test_the_consent_list_cannot_be_used_to_change_a_consent(api):
+    for method in ("post", "put", "patch", "delete"):
+        response = getattr(api, method)("/consents", headers=ADMIN)
+        assert response.status_code == 405, method
+
+
+def test_the_consent_list_is_closed_for_a_source_whose_rows_may_not_be_shown(api, api_world):
+    hidden = copy.deepcopy(api_world.config)
+    hidden["data"]["rows_never_shown"] = ["synthetic_bd"]
+    app.state.services = Services(
+        config=hidden, engine=api_world.engine, scorer=api_world.services.scorer
+    )
+    response = api.get("/consents", headers=OFFICER)
+    assert response.status_code == 403
+    assert response.json()["detail"]["code"] == "rows_not_shown"
+
+
+def test_consent_status_on_the_day_it_changes(tmp_path):
+    """On the very day a consent expires or is revoked it no longer holds; on the day it is
+    granted it does. The list, its filter and the scorer's own rule must agree."""
+    import pandas as pd
+
+    from src.config import load_config
+    from src.db.models import create_tables, make_engine
+    from src.model.dataset import merchants_with_valid_consent
+
+    today = date(2026, 6, 30)
+    day = timedelta(days=1)
+    cases = {  # name: (granted, expires, revoked) -> expected status
+        "granted_today": (today, today + 30 * day, None, "valid"),
+        "expires_today": (today - 30 * day, today, None, "expired"),
+        "expires_tomorrow": (today - 30 * day, today + day, None, "valid"),
+        "revoked_today": (today - 30 * day, today + 30 * day, today, "revoked"),
+        "revoked_tomorrow": (today - 30 * day, today + 30 * day, today + day, "valid"),
+        "revoked_and_expired": (today - 60 * day, today - day, today - 30 * day, "revoked"),
+        "granted_tomorrow": (today + day, today + 30 * day, None, "not_started"),
+        "plainly_valid": (today - 90 * day, today + 90 * day, None, "valid"),
+    }
+    url = "sqlite:///" + (tmp_path / "boundary.db").as_posix()
+    create_tables(url)
+    engine = make_engine(url)
+    with Session(engine) as session:
+        session.add(db.User(user_id="officer-1", display_name="Demo", role="officer"))
+        for name in cases:
+            session.add(
+                db.Merchant(
+                    merchant_id=name,
+                    onboarded_at=today - 400 * day,
+                    consent_data_use=True,
+                    questionnaire_done=False,
+                )
+            )
+        session.flush()
+        for name, (granted, expires, revoked, _) in cases.items():
+            session.add(
+                db.Consent(
+                    consent_id="C-" + name,
+                    merchant_id=name,
+                    purpose="credit_readiness_assessment",
+                    data_categories="purchases|payments",
+                    granted_at=granted,
+                    expires_at=expires,
+                    revoked_at=revoked,
+                )
+            )
+        session.commit()
+    services = Services(config=load_config(), engine=engine)
+    services._data_today = today
+    app.state.services = services
+    try:
+        api = TestClient(app)
+        page = ConsentList.model_validate(api.get("/consents?limit=500", headers=OFFICER).json())
+        assert page.as_of == today.isoformat() and page.total == len(cases)
+        got = {item.merchant_id: item.status for item in page.items}
+        assert got == {name: case[3] for name, case in cases.items()}
+        for status in ("valid", "expired", "revoked", "not_started"):
+            filtered = ConsentList.model_validate(
+                api.get(f"/consents?status={status}", headers=OFFICER).json()
+            )
+            expected = {n for n, case in cases.items() if case[3] == status}
+            assert {i.merchant_id for i in filtered.items} == expected, status
+            assert filtered.total == page.counts[status] == len(expected)
+        # the scorer's rule, applied to the same rows, says the same about who is valid
+        frame = pd.DataFrame(
+            [
+                {"merchant_id": n, "granted_at": g, "expires_at": e, "revoked_at": r}
+                for n, (g, e, r, _) in cases.items()
+            ]
+        )
+        scored = merchants_with_valid_consent(frame, pd.Timestamp(today))
+        assert scored == {n for n, status in got.items() if status == "valid"}
+    finally:
+        del app.state.services
+        engine.dispose()
+
+
 # --- model card and audit log -----------------------------------------------------------
 
 
@@ -840,6 +1088,95 @@ def test_a_data_source_whose_rows_may_not_be_shown_has_no_merchant_pages(api, ap
         assert response.status_code == 403, url
         assert response.json()["detail"]["code"] == "rows_not_shown", url
     assert (count(api_world, db.Decision), count(api_world, db.Questionnaire)) == before
+
+
+# --- starting up and running in production ----------------------------------------------
+
+
+def test_ready_says_yes_only_when_the_database_and_the_scorer_are_there(api, api_world):
+    answer = api.get("/ready")  # no token needed
+    assert answer.status_code == 200
+    body = ReadyResponse.model_validate(answer.json())
+    assert body.ready and body.scorer and body.database and body.problems == []
+    assert body.model_version == "test-version"
+
+    app.state.services = Services(
+        config=api_world.config,
+        engine=api_world.engine,
+        scorer=None,
+        scorer_error="Traceback in /secret/path/model.joblib",
+    )
+    answer = api.get("/ready")
+    assert answer.status_code == 503
+    body = ReadyResponse.model_validate(answer.json())
+    assert not body.ready and not body.scorer and body.database and body.model_version is None
+    assert "python -m src.api.preflight" in body.problems[0]
+    assert "secret" not in answer.text and "model.joblib" not in answer.text
+
+    app.state.services = Services(
+        config=api_world.config,
+        engine=api_world.engine,
+        scorer=api_world.services.scorer,
+        database_error="the database file /secret/app.db is empty",
+    )
+    answer = api.get("/ready")
+    assert answer.status_code == 503 and answer.json()["database"] is False
+    assert "secret" not in answer.text
+
+
+def test_ready_before_the_api_has_finished_starting():
+    answer = TestClient(app).get("/ready")
+    assert answer.status_code == 503
+    assert answer.json()["problems"] == ["The API is still starting."]
+    assert TestClient(app).get("/health").status_code == 200
+
+
+def test_production_switches_off_the_pages_that_list_every_endpoint(api_world):
+    production = create_app(production=True)
+    production.state.services = api_world.services
+    shut = TestClient(production)
+    for path in ("/docs", "/redoc", "/openapi.json"):
+        assert shut.get(path).status_code == 404, path
+    assert shut.get("/health").status_code == 200 and shut.get("/ready").status_code == 200
+    assert shut.get("/merchants", headers=OFFICER).status_code == 200
+    development = TestClient(create_app(production=False))
+    for path in ("/docs", "/redoc", "/openapi.json"):
+        assert development.get(path).status_code == 200, path
+
+
+def test_the_environment_variable_decides_whether_the_real_app_is_in_production():
+    import os
+    import subprocess
+    import sys
+
+    code = "from src.api.main import app; print(app.openapi_url, app.docs_url)"
+    for value, expected in (("production", "None None"), ("", "/openapi.json /docs")):
+        env = {**os.environ, "CREDLENS_ENV": value}
+        done = subprocess.run(
+            [sys.executable, "-c", code], capture_output=True, text=True, env=env, check=True
+        )
+        assert done.stdout.strip() == expected, value
+
+
+def test_a_server_can_allow_no_browser_origin_or_exactly_its_own(monkeypatch):
+    preflight = {
+        "Access-Control-Request-Method": "GET",
+        "Access-Control-Request-Headers": "x-demo-token",
+    }
+
+    def allowed(origin: str, **kwargs) -> bool:
+        reply = TestClient(create_app(**kwargs)).options(
+            "/merchants", headers={"Origin": origin, **preflight}
+        )
+        return reply.headers.get("access-control-allow-origin") == origin
+
+    assert allowed("http://localhost:5173")  # the default is the Vite dev server
+    assert not allowed("http://localhost:5173", cors_origins=[])
+    monkeypatch.setenv("CREDLENS_CORS_ORIGINS", "")
+    assert not allowed("http://localhost:5173")
+    monkeypatch.setenv("CREDLENS_CORS_ORIGINS", "https://credlens.example, https://b.example")
+    assert allowed("https://credlens.example") and allowed("https://b.example")
+    assert not allowed("http://localhost:5173") and not allowed("https://evil.example")
 
 
 # --- the browser ------------------------------------------------------------------------

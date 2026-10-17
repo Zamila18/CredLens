@@ -18,12 +18,17 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-DataMode = Literal["synthetic_bd", "kiva_asia", "taiwan_cc", "india_ltfs", "homecredit"]
+from src.config import VALID_MODES, load_config
+
+# The data modes of the project: one list (src/config.py), so a new mode needs no change here.
+DataMode = Literal[VALID_MODES]
 Band = Literal["Strong", "Review", "Needs more info"]
 Role = Literal["officer", "admin", "viewer"]
 OfficerAction = Literal["accept", "override_up", "override_down", "needs_more_info"]
 
 OVERRIDE_ACTIONS = ("override_up", "override_down")
+# The longest written reason on a decision (config: api.reason_max_chars). Longer is refused.
+REASON_MAX_CHARS = load_config(validate=False)["api"]["reason_max_chars"]
 
 
 class HealthResponse(BaseModel):
@@ -44,6 +49,31 @@ class Reason(BaseModel):
     detail: str | None = Field(
         default=None, description="Number for context, e.g. 'Returns 7.5% vs average 7.0%'."
     )
+
+
+class ReadyResponse(BaseModel):
+    """GET /ready: can the API answer yet? (503 with the same body when it cannot.)"""
+
+    ready: bool
+    scorer: bool = Field(description="The scorer has been built.")
+    database: bool = Field(description="The database is open and has its tables.")
+    model_version: str | None = Field(default=None, description="The model the scores come from.")
+    problems: list[str] = Field(default=[], description="Plain reasons, when not ready.")
+
+
+class BandRules(BaseModel):
+    """The lines that turn a score and a coverage into a band, for one data mode.
+
+    They are settings (config/default.yaml, `score`), sent so a screen can show the
+    numbers next to a band. A screen must still take the band itself from the API: it must
+    never work a band out from these.
+    """
+
+    strong_min_score: float = Field(description="Score at or above this is Strong ...")
+    min_coverage: float = Field(
+        ge=0, le=1, description="... but only when coverage is at least this (0 to 1)."
+    )
+    low_score_warning_below: float = Field(description="A score below this gets a warning.")
 
 
 class ScoreResponse(BaseModel):
@@ -69,6 +99,9 @@ class ScoreResponse(BaseModel):
         "Show it above the reasons; it never recommends lending or not.",
     )
     summary_bn: str | None = Field(default=None, description="The same paragraph in Bangla.")
+    band_rules: BandRules | None = Field(
+        default=None, description="The band lines of this data mode, to show beside the band."
+    )
 
 
 class MerchantQueueItem(BaseModel):
@@ -103,6 +136,40 @@ class ConsentView(BaseModel):
         description="Every consent record of the merchant: purpose, categories, granted, "
         "expires and revoked dates."
     )
+
+
+ConsentStatus = Literal["valid", "expired", "revoked", "not_started"]
+
+
+class ConsentListItem(BaseModel):
+    """One consent record in GET /consents."""
+
+    consent_id: str
+    merchant_id: str
+    purpose: str
+    data_categories: list[str] = Field(description="What the consent covers, e.g. purchases.")
+    granted_at: str
+    expires_at: str
+    revoked_at: str | None = None
+    status: ConsentStatus = Field(
+        description="As of the last day in the data: valid, expired, revoked, or not_started "
+        "(granted after that day)."
+    )
+
+
+class ConsentList(BaseModel):
+    """GET /consents: one page of consent records and how many there are."""
+
+    as_of: str = Field(
+        description="The day the statuses are worked out for: the last day in the data."
+    )
+    total: int = Field(description="Records matching the filters, over all pages.")
+    limit: int
+    offset: int
+    counts: dict[str, int] = Field(
+        description="Records per status for the merchant filter (the status filter is ignored)."
+    )
+    items: list[ConsentListItem]
 
 
 class PurchasesSummary(BaseModel):
@@ -177,7 +244,12 @@ class DecisionCreate(BaseModel):
     """POST /merchants/{id}/decision. The officer decides; the system never does."""
 
     officer_action: OfficerAction
-    reason_text: str | None = None
+    reason_text: str | None = Field(
+        default=None,
+        max_length=REASON_MAX_CHARS,
+        description="The officer's written reason. Required for an override. "
+        "At most `api.reason_max_chars` characters (2,000).",
+    )
 
     @model_validator(mode="after")
     def override_needs_reason(self) -> DecisionCreate:
@@ -221,6 +293,9 @@ class ModelCard(BaseModel):
     ablation: list[dict[str, float | str | None]] = []
     group_results: list[dict[str, float | str | None]] = []
     limitations: list[str]
+    band_rules: BandRules | None = Field(
+        default=None, description="The band lines of this data mode (set by the API)."
+    )
     limitations_bn: list[str] = Field(
         default=[], description="The same limitations in Bangla, for the language switch."
     )

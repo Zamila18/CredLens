@@ -25,7 +25,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.api.auth import EVERY_ROLE, CurrentUser, add_audit, require_roles
-from src.api.common import api_error, card_or_error
+from src.api.common import api_error, band_rules_for, refuse_rows_not_shown
 from src.api.profile import (
     QUESTIONNAIRE_CONSENT_CATEGORY,
     build_profile,
@@ -41,9 +41,10 @@ from src.api.schemas import (
     QuestionnaireSummary,
     ScoreResponse,
 )
+from src.api.scoring_access import card_or_refuse, note_refusal
 from src.api.state import Services, get_scorer, get_services, get_session
 from src.db import models as db
-from src.model.explain import RowsNotShown, refuse_hidden_rows
+from src.model.explain import RowsNotShown
 from src.model.scoring import Scorer, UnknownMerchant
 
 router = APIRouter(tags=["merchants"])
@@ -61,25 +62,19 @@ def _known_merchant(session: Session, merchant_id: str) -> db.Merchant:
 
 def _refuse_hidden_rows(services: Services) -> None:
     """A data mode whose rows may never be shown (Home Credit) has no merchant pages."""
-    try:
-        refuse_hidden_rows(services.config, services.config["data"]["mode"])
-    except RowsNotShown as error:
-        raise api_error(403, "rows_not_shown", str(error)) from None
+    refuse_rows_not_shown(services.config)
 
 
 def _optional(value, cast):
     return None if value is None or pd.isna(value) else cast(value)
 
 
-@router.get(
-    "/merchants",
-    response_model=list[MerchantQueueItem],
-    dependencies=[Depends(ANY_ROLE)],
-)
+@router.get("/merchants", response_model=list[MerchantQueueItem])
 def review_queue(
     status_filter: Literal["pending", "decided"] | None = Query(default=None, alias="status"),
     band: Band | None = None,
     town_tier: str | None = None,
+    user: CurrentUser = Depends(ANY_ROLE),
     scorer: Scorer = Depends(get_scorer),
     session: Session = Depends(get_session),
 ) -> list[MerchantQueueItem]:
@@ -88,13 +83,16 @@ def review_queue(
     `status` is "decided" when an officer has recorded a decision on the merchant (the
     decisions table has no loan id, so one decision covers the merchant), else "pending".
     Pending merchants come first. A merchant without consent is listed with no score,
-    coverage or band.
+    coverage or band. The queue shows the score and band of thousands of merchants, so every
+    read writes an audit entry `view_queue` (before the list is returned).
     """
     try:
         queue = scorer.queue()
     except RowsNotShown as error:
         raise api_error(403, "rows_not_shown", str(error)) from None
     if queue.empty:
+        add_audit(session, user, "view_queue")
+        session.commit()
         return []
 
     details = {
@@ -148,6 +146,8 @@ def review_queue(
     items.sort(
         key=lambda item: (item.status != "pending", item.pending_since or "", item.merchant_id)
     )
+    add_audit(session, user, "view_queue")
+    session.commit()
     return items
 
 
@@ -193,7 +193,8 @@ def merchant_score(
 
     403 `consent_required` when the merchant has no valid consent: nothing is computed.
     """
-    card = card_or_error(scorer, merchant_id)
+    card = card_or_refuse(scorer, merchant_id, session, user, "refused_score")
+    card["band_rules"] = band_rules_for(scorer.config, card["data_mode"])
     add_audit(session, user, "view_score", merchant_id)
     session.commit()
     return card
@@ -261,12 +262,14 @@ def save_questionnaire(
     merchant = _known_merchant(session, merchant_id)
     valid, categories = consent_state(session, merchant_id, services.data_today(session))
     if not valid:
+        note_refusal(session, user, "refused_questionnaire", merchant_id)
         raise api_error(
             403,
             "consent_required",
             "Consent needed: this merchant has no valid consent, so nothing is recorded.",
         )
     if QUESTIONNAIRE_CONSENT_CATEGORY not in categories:
+        note_refusal(session, user, "refused_questionnaire", merchant_id)
         raise api_error(
             403,
             "consent_scope",

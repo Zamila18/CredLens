@@ -21,7 +21,7 @@ Tick before the demo. Claude Code should help produce evidence for each item (te
 - [ ] Logistics-noise returns present; delivery reasons worded neutrally.
 - [ ] No sales or repeat-customer features from Mokam purchases.
 - [ ] Group table by town_tier, shop_type, licence (and public-data audit columns) with bootstrap ranges; gaps flagged only when ranges do not overlap or persist across seeds.
-- [ ] Every score returns probability, score, band, coverage, 3 up + 3 down reasons, model version.
+- [ ] Every score returns probability, score, band, coverage, up to 3 reasons up and up to 3 down, model version.
 
 ## Public data
 - [ ] kiva_asia, taiwan_cc and homecredit adapters pass test_adapters with fixtures.

@@ -327,6 +327,9 @@ POSITIVE_WHOLE_NUMBERS = (
     "sanity.min_not_repaid_for_stable_metrics",
     "fairness.min_group_outcomes",
     "fairness.bootstrap_resamples",
+    "api.sqlite_busy_timeout_seconds",
+    "api.reason_max_chars",
+    "api.duplicate_decision_seconds",
 )
 SHARES = (
     "evaluation.lowest_share",

@@ -1,0 +1,47 @@
+# CredLens API as a systemd service: starts at boot, starts again by itself if it stops.
+#
+# Install (docs/DEPLOY.md has every step):
+#     sudo cp /opt/credlens/deploy/credlens-api.service /etc/systemd/system/
+#     sudo systemctl daemon-reload
+#     sudo systemctl enable --now credlens-api
+# Look at it:
+#     sudo systemctl status credlens-api
+#     sudo journalctl -u credlens-api -n 80 --no-pager
+#
+# Paths assume the project lives in /opt/credlens and runs as the user "credlens".
+
+[Unit]
+Description=CredLens API (decision support only)
+After=network.target
+
+[Service]
+Type=simple
+User=credlens
+Group=credlens
+WorkingDirectory=/opt/credlens
+# The settings (CREDLENS_ENV, CREDLENS_DATA_MODE ...). Plain KEY=value lines.
+EnvironmentFile=/opt/credlens/.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONUNBUFFERED=1
+
+# Listens on this machine only: Nginx is the only way in. One worker: the scorer lives in memory
+# (about 1.3 GB while it starts, 250 to 450 MB afterwards) and the database is a single SQLite file.
+ExecStart=/opt/credlens/.venv/bin/python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000 --workers 1 --proxy-headers
+
+# "systemctl start" (and the reboot) wait here until the API says it can score, which takes
+# 30 to 60 seconds. If it never does, the service is marked failed and tried again.
+ExecStartPost=/opt/credlens/.venv/bin/python /opt/credlens/deploy/wait_for_api.py --timeout 200
+TimeoutStartSec=240
+
+Restart=on-failure
+RestartSec=5
+
+# The service may change only its data folder (the database and the backups).
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/credlens/data
+
+[Install]
+WantedBy=multi-user.target

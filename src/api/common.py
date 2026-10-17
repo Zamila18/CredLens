@@ -18,18 +18,39 @@ from typing import Any
 
 from fastapi import HTTPException
 
-from src.model.explain import ConsentRequired, RowsNotShown
+from src.api.schemas import BandRules
+from src.model.explain import ConsentRequired, RowsNotShown, refuse_hidden_rows
+from src.model.score import band_lines
 from src.model.scoring import Scorer, UnknownMerchant
 
 
-def api_error(status_code: int, code: str, message: str) -> HTTPException:
-    """An HTTP error whose body is {"detail": {"code": ..., "message": ...}}."""
-    return HTTPException(status_code=status_code, detail={"code": code, "message": message})
+def api_error(status_code: int, code: str, message: str, **facts) -> HTTPException:
+    """An HTTP error whose body is {"detail": {"code": ..., "message": ..., ...facts}}."""
+    detail = {"code": code, "message": message, **facts}
+    return HTTPException(status_code=status_code, detail=detail)
 
 
 def utc_now() -> datetime:
     """The current time in UTC, without a time zone, as stored in the database."""
     return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def refuse_rows_not_shown(config: dict[str, Any]) -> None:
+    """403 `rows_not_shown` when the running data mode may never show rows (Home Credit)."""
+    try:
+        refuse_hidden_rows(config, config["data"]["mode"])
+    except RowsNotShown as error:
+        raise api_error(403, "rows_not_shown", str(error)) from None
+
+
+def band_rules_for(config: dict[str, Any], mode: str) -> BandRules:
+    """The band lines of a data mode, read from the config (never written in code here)."""
+    lines = band_lines(config, mode)
+    return BandRules(
+        strong_min_score=lines["band_strong_min_score"],
+        min_coverage=lines["band_min_coverage"],
+        low_score_warning_below=lines["low_score_warning_below"],
+    )
 
 
 def card_or_error(scorer: Scorer, merchant_id: str) -> dict[str, Any]:

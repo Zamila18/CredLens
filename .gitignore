@@ -1,9 +1,11 @@
 # Data: raw public downloads, generated CSVs and local databases never go to git
 data/raw/
 data/*.db
+data/*.log
 data/backups/
 data/exports/
 *.zip
+*.tar.gz
 *.parquet
 
 # Model artifacts and report images are rebuilt by `python tasks.py train`
