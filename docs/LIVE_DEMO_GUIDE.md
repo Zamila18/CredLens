@@ -70,6 +70,13 @@ The demo file is `data/demo/credlens_demo_bundle.zip`: five NEW synthetic mercha
 
 5. Click **D00001**. Its page has a score, reasons, evidence and a timeline, made by the same
    saved model as every other merchant. Nothing was retrained.
+   Then open **D00002** and look at the readiness overview:
+   - **Where the score came from:** average merchant 92.2, Purchases −11.1, Repayments "no data · 0",
+     Deliveries −6.0, score 75. Missing data adds 0 points; it never lowers the score.
+   - **Why coverage is 35%:** delivery records 15% + questionnaire 10% + active in the last 30 days 10%;
+     history, regular purchases and repayments are missing.
+   - **Why this score** lists every input with its points, and the inputs with no data under
+     "No data, so 0 points".
 6. Open **Review queue** and search `D0`: the five new cards, D00004 locked.
 
 What to say: "A lender's file is checked against the data contract before anything loads,
@@ -84,6 +91,9 @@ The file can never change an existing merchant's history or consent."
    - Expected: "Recorded: Override: raise", with the score, band, coverage and model version
      saved with it, in Bangladesh time.
 3. Open **D00004**: no score, no evidence, no decision form. Consent comes first.
+   Press **Ask for consent**. Expected: "Request recorded", and the request listed with the time.
+   The score stays locked: only the merchant can grant consent, in their own app. The audit log
+   shows "officer-1 asked for the consent of D00004".
 4. Open **Decision log**: the decision, with the score, band and coverage at the time.
    There is no edit or delete anywhere; a change of mind is a new decision.
 5. Optional: on **D00001** record "Accept suggestion" as Officer 1, then switch to

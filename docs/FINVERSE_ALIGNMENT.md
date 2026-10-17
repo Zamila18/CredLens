@@ -4,7 +4,7 @@ Source: the team's Finverse result (data.org). Full rules are in section 13 of P
 
 | Finverse theme | What we build | Where |
 |---|---|---|
-| Limited data availability and access | Starter kit from DATASET_PLAN, five data modes (synthetic_bd, taiwan_cc, india_ltfs, homecredit, kiva_asia), data inventory | docs/starter_kit.md and docs/data_inventory.md (still to write) |
+| Limited data availability and access | Starter kit from DATASET_PLAN, five data modes (synthetic_bd, taiwan_cc, india_ltfs, homecredit, kiva_asia), data inventory | docs/starter_kit.md and docs/data_inventory.md (written Oct 18) |
 | Consent rails (AA/SGFinDex as design references only) | platform consent: consents table, mock consent page, consent check before scoring | src/db, app page, API |
 | Fragmented systems | Single merchant master table, master-data test, backup | tests, `python tasks.py backup` |
 | Internal hub (Mifos X) | Mifos X-style data model, export adapter (A, the deliverable), Docker spike (B, only if time allows) | src/db/mifos_adapter.py |

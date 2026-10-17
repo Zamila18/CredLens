@@ -144,7 +144,7 @@ export function DecisionsPage() {
               : kept === 0
                 ? t('No accepts or overrides recorded yet.', 'এখনও কোনো মেনে নেওয়া বা পরিবর্তন রাখা হয়নি।')
                 : t(
-                    `Officers kept ${count(stats.accepts)} of ${count(kept)} suggestions they accepted or overrode.`,
+                    `Officers kept ${count(stats.accepts)} of ${count(kept)} ${kept === 1 ? 'suggestion' : 'suggestions'} they accepted or overrode.`,
                     `মেনে নেওয়া বা পরিবর্তন করা ${count(kept)}টি পরামর্শের ${count(stats.accepts)}টি কর্মকর্তারা রেখেছেন।`,
                   )
           }
@@ -167,7 +167,7 @@ export function DecisionsPage() {
               : stats.overrides === 0
                 ? t('No overrides recorded yet.', 'এখনও কোনো পরিবর্তন রাখা হয়নি।')
                 : t(
-                    `${count(stats.overridesWithReason)} of ${count(stats.overrides)} overrides include a written reason.`,
+                    `${count(stats.overridesWithReason)} of ${count(stats.overrides)} ${stats.overrides === 1 ? 'override includes' : 'overrides include'} a written reason.`,
                     `${count(stats.overrides)}টি পরিবর্তনের ${count(stats.overridesWithReason)}টিতে লিখিত কারণ আছে।`,
                   )
           }
@@ -286,7 +286,7 @@ export function DecisionsPage() {
           </div>
           {loaded && all.length > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-body">
-              <span>{t(`${count(filtered.length)} of ${count(all.length)} decisions`, `${count(all.length)}টি সিদ্ধান্তের মধ্যে ${count(filtered.length)}টি`)}</span>
+              <span>{t(`${count(filtered.length)} of ${count(all.length)} ${all.length === 1 ? 'decision' : 'decisions'}`, `${count(all.length)}টি সিদ্ধান্তের মধ্যে ${count(filtered.length)}টি`)}</span>
               <Pager page={current} pages={pages} onPage={setPage} />
             </div>
           )}

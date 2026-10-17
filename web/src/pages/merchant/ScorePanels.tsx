@@ -4,11 +4,11 @@
  * Every number comes from GET /merchants/{id}/score or the profile; nothing is made up.
  */
 import type { LucideIcon } from 'lucide-react'
-import { BadgeInfo, CalendarCheck, ChartNoAxesColumn, Database, FileText, Lock, Package, Users } from 'lucide-react'
+import { ArrowDown, BadgeInfo, CalendarCheck, ChartNoAxesColumn, Check, Database, FileText, Lock, Minus, Package, Users, X } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import type { Lang } from '@/app/session-context'
-import type { Band, MerchantProfile, Reason, Score } from '@/api/types'
+import type { Band, InputPoints, MerchantProfile, Reason, Score } from '@/api/types'
 import { BandChip, Chip } from '@/components/BandChip'
 import { CoverageBar } from '@/components/CoverageBar'
 import { Section } from '@/components/Page'
@@ -16,6 +16,7 @@ import { ScoreRing } from '@/components/ScoreRing'
 import { fmtDate, pct } from '@/lib/format'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { coverageItemText, groupText, inputName } from './scoreWords'
 
 /** What each band asks of the officer. Describes; never says lend or do not lend. */
 const BAND_MEANING: Record<Band, { en: string; bn: string; titleEn: string; titleBn: string }> = {
@@ -75,6 +76,12 @@ export function ReadinessOverview({ score, lang, outcome }: { score: Score; lang
           {t('Low score: read every reason before deciding.', 'কম স্কোর: সিদ্ধান্তের আগে প্রতিটি কারণ পড়ুন।')}
         </p>
       )}
+      {(score.inputs?.length > 0 || score.coverage_items?.length > 0) && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {score.inputs?.length > 0 && <ScoreBySource score={score} lang={lang} />}
+          {score.coverage_items?.length > 0 && <CoverageChecklist score={score} lang={lang} />}
+        </div>
+      )}
       <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 xl:grid-cols-4">
         <InfoTile icon={BadgeInfo}>
           {t('Calibrated probability of repaying in time:', 'সময়মতো পরিশোধের ক্যালিব্রেটেড সম্ভাবনা:')}{' '}
@@ -101,42 +108,143 @@ function abs1(n: number) {
   return Math.abs(n).toFixed(1)
 }
 
-function sum(reasons: Reason[]) {
-  return reasons.reduce((total, r) => total + r.contribution, 0)
+function signed2(n: number) {
+  return `${n >= 0 ? '+' : '−'}${Math.abs(n).toFixed(2)}`
 }
 
 /** A whole-number axis that holds every contribution and zero. */
 function axis(values: number[]): { low: number; high: number } {
-  const low = Math.min(0, Math.floor(Math.min(...values)))
-  const high = Math.max(0, Math.ceil(Math.max(...values)))
+  const low = Math.min(0, Math.floor(Math.min(0, ...values)))
+  const high = Math.max(0, Math.ceil(Math.max(0, ...values)))
   return { low: low === high ? -1 : low, high: high === low ? 1 : high }
 }
 
-/** One reason: dot, sentence and detail, the points, and a bar drawn to scale around zero. */
-function ReasonRow({ reason, lang, low, high }: { reason: Reason; lang: Lang; low: number; high: number }) {
-  const helps = reason.contribution >= 0
-  const sentence = lang === 'bn' ? reason.sentence_bn : reason.sentence_en
+/** The inputs of a card. Older API answers have only the top reasons: use those. */
+function inputsOf(score: Score): InputPoints[] {
+  if (score.inputs?.length) return score.inputs
+  return [...score.reasons_positive, ...score.reasons_negative].map((r: Reason) => ({
+    code: r.code,
+    group: '',
+    label: r.code,
+    has_data: true,
+    points: r.contribution,
+    sentence_en: r.sentence_en,
+    sentence_bn: r.sentence_bn,
+    detail: r.detail ?? null,
+  }))
+}
+
+/** "Where the score came from": the average merchant, then the points of each data source. */
+function ScoreBySource({ score, lang }: { score: Score; lang: Lang }) {
+  const t = useT()
+  const order = ['purchases', 'payments', 'deliveries']
+  const groups = order
+    .map((g) => {
+      const items = score.inputs.filter((i) => i.group === g)
+      return { group: g, points: items.reduce((s, i) => s + i.points, 0), anyData: items.some((i) => i.has_data) }
+    })
+    .filter((g) => score.inputs.some((i) => i.group === g.group))
+  return (
+    <div className="flex flex-col gap-3 rounded-[12px] border border-line bg-white/80 p-4">
+      <span className="text-[15px] font-semibold text-ink">{t('Where the score came from', 'স্কোর কোথা থেকে এলো')}</span>
+      <ol className="m-0 flex list-none flex-col gap-1.5 p-0 text-sm text-ink-2">
+        <li className="flex items-center justify-between gap-3">
+          <span>{t('Average merchant', 'গড় মার্চেন্ট')}</span>
+          <span className="font-semibold text-ink tabular">{score.baseline_score.toFixed(1)}</span>
+        </li>
+        {groups.map((g) => (
+          <li key={g.group} className="flex items-center justify-between gap-3 border-t border-line pt-1.5">
+            <span className="flex items-center gap-2">
+              {g.anyData ? (
+                <span className={cn('size-2.5 rounded-full', g.points >= 0 ? 'bg-band-strong' : 'bg-band-review')} aria-hidden="true" />
+              ) : (
+                <Minus size={12} className="text-muted-2" aria-hidden="true" />
+              )}
+              {groupText(g.group, lang)}
+            </span>
+            <span className={cn('tabular', !g.anyData ? 'text-muted-2' : g.points >= 0 ? 'font-semibold text-lens-dark' : 'font-semibold text-amber-text')}>
+              {g.anyData ? `${g.points >= 0 ? '+' : '−'}${abs1(g.points)}` : t('no data · 0', 'তথ্য নেই · 0')}
+            </span>
+          </li>
+        ))}
+        <li className="flex items-center justify-between gap-3 border-t border-control-line pt-1.5">
+          <span className="font-semibold text-ink">{t('Score', 'স্কোর')}</span>
+          <span className="font-display text-lg font-bold text-ink tabular">{score.score}</span>
+        </li>
+      </ol>
+      <a href="#reasons" className="inline-flex items-center gap-1 self-start text-sm font-semibold no-underline">
+        {t('See every input below', 'নিচে প্রতিটি ইনপুট দেখুন')} <ArrowDown size={14} aria-hidden="true" />
+      </a>
+    </div>
+  )
+}
+
+/** "Why coverage is 35%": the checklist, each item with its weight, ✓ or ✗. */
+function CoverageChecklist({ score, lang }: { score: Score; lang: Lang }) {
+  const t = useT()
+  const missing = score.coverage_items.filter((x) => !x.present)
+  return (
+    <div className="flex flex-col gap-3 rounded-[12px] border border-line bg-white/80 p-4">
+      <span className="text-[15px] font-semibold text-ink">
+        {t(`Why coverage is ${pct(score.coverage)}`, `কভারেজ কেন ${pct(score.coverage)}`)}
+      </span>
+      <ul className="m-0 flex list-none flex-col gap-1.5 p-0 text-sm">
+        {score.coverage_items.map((x) => (
+          <li key={x.item} className="flex items-center justify-between gap-3">
+            <span className={cn('flex items-center gap-2', x.present ? 'text-ink-2' : 'text-muted-2')}>
+              {x.present ? (
+                <Check size={16} strokeWidth={2.5} className="shrink-0 text-band-strong" aria-label={t('present', 'আছে')} />
+              ) : (
+                <X size={16} strokeWidth={2.5} className="shrink-0 text-muted-2" aria-label={t('missing', 'নেই')} />
+              )}
+              {coverageItemText(x.item, lang)}
+            </span>
+            <span className={cn('tabular', x.present ? 'font-semibold text-ink' : 'text-muted-2 line-through')}>{Math.round(x.weight * 100)}%</span>
+          </li>
+        ))}
+      </ul>
+      <span className="text-[13px] text-body">
+        {missing.length === 0
+          ? t('Every item is present.', 'সব কিছুই আছে।')
+          : t(
+              `To raise coverage, collect: ${missing.map((x) => { const s = coverageItemText(x.item, 'en'); return s.charAt(0).toLowerCase() + s.slice(1) }).join('; ')}. Coverage never changes the score.`,
+              `কভারেজ বাড়াতে সংগ্রহ করুন: ${missing.map((x) => coverageItemText(x.item, 'bn')).join('; ')}। কভারেজ স্কোর বদলায় না।`,
+            )}
+      </span>
+    </div>
+  )
+}
+
+/** One input: dot, sentence (or its name) and detail, the points, and a bar drawn to scale around zero. */
+function InputRow({ input, lang, low, high }: { input: InputPoints; lang: Lang; low: number; high: number }) {
+  const t = useT()
+  const helps = input.points >= 0
+  const sentence = (lang === 'bn' ? input.sentence_bn : input.sentence_en) ?? inputName(input.code, input.label, lang)
   const span = high - low
   const zero = ((0 - low) / span) * 100
-  const width = (Math.abs(reason.contribution) / span) * 100
+  const width = (Math.abs(input.points) / span) * 100
   const left = helps ? zero : zero - width
   return (
     <li className="grid grid-cols-[14px_minmax(0,1fr)_64px] items-start gap-x-3 gap-y-2 border-t border-line py-3 md:grid-cols-[14px_minmax(0,1fr)_64px_minmax(180px,0.8fr)]">
-      <span className={cn('mt-1.5 size-3 rounded-full', helps ? 'bg-band-strong' : 'bg-band-review')} aria-hidden="true" />
+      <span className={cn('mt-1.5 size-3 rounded-full', input.points === 0 ? 'bg-[#B4C3C8]' : helps ? 'bg-band-strong' : 'bg-band-review')} aria-hidden="true" />
       <span className="flex flex-col gap-0.5">
         <span className="text-[15px] leading-[22px] text-ink">{sentence}</span>
-        {reason.detail && <span className="text-[13px] text-muted-2">{reason.detail}</span>}
+        <span className="text-[13px] text-muted-2">
+          {input.group && `${groupText(input.group, lang)} · `}
+          {input.detail ?? t('no notable effect', 'উল্লেখযোগ্য প্রভাব নেই')}
+        </span>
       </span>
-      <span className={cn('pt-0.5 text-right text-[15px] font-semibold tabular', helps ? 'text-lens-dark' : 'text-amber-text')}>
-        {helps ? '+' : '−'}
-        {Math.abs(reason.contribution).toFixed(2)}
+      <span className={cn('pt-0.5 text-right text-[15px] font-semibold tabular', input.points === 0 ? 'text-muted-2' : helps ? 'text-lens-dark' : 'text-amber-text')}>
+        {signed2(input.points)}
       </span>
       <span className="relative col-span-3 h-6 md:col-span-1" aria-hidden="true">
         <span className="absolute inset-y-0 w-px bg-control-line" style={{ left: `${zero}%` }} />
-        <span
-          className={cn('absolute top-1 h-4 rounded-[4px]', helps ? 'bg-band-strong/70' : 'bg-band-review/70')}
-          style={{ left: `${left}%`, width: `${Math.max(width, 0.8)}%` }}
-        />
+        {input.points !== 0 && (
+          <span
+            className={cn('absolute top-1 h-4 rounded-[4px]', helps ? 'bg-band-strong/70' : 'bg-band-review/70')}
+            style={{ left: `${left}%`, width: `${Math.max(width, 0.8)}%` }}
+          />
+        )}
       </span>
     </li>
   )
@@ -144,25 +252,28 @@ function ReasonRow({ reason, lang, low, high }: { reason: Reason; lang: Lang; lo
 
 export function WhyThisScore({ score, lang }: { score: Score; lang: Lang }) {
   const t = useT()
-  const helps = score.reasons_positive
-  const holds = score.reasons_negative
-  const reasons = [...helps, ...holds]
-  const { low, high } = axis(reasons.map((r) => r.contribution))
+  const inputs = inputsOf(score)
+  const withData = inputs.filter((i) => i.has_data).sort((a, b) => b.points - a.points)
+  const noData = inputs.filter((i) => !i.has_data)
+  const { low, high } = axis(withData.map((i) => i.points))
   const zero = ((0 - low) / (high - low)) * 100
-  const helpsTotal = sum(helps)
-  const holdsTotal = sum(holds)
-  const other = score.other_contribution
+  const helps = withData.filter((i) => i.points > 0).reduce((s, i) => s + i.points, 0)
+  const holds = withData.filter((i) => i.points < 0).reduce((s, i) => s + i.points, 0)
+  // Each input's points are rounded to 2 decimals and the score to a whole number;
+  // whatever the rounding leaves is shown, so the line always adds up.
+  const listed = score.inputs?.length ? 0 : score.other_contribution
+  const rounding = score.score - score.baseline_score - helps - holds - listed
 
   return (
     <Section
       id="reasons"
       title={t('Why this score', 'কেন এই স্কোর')}
       answer={t(
-        'Observations, not causes. Green raised the score, amber held it back; each bar is drawn to scale.',
-        'পর্যবেক্ষণ, কারণ নয়। সবুজ স্কোর বাড়িয়েছে, হলুদ পিছিয়ে দিয়েছে; প্রতিটি দাগ মাপমতো আঁকা।',
+        'Every input the model uses, from this merchant’s own records. Observations, not causes. Green raised the score, amber held it back; each bar is drawn to scale.',
+        'মডেল যত ইনপুট ব্যবহার করে, সব, এই মার্চেন্টের নিজের রেকর্ড থেকে। পর্যবেক্ষণ, কারণ নয়। সবুজ স্কোর বাড়িয়েছে, হলুদ পিছিয়ে দিয়েছে; প্রতিটি দাগ মাপমতো আঁকা।',
       )}
     >
-      {reasons.length === 0 ? (
+      {withData.length === 0 ? (
         <p className="m-0 text-sm text-body">{t('Nothing stands out for this merchant.', 'এই মার্চেন্টের ক্ষেত্রে আলাদা কিছু চোখে পড়ে না।')}</p>
       ) : (
         <div className="flex flex-col">
@@ -179,33 +290,60 @@ export function WhyThisScore({ score, lang }: { score: Score; lang: Lang }) {
             </span>
           </div>
           <ul className="m-0 list-none p-0">
-            {[...helps, ...holds].map((r, i) => (
-              <ReasonRow key={`${r.code}-${i}`} reason={r} lang={lang} low={low} high={high} />
+            {withData.map((input) => (
+              <InputRow key={input.code} input={input} lang={lang} low={low} high={high} />
             ))}
           </ul>
           <span className="pt-1 text-right text-xs text-muted-2">{t('Contribution (points)', 'অবদান (পয়েন্ট)')}</span>
         </div>
       )}
-      {/* baseline + helps + holds back + everything else = score */}
+
+      {noData.length > 0 && (
+        <div className="flex flex-col gap-2 rounded-[12px] border border-line bg-ground p-4">
+          <span className="text-[15px] font-semibold text-ink">
+            {t('No data, so 0 points', 'তথ্য নেই, তাই 0 পয়েন্ট')}
+          </span>
+          <span className="text-[13px] text-body">
+            {t('Missing data never lowers a score; it lowers coverage instead.', 'তথ্য না থাকলে স্কোর কমে না; কমে কভারেজ।')}
+          </span>
+          <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
+            {noData.map((i) => (
+              <li key={i.code} className="rounded-full border border-line bg-white px-3 py-1 text-[13px] text-ink-2">
+                {inputName(i.code, i.label, lang)}
+                {i.group && <span className="text-muted-2"> · {groupText(i.group, lang)}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* baseline + helps + holds back (+ rounding) = score */}
       <div
         className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 rounded-[12px] bg-ground px-4 py-3 text-[15px] text-ink-2 tabular"
         aria-label={t(
-          `Average merchant ${abs1(score.baseline_score)}, plus ${abs1(helpsTotal)} from what helps, minus ${abs1(holdsTotal)} from what holds back, ${other < 0 ? 'minus' : 'plus'} ${abs1(other)} from everything else, gives ${score.score}`,
-          `গড় মার্চেন্ট ${abs1(score.baseline_score)}, সাহায্যকারী থেকে যোগ ${abs1(helpsTotal)}, পিছিয়ে দেওয়া থেকে বিয়োগ ${abs1(holdsTotal)}, বাকি সব থেকে ${other < 0 ? 'বিয়োগ' : 'যোগ'} ${abs1(other)}, মোট ${score.score}`,
+          `Average merchant ${abs1(score.baseline_score)}, plus ${abs1(helps)} from what helps, minus ${abs1(holds)} from what holds back, gives ${score.score}`,
+          `গড় মার্চেন্ট ${abs1(score.baseline_score)}, সাহায্যকারী থেকে যোগ ${abs1(helps)}, পিছিয়ে দেওয়া থেকে বিয়োগ ${abs1(holds)}, মোট ${score.score}`,
         )}
       >
         <span>
           <b className="font-semibold text-ink">{score.baseline_score.toFixed(1)}</b> {t('average merchant', 'গড় মার্চেন্ট')}
         </span>
         <span className="text-lens-dark">
-          + {abs1(helpsTotal)} {t('helps', 'সাহায্য')}
+          + {abs1(helps)} {t('helps', 'সাহায্য')}
         </span>
         <span className="text-amber-text">
-          − {abs1(holdsTotal)} {t('holds back', 'পিছিয়ে দেয়')}
+          − {abs1(holds)} {t('holds back', 'পিছিয়ে দেয়')}
         </span>
-        <span>
-          {other < 0 ? '−' : '+'} {abs1(other)} {t('everything else', 'বাকি সব')}
-        </span>
+        {listed !== 0 && (
+          <span>
+            {listed < 0 ? '−' : '+'} {abs1(listed)} {t('everything else', 'বাকি সব')}
+          </span>
+        )}
+        {Math.abs(rounding) >= 0.05 && (
+          <span className="text-muted-2">
+            {rounding < 0 ? '−' : '+'} {abs1(rounding)} {t('rounding', 'পূর্ণসংখ্যা করা')}
+          </span>
+        )}
         <span aria-hidden="true">=</span>
         <span className="font-display text-xl font-bold text-ink">{score.score}</span>
       </div>

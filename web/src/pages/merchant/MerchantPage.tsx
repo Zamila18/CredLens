@@ -28,6 +28,7 @@ import { listInWords, useT, valueText } from '@/lib/i18n'
 import { hasQueue } from '@/lib/modes'
 import { text } from '../model/metrics'
 import { ConsentPanel } from './ConsentPanel'
+import { ConsentRequestPanel } from './ConsentRequestPanel'
 import { DecisionForm, DecisionHistory, NoPendingLoanNote, ReadOnlyDecisionNote } from './DecisionPanels'
 import { EvidenceCards, Timeline } from './Evidence'
 import { QuestionnaireForm } from './QuestionnaireForm'
@@ -223,6 +224,7 @@ function MerchantView({ merchantId }: { merchantId: string }) {
       {noConsent ? (
         <>
           <NoConsentScore />
+          <ConsentRequestPanel merchantId={merchantId} consent={consent.data} onRequested={consent.reload} />
           {score.error && score.error.code !== 'consent_required' && <ErrorCallout error={score.error} />}
         </>
       ) : score.error ? (

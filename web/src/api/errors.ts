@@ -84,6 +84,12 @@ export const ERROR_COPY: Record<string, ErrorCopy> = {
     title: 'No loan is waiting for a decision',
     text: 'The latest loan of this merchant already has an outcome, so there is nothing to decide now.',
   },
+  consent_already_valid: {
+    titleBn: 'অনুমতি আগেই আছে',
+    textBn: 'এই মার্চেন্টের বৈধ অনুমতি আছে, তাই চাওয়ার কিছু নেই।',
+    title: 'Consent is already valid',
+    text: 'This merchant already has a valid consent, so there is nothing to ask for.',
+  },
   not_found: {
     titleBn: 'পাতা পাওয়া যায়নি',
     textBn: 'এই ঠিকানায় কোনো পাতা নেই। বাঁ দিকের মেনু ব্যবহার করুন।',
@@ -172,6 +178,7 @@ export const ERROR_STATUS: Record<string, number> = {
   file_too_large: 413,
   bad_bundle: 422,
   not_found: 404,
+  consent_already_valid: 409,
   validation: 422,
   data_mismatch: 500,
   scorer_not_ready: 503,

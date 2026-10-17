@@ -43,7 +43,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from src.config import banner_text
+from src.config import banner_text, coverage_weights_for_mode
+from src.features.build_features import CHECKLIST_PREFIX
 from src.features.dictionary import (
     detail_text,
     features_for_mode,
@@ -164,7 +165,9 @@ def explain_score(
     Returns a dict with `probability`, `score`, `baseline_score`, `reasons_positive`,
     `reasons_negative` (each reason: code, sentence_en, sentence_bn, contribution, detail)
     and `other_contribution`. `points` holds every input's contribution, for logs and
-    tests; it is never shown to an officer.
+    tests. `inputs` lists every input in model order with its points, whether the
+    merchant has data for it, and its sentence and detail when there is one: the score
+    card shows it so an officer sees all ten inputs, not only the top reasons.
     """
     dictionary = dictionary or load_dictionary()
     # Each data mode has its own inputs and sentences; a saved model says which mode it is.
@@ -195,6 +198,26 @@ def explain_score(
             }
         )
 
+    inputs = []
+    for name in saved["features"]:
+        entry = entries[name]
+        value = _as_number(feature_row.get(name))
+        has_data = not np.isnan(value)
+        points = round(parts["points"][name], 2)
+        sentences = reason_sentences(entry, points > 0, value) if has_data and points else None
+        inputs.append(
+            {
+                "code": name,
+                "group": GROUP_NAMES.get(entry.get("group"), "other"),
+                "label": (entry.get("detail") or {}).get("label") or name.replace("_", " "),
+                "has_data": has_data,
+                "points": points,
+                "sentence_en": sentences["en"] if sentences else None,
+                "sentence_bn": sentences["bn"] if sentences else None,
+                "detail": detail_text(entry, value, averages[name]) if has_data else None,
+            }
+        )
+
     wanted = settings["top_reasons_each_side"]
     positive = sorted(candidates[True], key=lambda r: -r["contribution"])[:wanted]
     negative = sorted(candidates[False], key=lambda r: r["contribution"])[:wanted]
@@ -209,7 +232,36 @@ def explain_score(
         "other_contribution": round(score - baseline - shown, 2),
         "points": parts["points"],
         "exact_baseline_score": parts["baseline_score"],
+        "inputs": inputs,
     }
+
+
+# Where each input's data comes from (the dictionary's group letters).
+GROUP_NAMES = {
+    "A": "purchases",
+    "B": "payments",
+    "C": "deliveries",
+    "D": "questionnaire",
+    "L": "loan terms",
+    "P": "field partner",
+    "X": "outside score",
+}
+
+
+def coverage_items(
+    feature_row: pd.Series, config: dict[str, Any], mode: str | None = None
+) -> list[dict[str, Any]]:
+    """The coverage checklist of one row: each item, its weight and whether it is present.
+
+    Coverage is the sum of the weights of the present items (`coverage_for_rows`).
+    """
+    weights = coverage_weights_for_mode(config, mode)
+    items = []
+    for name, weight in weights.items():
+        value = feature_row.get(f"{CHECKLIST_PREFIX}{name}")
+        present = value is not None and not pd.isna(value) and bool(value)
+        items.append({"item": name, "weight": float(weight), "present": present})
+    return items
 
 
 class ConsentRequired(PermissionError):
@@ -342,6 +394,8 @@ def score_card(
         "reasons_negative": explanation["reasons_negative"],
         "other_contribution": explanation["other_contribution"],
         "banner": banner_text(mode),
+        "inputs": explanation["inputs"],
+        "coverage_items": coverage_items(feature_row, config, mode),
     }
     card.update(plain_summary(card, config, mode))
     return card

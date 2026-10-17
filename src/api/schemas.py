@@ -76,6 +76,32 @@ class BandRules(BaseModel):
     low_score_warning_below: float = Field(description="A score below this gets a warning.")
 
 
+class InputPoints(BaseModel):
+    """One model input on a score card, whether or not it is among the top reasons."""
+
+    code: str = Field(description="Feature name. For logs and tests; never shown to officers.")
+    group: str = Field(description="Where the data comes from: purchases, payments, deliveries.")
+    label: str = Field(description="Short English name of the input, e.g. 'Returns'.")
+    has_data: bool = Field(description="False: the merchant has no data for this input.")
+    points: float = Field(description="Score points this input added (+) or removed (-).")
+    sentence_en: str | None = Field(
+        default=None, description="The plain reason sentence, when one is true for the merchant."
+    )
+    sentence_bn: str | None = None
+    detail: str | None = Field(
+        default=None,
+        description="The merchant's number against the average, e.g. 'Returns 5.9% vs 6.8%'.",
+    )
+
+
+class CoverageItem(BaseModel):
+    """One item of the coverage checklist."""
+
+    item: str = Field(description="Checklist item, e.g. 'deliveries_present'.")
+    weight: float = Field(ge=0, le=1, description="Its share of coverage (weights sum to 1).")
+    present: bool
+
+
 class ScoreResponse(BaseModel):
     """GET /merchants/{id}/score"""
 
@@ -102,6 +128,17 @@ class ScoreResponse(BaseModel):
     band_rules: BandRules | None = Field(
         default=None, description="The band lines of this data mode, to show beside the band."
     )
+    inputs: list[InputPoints] = Field(
+        default=[],
+        description="Every model input with its points, in model order (Oct 17). "
+        "baseline_score + the sum of all points = the score before rounding. An input "
+        "the merchant has no data for has 0 points: missing data never lowers a score.",
+    )
+    coverage_items: list[CoverageItem] = Field(
+        default=[],
+        description="The coverage checklist behind `coverage` (Oct 17): coverage is the "
+        "sum of the weights of the items that are present.",
+    )
 
 
 class MerchantQueueItem(BaseModel):
@@ -123,6 +160,15 @@ class MerchantQueueItem(BaseModel):
     consent_valid: bool
 
 
+class ConsentRequestOut(BaseModel):
+    """POST /merchants/{id}/consent-request: an officer asked the merchant for consent."""
+
+    merchant_id: str
+    requested_by: str = Field(description="The officer's demo user id.")
+    requested_at: str = Field(description="When, in UTC (ISO 8601, no zone suffix).")
+    note: str = Field(description="What happens next, in plain words.")
+
+
 class ConsentView(BaseModel):
     """GET /merchants/{id}/consent: the merchant's consent as the data stands today."""
 
@@ -135,6 +181,11 @@ class ConsentView(BaseModel):
     records: list[dict[str, str | None]] = Field(
         description="Every consent record of the merchant: purpose, categories, granted, "
         "expires and revoked dates."
+    )
+    consent_requests: list[ConsentRequestOut] = Field(
+        default=[],
+        description="Officers' requests for consent, newest first (Oct 17). A request never "
+        "grants consent: only the merchant can, in their own app.",
     )
 
 

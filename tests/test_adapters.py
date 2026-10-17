@@ -107,11 +107,6 @@ def test_check_frame_names_missing_and_unexpected_columns():
     assert "surprise" in str(error.value)
 
 
-@pytest.mark.skip(reason="Phase 7: kiva_asia, taiwan_cc and homecredit read tiny fixture files")
-def test_public_adapters_return_the_contract_from_fixtures():
-    """Each public adapter maps a tiny fixture file into the seven contract tables."""
-
-
-@pytest.mark.skip(reason="Phase 7: per-source leakage whitelist")
-def test_audit_columns_never_reach_the_feature_matrix():
-    """Only whitelisted decision-time columns may become features; audit columns never."""
+# The public adapters are tested in their own files (Phase 7): each checks that its seven
+# tables match the contract and that its audit columns never reach the model inputs
+# (tests/test_taiwan_cc.py, test_india_ltfs.py, test_homecredit.py, test_kiva_asia.py).

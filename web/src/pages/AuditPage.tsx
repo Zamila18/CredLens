@@ -5,7 +5,7 @@
  * Times are stored in UTC and shown in Bangladesh time (UTC+06:00).
  */
 import type { LucideIcon } from 'lucide-react'
-import { Ban, ClipboardList, Eye, FileCheck2, FilePen, FileText, Info, NotebookPen, RefreshCw, ScrollText, Upload, UserRound } from 'lucide-react'
+import { Ban, ClipboardList, Eye, FileCheck2, FilePen, FileText, Info, NotebookPen, RefreshCw, ScrollText, Send, Upload, UserRound } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 
@@ -50,6 +50,8 @@ function describe(action: string): Look {
       return { en: 'recorded a decision on', bnAfter: '-এর ব্যাপারে সিদ্ধান্ত রেখেছেন', icon: NotebookPen, tile: TILE.write }
     case 'record_questionnaire':
       return { en: 'saved questionnaire answers for', bnAfter: '-এর প্রশ্নাবলির উত্তর রেখেছেন', icon: FilePen, tile: TILE.answers }
+    case 'request_consent':
+      return { en: 'asked for the consent of', bnAfter: '-এর কাছে অনুমতি চেয়েছেন', icon: Send, tile: TILE.write }
     case 'view_audit_log':
       return { en: 'opened', bnAfter: ' খুলেছেন', icon: ScrollText, tile: TILE.plain, target: 'the audit log', targetBn: 'অডিট লগ' }
     case 'refused_score':
