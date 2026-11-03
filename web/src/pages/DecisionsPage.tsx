@@ -15,51 +15,15 @@ import { ActionChip } from '@/components/ActionChip'
 import { BandChip } from '@/components/BandChip'
 import { ErrorCallout } from '@/components/ErrorCallout'
 import { FilterSelect, Pager, SearchBox } from '@/components/Filters'
+import { Notice } from '@/components/Notice'
 import { Card, Page, PageHeader } from '@/components/Page'
 import { ScoreRing } from '@/components/ScoreRing'
+import { MetricTile } from '@/components/Workspace'
 import { ACTION_SHORT, isOverride } from '@/lib/actions'
 import { count, fmtBdTime, pct } from '@/lib/format'
 import { ACTION_TEXT, pick, useLang, useT } from '@/lib/i18n'
 
 const PAGE_SIZE = 25
-
-/** A question card: the question, a plain answer, a visual, and what the number means. */
-function QuestionCard({ question, answer, children }: { question: string; answer: string; children: React.ReactNode }) {
-  return (
-    <section className="flex flex-col gap-3 rounded-card border border-card-line bg-card p-5">
-      <h2 className="m-0 text-[17px] leading-6 font-semibold">{question}</h2>
-      <p className="m-0 text-[15px] text-body">{answer}</p>
-      <div className="mt-auto">{children}</div>
-    </section>
-  )
-}
-
-/** A small ring for a share (e.g. 80% of suggestions kept). */
-function ShareRing({ share }: { share: number }) {
-  const size = 88
-  const stroke = 10
-  const r = (size - stroke) / 2
-  const c = 2 * Math.PI * r
-  return (
-    <div className="relative shrink-0" style={{ width: size, height: size }} aria-hidden="true">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#E6EEF0" strokeWidth={stroke} />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke="#16845B"
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={`${(c * share).toFixed(1)} ${c.toFixed(1)}`}
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        />
-      </svg>
-      <span className="absolute inset-0 flex items-center justify-center font-display text-lg font-bold text-ink">{Math.round(share * 100)}%</span>
-    </div>
-  )
-}
 
 /** The score as it was on screen: ring, band and coverage (only the number for decisions before Oct 17). */
 function ShownScore({ d }: { d: Decision }) {
@@ -135,68 +99,19 @@ export function DecisionsPage() {
         )}
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <QuestionCard
-          question={t('Do officers keep the suggested band?', 'কর্মকর্তারা কি প্রস্তাবিত ব্যান্ড রাখেন?')}
-          answer={
-            !loaded
-              ? '…'
-              : kept === 0
-                ? t('No accepts or overrides recorded yet.', 'এখনও কোনো মেনে নেওয়া বা পরিবর্তন রাখা হয়নি।')
-                : t(
-                    `Officers kept ${count(stats.accepts)} of ${count(kept)} ${kept === 1 ? 'suggestion' : 'suggestions'} they accepted or overrode.`,
-                    `মেনে নেওয়া বা পরিবর্তন করা ${count(kept)}টি পরামর্শের ${count(stats.accepts)}টি কর্মকর্তারা রেখেছেন।`,
-                  )
-          }
-        >
-          {loaded && kept > 0 && (
-            <div className="flex items-center gap-4">
-              <ShareRing share={stats.accepts / kept} />
-              <span className="flex flex-col">
-                <span className="font-display text-2xl font-bold text-ink">{t(`${count(stats.accepts)} of ${count(kept)}`, `${count(kept)}-এর মধ্যে ${count(stats.accepts)}`)}</span>
-                <span className="text-[13px] text-body">{t('Requests for more information are left out.', '"আরও তথ্য" চাওয়া এখানে ধরা হয়নি।')}</span>
-              </span>
-            </div>
-          )}
-        </QuestionCard>
-        <QuestionCard
-          question={t('Do overrides explain why?', 'পরিবর্তনে কি কারণ লেখা থাকে?')}
-          answer={
-            !loaded
-              ? '…'
-              : stats.overrides === 0
-                ? t('No overrides recorded yet.', 'এখনও কোনো পরিবর্তন রাখা হয়নি।')
-                : t(
-                    `${count(stats.overridesWithReason)} of ${count(stats.overrides)} ${stats.overrides === 1 ? 'override includes' : 'overrides include'} a written reason.`,
-                    `${count(stats.overrides)}টি পরিবর্তনের ${count(stats.overridesWithReason)}টিতে লিখিত কারণ আছে।`,
-                  )
-          }
-        >
-          {loaded && stats.overrides > 0 && (
-            <div className="flex flex-col gap-2">
-              <div className="h-3 overflow-hidden rounded-full bg-track" aria-hidden="true">
-                <span className="block h-3 rounded-full bg-band-strong" style={{ width: `${(stats.overridesWithReason / stats.overrides) * 100}%` }} />
-              </div>
-              <span className="font-display text-2xl font-bold text-ink">{t(`${count(stats.overridesWithReason)} of ${count(stats.overrides)}`, `${count(stats.overrides)}-এর মধ্যে ${count(stats.overridesWithReason)}`)}</span>
-              <span className="text-[13px] text-body">{t('The API refuses an override without a reason.', 'কারণ ছাড়া পরিবর্তন API নেয় না।')}</span>
-            </div>
-          )}
-        </QuestionCard>
-        <QuestionCard
-          question={t('Who needs more evidence?', 'কার আরও প্রমাণ দরকার?')}
-          answer={
-            !loaded
-              ? '…'
-              : t(`Officers asked for more information on ${count(stats.moreInfo)} ${stats.moreInfo === 1 ? 'decision' : 'decisions'}.`, `${count(stats.moreInfo)}টি সিদ্ধান্তে কর্মকর্তারা আরও তথ্য চেয়েছেন।`)
-          }
-        >
-          {loaded && (
-            <div className="flex flex-col">
-              <span className="font-display text-[32px] leading-10 font-bold text-ink">{count(stats.moreInfo)}</span>
-              <span className="text-[13px] text-body">{t(stats.moreInfo === 1 ? 'request to collect more evidence' : 'requests to collect more evidence', 'আরও প্রমাণ জোগাড়ের অনুরোধ')}</span>
-            </div>
-          )}
-        </QuestionCard>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <MetricTile label={t('Decisions recorded', 'রাখা সিদ্ধান্ত')} value={loaded ? all.length : null} hint={t('Every one kept, none edited', 'সবগুলো রাখা, কোনোটি বদলানো নয়')} />
+        <MetricTile
+          label={t('Suggested band kept', 'প্রস্তাবিত ব্যান্ড রাখা')}
+          value={loaded ? stats.accepts : null}
+          hint={kept ? t(`of ${count(kept)} accepted or overridden`, `মেনে নেওয়া বা বদলানো ${count(kept)}টির মধ্যে`) : t('No accepts or overrides yet', 'এখনও মেনে নেওয়া বা বদলানো নেই')}
+        />
+        <MetricTile
+          label={t('Overrides with a reason', 'কারণসহ পরিবর্তন')}
+          value={loaded ? stats.overridesWithReason : null}
+          hint={stats.overrides ? t(`of ${count(stats.overrides)} · the API refuses one without`, `${count(stats.overrides)}টির মধ্যে · কারণ ছাড়া API নেয় না`) : t('No overrides yet', 'এখনও কোনো পরিবর্তন নেই')}
+        />
+        <MetricTile label={t('Asked for more information', 'আরও তথ্য চাওয়া')} value={loaded ? stats.moreInfo : null} hint={t('Requests to collect more evidence', 'আরও প্রমাণ জোগাড়ের অনুরোধ')} />
       </div>
 
       {decisions.error ? (
@@ -205,8 +120,8 @@ export function DecisionsPage() {
         <Card className="flex flex-col gap-4 p-4 sm:p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex flex-col gap-1">
-              <h2 className="m-0 text-[22px] leading-7 font-semibold">{t('What did each officer decide?', 'প্রত্যেক কর্মকর্তা কী সিদ্ধান্ত নিয়েছেন?')}</h2>
-              <p className="m-0 text-[15px] text-body">
+              <h2 className="m-0 text-[18px] leading-7 font-semibold">{t('What did each officer decide?', 'প্রত্যেক কর্মকর্তা কী সিদ্ধান্ত নিয়েছেন?')}</h2>
+              <p className="m-0 text-[14.5px] text-body">
                 {t('Each row keeps the decision, its reason and the score shown at that moment.', 'প্রতিটি সারিতে সিদ্ধান্ত, তার কারণ আর সেই মুহূর্তে দেখানো স্কোর থাকে।')}
               </p>
             </div>
@@ -239,23 +154,25 @@ export function DecisionsPage() {
             <span>{t('Times shown in Bangladesh time (UTC+06:00)', 'সময় বাংলাদেশ সময়ে (UTC+06:00)')}</span>
           </div>
           <div className="overflow-x-auto rounded-[12px] border border-line" role="region" aria-label={t('Decisions', 'সিদ্ধান্ত')} tabIndex={0}>
-            <table className="w-full min-w-[960px] border-collapse text-[15px]">
+            <table className="w-full min-w-[760px] border-collapse text-[14.5px]">
               <thead className="bg-ground">
                 <tr className="text-left text-sm text-ink-2">
-                  <th scope="col" className="px-4 py-3 font-semibold">{t('When', 'কখন')}</th>
+                  <th scope="col" className="px-4 py-3 font-semibold">{t('When and who', 'কখন ও কে')}</th>
                   <th scope="col" className="px-4 py-3 font-semibold">{t('Merchant', 'মার্চেন্ট')}</th>
-                  <th scope="col" className="px-4 py-3 font-semibold">{t('Score at the time of the decision', 'সিদ্ধান্তের সময়ের স্কোর')}</th>
+                  <th scope="col" className="px-4 py-3 font-semibold">{t('Score shown', 'দেখানো স্কোর')}</th>
                   <th scope="col" className="px-4 py-3 font-semibold">{t('Action', 'পদক্ষেপ')}</th>
                   <th scope="col" className="px-4 py-3 font-semibold">{t('Why', 'কেন')}</th>
-                  <th scope="col" className="px-4 py-3 font-semibold">{t('Officer', 'কর্মকর্তা')}</th>
                 </tr>
               </thead>
               <tbody>
                 {visible.map((d) => (
                   <tr key={d.decision_id} className="border-t border-line align-top">
-                    <td className="px-4 py-4 whitespace-nowrap text-ink-2 tabular">{fmtBdTime(d.decided_at)}</td>
-                    <td className="px-4 py-4 font-semibold">
-                      <Link to={`/merchants/${encodeURIComponent(d.merchant_id)}`} className="no-underline">
+                    <td className="px-4 py-4 text-ink-2">
+                      <span className="block whitespace-nowrap tabular">{fmtBdTime(d.decided_at)}</span>
+                      <span className="text-[13px] text-muted-2">{d.officer_id}</span>
+                    </td>
+                    <td className="px-4 py-4 font-semibold whitespace-nowrap">
+                      <Link to={`/app/merchants/${encodeURIComponent(d.merchant_id)}`} className="no-underline">
                         {d.merchant_id}
                       </Link>
                     </td>
@@ -265,11 +182,10 @@ export function DecisionsPage() {
                     <td className="px-4 py-4">
                       <ActionChip action={d.officer_action} />
                     </td>
-                    <td className="max-w-[340px] px-4 py-4 leading-[22px] text-ink">
+                    <td className="min-w-[200px] px-4 py-4 leading-[22px] text-ink">
                       {d.reason_text ??
                         (d.officer_action === 'accept' ? t('No note. Accepting needs none.', 'কোনো নোট নেই। মেনে নিতে নোট লাগে না।') : t('No note.', 'কোনো নোট নেই।'))}
                     </td>
-                    <td className="px-4 py-4 text-ink-2">{d.officer_id}</td>
                   </tr>
                 ))}
               </tbody>
@@ -293,22 +209,15 @@ export function DecisionsPage() {
         </Card>
       )}
 
-      {stats.models.length > 0 && (
-        <Card className="flex flex-col gap-1 px-5 py-4">
-          <span className="text-[15px] text-ink">
-            {t(stats.models.length === 1 ? 'Model for these records:' : 'Models for these records:', 'এই রেকর্ডগুলোর মডেল:')}{' '}
-            <span className="font-mono text-sm">{stats.models.join(', ')}</span>
+      <Notice tone="info" title={t('Decisions are append-only', 'সিদ্ধান্ত শুধু যোগ করা যায়')}>
+        {t('To change course, record a new decision on the merchant’s page.', 'মত বদলালে মার্চেন্টের পাতায় নতুন সিদ্ধান্ত রাখুন।')}
+        {stats.models.length > 0 && (
+          <span className="mt-1 block text-[13px]">
+            {t(stats.models.length === 1 ? 'Model behind these scores: ' : 'Models behind these scores: ', 'এই স্কোরগুলোর মডেল: ')}
+            <span className="font-mono">{stats.models.join(', ')}</span>
           </span>
-          <span className="text-[13px] text-body">{t('The model version identifies how the displayed scores were produced.', 'মডেল সংস্করণ বলে দেখানো স্কোর কীভাবে তৈরি হয়েছিল।')}</span>
-        </Card>
-      )}
-      <Card className="flex flex-col gap-1 px-5 py-4">
-        <span className="text-[15px] text-ink">
-          {t('Decisions are', 'সিদ্ধান্ত')} <b className="font-semibold">{t('append-only', 'শুধু যোগ করা যায়')}</b>
-          {t('. To change course, record a new decision.', '। মত বদলালে নতুন সিদ্ধান্ত রাখুন।')}
-        </span>
-        <span className="text-[13px] text-body">{t('New decisions are recorded on a merchant’s page.', 'নতুন সিদ্ধান্ত মার্চেন্টের পাতায় রাখা হয়।')}</span>
-      </Card>
+        )}
+      </Notice>
     </Page>
   )
 }

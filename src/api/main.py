@@ -27,17 +27,28 @@ from __future__ import annotations
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from src.api.auth import TOKEN_HEADER
+from src.api.auth import identify
 from src.api.routes_admin import router as admin_router
+from src.api.routes_assessments import router as assessments_router
+from src.api.routes_auth import router as auth_router
 from src.api.routes_consents import router as consents_router
+from src.api.routes_daily import router as daily_router
 from src.api.routes_decisions import router as decisions_router
+from src.api.routes_intake import router as intake_router
 from src.api.routes_merchants import router as merchants_router
+from src.api.routes_org import router as org_router
+from src.api.routes_platform import router as platform_router
+from src.api.routes_quality import router as quality_router
+from src.api.routes_registrations import router as registrations_router
+from src.api.routes_sources import router as sources_router
+from src.api.routes_workspace import router as workspace_router
 from src.api.schemas import HealthResponse, ReadyResponse
 from src.api.state import Services, build_services
+from src.api.tenancy import merchant_guard
 from src.config import banner_text, load_config
 
 # The React dev server (Vite). Set CREDLENS_CORS_ORIGINS (comma separated) for another origin.
@@ -52,7 +63,12 @@ CHECK_HINT = "Run on the server: python -m src.api.preflight --server"
 async def lifespan(app: FastAPI):
     """Build the scorer and open the database once, when the API starts."""
     app.state.services = build_services()
+    from src.extraction.worker import maybe_start
+
+    worker = maybe_start(app.state.services.engine, app.state.services.config)
     yield
+    if worker is not None:
+        worker.stop()
     app.state.services.engine.dispose()
 
 
@@ -77,6 +93,8 @@ def not_ready_problems(services: Services | None) -> list[str]:
 def create_app(production: bool = False, cors_origins: list[str] | None = None) -> FastAPI:
     """Build the API. `production` switches off the pages that list every endpoint."""
     app = FastAPI(
+        # First find the caller (auth.py), then the institution boundary (tenancy.py).
+        dependencies=[Depends(identify), Depends(merchant_guard)],
         title="CredLens API",
         description="Explainable merchant readiness for lenders. Decision support only.",
         version="0.1.0",
@@ -88,10 +106,20 @@ def create_app(production: bool = False, cors_origins: list[str] | None = None) 
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cors_origins_from_environment() if cors_origins is None else cors_origins,
-        allow_methods=["GET", "POST"],
-        allow_headers=[TOKEN_HEADER, "Content-Type"],
+        allow_methods=["GET", "POST", "PATCH", "PUT"],
+        allow_headers=["Content-Type"],
         expose_headers=["X-Total-Count"],
     )
+    app.include_router(auth_router)
+    app.include_router(org_router)
+    app.include_router(platform_router)
+    app.include_router(intake_router)
+    app.include_router(registrations_router)
+    app.include_router(daily_router)
+    app.include_router(assessments_router)
+    app.include_router(workspace_router)
+    app.include_router(sources_router)
+    app.include_router(quality_router)
     app.include_router(merchants_router)
     app.include_router(consents_router)
     app.include_router(decisions_router)

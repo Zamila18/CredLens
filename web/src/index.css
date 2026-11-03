@@ -27,6 +27,11 @@
 
   /* The approved palette (design sheet, section 1) */
   --color-page: #f6fafa;
+  /* Public site: midnight structure and a warm paper surface around the same teal. */
+  --color-deep: #0b1533;
+  --color-deep-2: #142252;
+  --color-deep-line: #24346a;
+  --color-paper: #faf8f3;
   --color-body: #40516c;
   --color-accent-strong: #008a6c;
   --color-mint: #dff7ef;
@@ -248,4 +253,75 @@
   top: calc((100cqh - 992 * var(--s)) / 2 + 212 * var(--s));
   transform: translate(-50%, -50%);
   font-size: calc(55 * var(--s));
+}
+
+/*
+ * Motion: one easing and three durations, used everywhere. Everything here is switched off
+ * for people who ask for reduced motion (the base layer above, and the .reveal rule below).
+ */
+:root {
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur-fast: 160ms;
+  --dur-base: 280ms;
+  --dur-slow: 520ms;
+}
+@keyframes cl-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes cl-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+/* A page fades in when the route changes. */
+.route-enter {
+  animation: cl-fade-up var(--dur-base) var(--ease-out) both;
+}
+/* Sections fade up once when they scroll into view (components/Motion.tsx). */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity var(--dur-slow) var(--ease-out),
+    transform var(--dur-slow) var(--ease-out);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+/* Dashed connector lines that drift along the evidence flow diagrams. */
+.flow-line {
+  stroke-dasharray: 6 6;
+  animation: cl-flow 1.6s linear infinite;
+}
+/* Lift on hover for links that are whole cards. */
+.lift {
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+.lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -18px rgba(11, 21, 51, 0.45);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+  .flow-line,
+  .route-enter {
+    animation: none;
+  }
+  .lift:hover {
+    transform: none;
+  }
 }

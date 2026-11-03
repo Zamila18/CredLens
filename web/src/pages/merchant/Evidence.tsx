@@ -7,7 +7,9 @@
 import { ShoppingBasket, Truck, Wallet } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
-import type { MerchantProfile, TimelineEvent } from '@/api/types'
+import type { MerchantLoan, MerchantProfile, TimelineEvent } from '@/api/types'
+import { StatusTag } from '@/components/StatusTag'
+import { LOAN_KIND } from '@/lib/statuses'
 import { FilterChip } from '@/components/Filters'
 import { Section } from '@/components/Page'
 import { count, fmtDate, pct, taka } from '@/lib/format'
@@ -18,7 +20,7 @@ function plural(n: number, one: string, many: string) {
   return `${count(n)} ${n === 1 ? one : many}`
 }
 
-/** Stream colours: Mokam blue, REDX violet, Baki amber, loans ink (each also named in words). */
+/** Stream colours: purchases blue, deliveries violet, repayments amber, loans ink (each also named in words). */
 const STREAM_COLOR = { purchase: '#2F6FB0', delivery: '#6555A6', payment: '#B7791F', loan: '#111B42' } as const
 
 function StreamCard({
@@ -139,12 +141,12 @@ export function EvidenceCards({ profile }: { profile: MerchantProfile }) {
       title={t('Evidence, last 90 days', 'প্রমাণ, গত ৯০ দিন')}
       answer={t('The same numbers the score was computed from.', 'যে সংখ্যা থেকে স্কোর হিসাব হয়েছে, সেগুলোই।')}
     >
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 @2xl:grid-cols-3">
         <StreamCard
           icon={<ShoppingBasket size={18} aria-hidden="true" />}
           color={STREAM_COLOR.purchase}
           name={t('Purchases', 'কেনাকাটা')}
-          source="Mokam"
+          source={t('stock bought from suppliers', 'সরবরাহকারীর কাছ থেকে কেনা')}
           tone="border-[#D5E4F3] bg-info-panel/60"
         >
           {purchases ? (
@@ -172,7 +174,7 @@ export function EvidenceCards({ profile }: { profile: MerchantProfile }) {
           icon={<Truck size={18} aria-hidden="true" />}
           color={STREAM_COLOR.delivery}
           name={t('Deliveries', 'ডেলিভারি')}
-          source="REDX"
+          source={t('parcels sent to customers', 'গ্রাহকের কাছে পাঠানো পার্সেল')}
           tone="border-peri-chip bg-peri-panel/60"
         >
           {deliveries ? (
@@ -209,7 +211,7 @@ export function EvidenceCards({ profile }: { profile: MerchantProfile }) {
           icon={<Wallet size={18} aria-hidden="true" />}
           color={STREAM_COLOR.payment}
           name={t('Payments', 'পেমেন্ট')}
-          source="Baki"
+          source={t('earlier credit', 'আগের ঋণ')}
           tone="border-amber-chip bg-amber-panel"
         >
           {payments ? (
@@ -239,10 +241,17 @@ export function EvidenceCards({ profile }: { profile: MerchantProfile }) {
 type Stream = TimelineEvent['stream']
 
 const STREAM_META: Record<Stream, { tag: string; tagBn: string; chip: string }> = {
-  purchase: { tag: 'Mokam · Purchase', tagBn: 'Mokam · কেনা', chip: 'border-[#CFE0F2] bg-info-panel text-[#245C93]' },
-  delivery: { tag: 'REDX · Delivery', tagBn: 'REDX · ডেলিভারি', chip: 'border-peri-chip bg-peri-panel text-peri-text' },
-  payment: { tag: 'Baki · Payment', tagBn: 'Baki · পেমেন্ট', chip: 'border-amber-chip bg-amber-panel text-amber-text' },
-  loan: { tag: 'Baki · Loan', tagBn: 'Baki · ঋণ', chip: 'border-line bg-neutral-chip text-ink-2' },
+  purchase: { tag: 'Purchase', tagBn: 'কেনা', chip: 'border-[#CFE0F2] bg-info-panel text-[#245C93]' },
+  delivery: { tag: 'Delivery', tagBn: 'ডেলিভারি', chip: 'border-peri-chip bg-peri-panel text-peri-text' },
+  payment: { tag: 'Repayment', tagBn: 'পরিশোধ', chip: 'border-amber-chip bg-amber-panel text-amber-text' },
+  loan: { tag: 'Loan', tagBn: 'ঋণ', chip: 'border-line bg-neutral-chip text-ink-2' },
+}
+
+/** An application is on the loan stream but is a request, not a loan: it gets its own tag. */
+const APPLICATION_META = {
+  tag: 'Application · not a loan',
+  tagBn: 'আবেদন · ঋণ নয়',
+  chip: 'border-peri-chip bg-peri-panel text-peri-text',
 }
 
 const STREAM_FILTERS: { value: Stream | 'all'; label: string; labelBn: string }[] = [
@@ -250,7 +259,7 @@ const STREAM_FILTERS: { value: Stream | 'all'; label: string; labelBn: string }[
   { value: 'purchase', label: 'Purchases', labelBn: 'কেনাকাটা' },
   { value: 'delivery', label: 'Deliveries', labelBn: 'ডেলিভারি' },
   { value: 'payment', label: 'Payments', labelBn: 'পেমেন্ট' },
-  { value: 'loan', label: 'Loans', labelBn: 'ঋণ' },
+  { value: 'loan', label: 'Loans and applications', labelBn: 'ঋণ ও আবেদন' },
 ]
 
 /** How many events to show before "Show all". */
@@ -286,26 +295,26 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
       ) : (
         <ol className="relative m-0 flex list-none flex-col p-0">
           {shown.map((e, i) => {
-            const meta = STREAM_META[e.stream]
+            const meta = e.kind === 'application' ? APPLICATION_META : STREAM_META[e.stream]
             return (
               <li
                 key={`${e.date}-${i}`}
-                className="grid grid-cols-[88px_16px_minmax(0,1fr)] items-start gap-x-3 gap-y-1 border-t border-line py-3 sm:grid-cols-[104px_16px_150px_minmax(0,1fr)_auto]"
+                className="grid grid-cols-[88px_16px_minmax(0,1fr)] items-start gap-x-3 gap-y-1 border-t border-line py-3 @lg:grid-cols-[104px_16px_150px_minmax(0,1fr)_auto]"
               >
                 <span className="flex flex-col">
                   <span className="text-xs text-muted-2">{t('Date', 'তারিখ')}</span>
                   <span className="text-sm text-ink tabular">{fmtDate(e.date)}</span>
                 </span>
                 <span aria-hidden="true" className="mt-2 block size-3 rounded-full border-2 border-white shadow-[0_0_0_1px_#DCE7EB]" style={{ background: STREAM_COLOR[e.stream] }} />
-                <span className={cn('hidden self-start justify-self-start rounded-md border px-2 py-0.5 text-xs font-medium sm:inline-flex', meta.chip)}>
+                <span className={cn('hidden self-start justify-self-start rounded-md border px-2 py-0.5 text-xs font-medium @lg:inline-flex', meta.chip)}>
                   {t(meta.tag, meta.tagBn)}
                 </span>
-                <span className="col-start-3 flex flex-col gap-0.5 sm:col-start-auto">
+                <span className="col-start-3 flex flex-col gap-0.5 @lg:col-start-auto">
                   <span className="text-[15px] font-medium text-ink">{lang === 'bn' && e.label_bn ? e.label_bn : e.label}</span>
-                  <span className="text-xs text-muted-2 sm:hidden">{t(meta.tag, meta.tagBn)}</span>
+                  <span className="text-xs text-muted-2 @lg:hidden">{t(meta.tag, meta.tagBn)}</span>
                 </span>
                 {e.amount_bdt != null && (
-                  <span className="col-start-3 flex flex-col sm:col-start-auto sm:items-end">
+                  <span className="col-start-3 flex flex-col @lg:col-start-auto @lg:items-end">
                     <span className="text-xs text-muted-2">{t('Amount', 'পরিমাণ')}</span>
                     <span className="text-[15px] font-semibold text-ink tabular">{taka(e.amount_bdt)}</span>
                   </span>
@@ -324,6 +333,51 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
           {showAll ? t('Show fewer', 'কম দেখান') : t(`Show all ${count(matching.length)} events`, `সব ${count(matching.length)}টি ঘটনা দেখান`)}
         </button>
       )}
+    </Section>
+  )
+}
+
+/**
+ * Loans and the application, said plainly (GET /merchants/{id}/loans): an issued loan with
+ * its limit, or the application with the amount requested. No balance is worked out here:
+ * the repayment events are on the timeline, and an application never takes a repayment.
+ */
+export function LoansPanel({ loans }: { loans: MerchantLoan[] }) {
+  const t = useT()
+  const rows = [...loans].sort((a, b) => b.issued_at.localeCompare(a.issued_at))
+  return (
+    <Section
+      id="loans"
+      title={t('Loans and application', 'ঋণ ও আবেদন')}
+      answer={t(
+        'Issued loans from the lender’s records, and this shop’s application if it has one. Repayments are on the timeline below.',
+        'ঋণদাতার রেকর্ডের দেওয়া ঋণ, আর থাকলে এই দোকানের আবেদন। পরিশোধ নিচের সময়রেখায়।',
+      )}
+    >
+      <ul className="m-0 flex list-none flex-col p-0">
+        {rows.map((loan) => (
+          <li key={loan.loan_id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 border-t border-line py-3 first:border-t-0">
+            <span className="flex flex-col gap-1">
+              <StatusTag status={LOAN_KIND[loan.kind]} />
+              <span className="text-[13px] text-muted-2">
+                {loan.kind === 'application' ? t(`Applied ${fmtDate(loan.issued_at)}`, `আবেদন ${fmtDate(loan.issued_at)}`) : t(`Issued ${fmtDate(loan.issued_at)}`, `দেওয়া হয়েছে ${fmtDate(loan.issued_at)}`)}
+              </span>
+            </span>
+            <span className="flex flex-col items-end gap-0.5 text-right">
+              <span className="text-[15px] font-semibold text-ink tabular">
+                {loan.kind === 'application' ? taka(loan.requested_amount_bdt) : taka(loan.limit_bdt)}
+              </span>
+              <span className="text-[12.5px] text-muted-2">
+                {loan.kind === 'application'
+                  ? t('requested, not issued', 'চাওয়া, দেওয়া হয়নি')
+                  : loan.has_outcome
+                    ? t('limit · outcome known', 'সীমা · ফলাফল জানা')
+                    : t('limit · outcome not known yet', 'সীমা · ফলাফল এখনও জানা নেই')}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
     </Section>
   )
 }

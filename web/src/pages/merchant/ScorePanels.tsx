@@ -16,7 +16,7 @@ import { ScoreRing } from '@/components/ScoreRing'
 import { fmtDate, pct } from '@/lib/format'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { coverageItemText, groupText, inputName } from './scoreWords'
+import { coverageItemText, groupAnchor, groupText, inputName } from './scoreWords'
 
 /** What each band asks of the officer. Describes; never says lend or do not lend. */
 const BAND_MEANING: Record<Band, { en: string; bn: string; titleEn: string; titleBn: string }> = {
@@ -65,7 +65,7 @@ export function ReadinessOverview({ score, lang, outcome }: { score: Score; lang
             <BandChip band={score.band} lowScoreWarning={score.low_score_warning} size="md" className="self-start text-sm" />
           </div>
         </div>
-        <div className="flex min-w-[220px] flex-1 flex-col gap-2 border-line sm:border-l sm:pl-10">
+        <div className="flex min-w-[220px] flex-1 flex-col gap-2 border-line @lg:border-l @lg:pl-10">
           <span className="text-sm font-medium text-ink-2">{t('Coverage', 'কভারেজ')}</span>
           <span className="font-display text-[30px] leading-9 font-bold text-ink tabular">{pct(score.coverage)}</span>
           <CoverageBar coverage={score.coverage} band={score.band} wide label={false} />
@@ -77,14 +77,14 @@ export function ReadinessOverview({ score, lang, outcome }: { score: Score; lang
         </p>
       )}
       {(score.inputs?.length > 0 || score.coverage_items?.length > 0) && (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 @3xl:grid-cols-2">
           {score.inputs?.length > 0 && <ScoreBySource score={score} lang={lang} />}
           {score.coverage_items?.length > 0 && <CoverageChecklist score={score} lang={lang} />}
         </div>
       )}
-      <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 xl:grid-cols-4">
+      <ul className="m-0 grid list-none gap-3 p-0 @lg:grid-cols-2 @4xl:grid-cols-4">
         <InfoTile icon={BadgeInfo}>
-          {t('Calibrated probability of repaying in time:', 'সময়মতো পরিশোধের ক্যালিব্রেটেড সম্ভাবনা:')}{' '}
+          {t('The model’s estimate of repaying in time (checked on synthetic data only):', 'সময়মতো পরিশোধের মডেলের অনুমান (শুধু সিনথেটিক ডেটায় যাচাই করা):')}{' '}
           <b className="font-semibold text-ink tabular">{score.probability.toFixed(2)}</b>
           {t(`, shown as ${score.score}.`, `, দেখানো হয় ${score.score} হিসেবে।`)}
         </InfoTile>
@@ -225,19 +225,27 @@ function InputRow({ input, lang, low, high }: { input: InputPoints; lang: Lang; 
   const width = (Math.abs(input.points) / span) * 100
   const left = helps ? zero : zero - width
   return (
-    <li className="grid grid-cols-[14px_minmax(0,1fr)_64px] items-start gap-x-3 gap-y-2 border-t border-line py-3 md:grid-cols-[14px_minmax(0,1fr)_64px_minmax(180px,0.8fr)]">
+    <li className="grid grid-cols-[14px_minmax(0,1fr)_64px] items-start gap-x-3 gap-y-2 border-t border-line py-3 @2xl:grid-cols-[14px_minmax(0,1fr)_64px_minmax(180px,0.8fr)]">
       <span className={cn('mt-1.5 size-3 rounded-full', input.points === 0 ? 'bg-[#B4C3C8]' : helps ? 'bg-band-strong' : 'bg-band-review')} aria-hidden="true" />
       <span className="flex flex-col gap-0.5">
         <span className="text-[15px] leading-[22px] text-ink">{sentence}</span>
         <span className="text-[13px] text-muted-2">
-          {input.group && `${groupText(input.group, lang)} · `}
+          {/* The input is a summary of a whole group of records, so the link goes to the group, never to one record. */}
+          {input.group && (groupAnchor(input.group) ? (
+            <a href={`#${groupAnchor(input.group)}`} className="font-medium text-muted-2 underline decoration-dotted underline-offset-2 hover:text-lens-dark">
+              {groupText(input.group, lang)}
+            </a>
+          ) : (
+            groupText(input.group, lang)
+          ))}
+          {input.group && ' · '}
           {input.detail ?? t('no notable effect', 'উল্লেখযোগ্য প্রভাব নেই')}
         </span>
       </span>
       <span className={cn('pt-0.5 text-right text-[15px] font-semibold tabular', input.points === 0 ? 'text-muted-2' : helps ? 'text-lens-dark' : 'text-amber-text')}>
         {signed2(input.points)}
       </span>
-      <span className="relative col-span-3 h-6 md:col-span-1" aria-hidden="true">
+      <span className="relative col-span-3 h-6 @2xl:col-span-1" aria-hidden="true">
         <span className="absolute inset-y-0 w-px bg-control-line" style={{ left: `${zero}%` }} />
         {input.points !== 0 && (
           <span
@@ -277,7 +285,7 @@ export function WhyThisScore({ score, lang }: { score: Score; lang: Lang }) {
         <p className="m-0 text-sm text-body">{t('Nothing stands out for this merchant.', 'এই মার্চেন্টের ক্ষেত্রে আলাদা কিছু চোখে পড়ে না।')}</p>
       ) : (
         <div className="flex flex-col">
-          <div className="hidden grid-cols-[14px_minmax(0,1fr)_64px_minmax(180px,0.8fr)] gap-x-3 pb-1 text-xs text-muted-2 md:grid">
+          <div className="hidden grid-cols-[14px_minmax(0,1fr)_64px_minmax(180px,0.8fr)] gap-x-3 pb-1 text-xs text-muted-2 @2xl:grid">
             <span />
             <span />
             <span />
@@ -461,7 +469,7 @@ export function WhyMightThisBeWrong() {
   const t = useT()
   return (
     <Section id="limits" title={t('Why might this be wrong?', 'এটি কেন ভুল হতে পারে?')} className="border-amber-chip bg-amber-panel">
-      <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 xl:grid-cols-4">
+      <ul className="m-0 grid list-none gap-3 p-0 @lg:grid-cols-2 @4xl:grid-cols-4">
         <Caveat icon={Package}>{t('Returns can come from riders or addresses, not the shop.', 'ফেরত রাইডার বা ঠিকানার কারণেও হতে পারে, দোকানের কারণে নয়।')}</Caveat>
         <Caveat icon={Database}>
           {t(

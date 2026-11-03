@@ -104,7 +104,7 @@ export function DecisionForm({ merchantId, score, onRecorded }: { merchantId: st
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          <div role="radiogroup" aria-label={t('Action', 'পদক্ষেপ')} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div role="radiogroup" aria-label={t('Action', 'পদক্ষেপ')} className="grid gap-3 @lg:grid-cols-2 @4xl:grid-cols-4">
             {ACTIONS.map((a) => (
               <ActionCard
                 key={a.value}

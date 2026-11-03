@@ -40,28 +40,63 @@ class Services:
     scorer_error: str | None = None
     database_error: str | None = None
     _data_today: date | None = None
+    _bulk_today: date | None = None
 
     def data_today(self, session: Session) -> date:
         """The last day anything happened in the data: "today" for the data.
 
         The same rule as `src.model.labels.latest_date`, read from the database, so that
         "is this consent valid" gives the same answer here as in the review queue.
+
+        Reading the maximum of the large tables scans millions of rows (about 10 seconds on
+        the full synthetic data), so it is done once and again only after a data-file
+        import. A record saved in the app can only move the last day through its own row:
+        those rows are found through their entry (provenance) record, which takes
+        milliseconds.
         """
+        from src.intake.policy import benchmark_request, real_today
+
+        if not benchmark_request():  # a real organisation's request: today's real date
+            return real_today(self.config)
         if self._data_today is None:
-            columns = (
-                db.Purchase.purchase_date,
-                db.Delivery.dispatched_at,
-                db.Loan.issued_at,
-                db.Payment.paid_date,
-            )
-            days = [session.scalar(select(func.max(column))) for column in columns]
-            days = [pd.Timestamp(day).date() for day in days if day is not None]
+            if self._bulk_today is None:
+                self._bulk_today = _last_day(session, app_only=False)
+            days = [d for d in (self._bulk_today, _last_day(session, app_only=True)) if d]
             self._data_today = max(days) if days else date.today()
         return self._data_today
 
-    def forget_data_today(self) -> None:
-        """Call after rows were imported: the last day may have moved."""
+    def forget_data_today(self, bulk: bool = False) -> None:
+        """Call after records were saved: the last day may have moved. `bulk=True` after a
+        data-file import, which can add rows that have no entry record."""
         self._data_today = None
+        if bulk:
+            self._bulk_today = None
+
+
+def _last_day(session: Session, app_only: bool) -> date | None:
+    """The latest purchase, delivery, loan or repayment date; with `app_only`, only among
+    rows entered in the app (a provenance record, or the loan row of an application)."""
+    provenance = db.RecordProvenance
+    columns = (
+        (db.Purchase.purchase_date, db.Purchase.purchase_id, "purchase"),
+        (db.Delivery.dispatched_at, db.Delivery.delivery_id, "delivery"),
+        (db.Loan.issued_at, db.Loan.loan_id, None),
+        (db.Payment.paid_date, db.Payment.payment_id, "payment"),
+    )
+    days = []
+    for column, key, record_type in columns:
+        query = select(func.max(column))
+        if app_only:
+            entered = (
+                select(provenance.record_id).where(provenance.record_type == record_type)
+                if record_type
+                else select(db.Application.loan_id)
+            )
+            query = query.where(key.in_(entered))
+        day = session.scalar(query)
+        if day is not None:
+            days.append(pd.Timestamp(day).date())
+    return max(days) if days else None
 
 
 def build_services(config: dict[str, Any] | None = None) -> Services:
@@ -72,7 +107,7 @@ def build_services(config: dict[str, Any] | None = None) -> Services:
 
     if not inspect(engine).has_table("users"):
         services.database_error = (
-            "The database is empty. Create it with: python tasks.py data"
+            "The database has not been created. Create it with: python tasks.py init-db"
         )
     if services.database_error is None:
         # Read the last day of the data now, so the first profile request is not the slow one.
@@ -82,10 +117,11 @@ def build_services(config: dict[str, Any] | None = None) -> Services:
         services.scorer = Scorer(config)
         if services.database_error is None:
             # Merchants imported before a restart are scored again (src/api/imported.py).
-            from src.api.imported import refresh_imported
+            from src.api.imported import refresh_imported, refresh_real
 
             with Session(engine) as session:
                 refresh_imported(services, session)
+                refresh_real(services, session)
     except Exception as error:  # noqa: BLE001 - the API must still start so /health works
         log.exception("The scorer could not be built")
         services.scorer_error = (

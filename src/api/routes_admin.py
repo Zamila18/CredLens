@@ -35,7 +35,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
-from src.api.auth import CurrentUser, add_audit, require_roles
+from src.api.auth import CurrentUser, add_audit, require_owner
 from src.api.common import api_error
 from src.api.imported import refresh_imported
 from src.api.importer import (
@@ -48,6 +48,7 @@ from src.api.importer import (
 )
 from src.api.schemas import BundleReport, ImportReport
 from src.api.state import Services, get_services, get_session
+from src.api.tenancy import default_org, org_of
 from src.db.load import LOADABLE_MODES
 
 router = APIRouter(tags=["admin"])
@@ -70,7 +71,7 @@ async def import_table(
     table: str,
     request: Request,
     dry_run: bool = False,
-    user: CurrentUser = Depends(require_roles("admin")),
+    user: CurrentUser = Depends(require_owner),
     services: Services = Depends(get_services),
     session: Session = Depends(get_session),
 ) -> ImportReport:
@@ -79,6 +80,11 @@ async def import_table(
     Send the file as the request body. The report lists the rows accepted and rejected,
     and why. With `dry_run=true` nothing is loaded. Admin only; audited.
     """
+    if org_of(user, services.config) != default_org(services.config):
+        # Contract files load into the default organisation only (tenancy.py).
+        raise api_error(
+            403, "role_not_allowed", "Data files load into the default organisation only."
+        )
     mode = services.config["data"]["mode"]
     if mode not in LOADABLE_MODES:
         raise api_error(
@@ -126,7 +132,7 @@ async def import_table(
         report.note = LOADED_NOTE
     add_audit(session, user, f"{'check_import' if dry_run else 'import'}_{table}")
     session.commit()
-    services.forget_data_today()
+    services.forget_data_today(bulk=True)
     if report.loaded:
         await run_in_threadpool(refresh_imported, services, session)
     return report
@@ -163,7 +169,7 @@ def _bundle_files(body: bytes) -> dict[str, bytes]:
 async def import_bundle(
     request: Request,
     dry_run: bool = False,
-    user: CurrentUser = Depends(require_roles("admin")),
+    user: CurrentUser = Depends(require_owner),
     services: Services = Depends(get_services),
     session: Session = Depends(get_session),
 ) -> BundleReport:
@@ -174,6 +180,11 @@ async def import_bundle(
     before it would add. With `dry_run=true`, or when any file is refused as a whole, nothing
     is kept. After a load, the new merchants are scored (same model, nothing retrained).
     """
+    if org_of(user, services.config) != default_org(services.config):
+        # Contract files load into the default organisation only (tenancy.py).
+        raise api_error(
+            403, "role_not_allowed", "Data files load into the default organisation only."
+        )
     mode = services.config["data"]["mode"]
     if mode not in LOADABLE_MODES:
         raise api_error(
@@ -232,7 +243,7 @@ async def import_bundle(
         )
     add_audit(session, user, "import_bundle" if keep else "check_import_bundle")
     session.commit()
-    services.forget_data_today()
+    services.forget_data_today(bulk=True)
 
     new_merchants: list[str] = []
     if keep:

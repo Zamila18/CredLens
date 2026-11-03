@@ -98,8 +98,13 @@ class Scorer:
         # from the source systems, so an import may never add to them.
         self._source_merchants = frozenset(tables["merchants"]["merchant_id"])
         self._base = _latest_loans(build_dataset(tables, config, as_of=self.as_of))
+        self._imported: pd.DataFrame | None = None
+        self._real: pd.DataFrame | None = None
         self._latest = self._base
         self.model_version = self.saved["version_id"]
+        # Merchants whose latest records could not be scored (src/api/imported.py): the
+        # API must say "assessment not updated" for them, never show an older score.
+        self.not_updated: dict[str, str] = {}
 
     def merchant_ids(self) -> list[str]:
         """Every merchant that can be looked up (has at least one loan)."""
@@ -126,13 +131,39 @@ class Scorer:
         the same as if the merchant had been in the original data.
         """
         if not tables or tables["loans"].empty:
-            self._latest = self._base
+            self._imported = None
+            self._rebuild()
             return []
         refuse_hidden_rows(self.config, self.mode)
         new = _latest_loans(build_dataset(tables, self.config, as_of=self.as_of, mode=self.mode))
         new = new[~new.index.isin(list(self._source_merchants))]
-        self._latest = pd.concat([self._base, new])
+        self._imported = new
+        self._rebuild()
         return list(new.index)
+
+    def set_real(self, tables: dict[str, pd.DataFrame] | None, as_of) -> list[str]:
+        """Score a real organisation's shops, as of today's real date (`as_of`).
+
+        The same saved model and feature rules as everything else; only "today" differs:
+        the synthetic data ends on its own calendar, real records are dated by the real one.
+        The model is still trained on synthetic data only, which every screen says.
+        Replaces any earlier real set. Returns the shops that can be looked up (with a loan
+        or an application).
+        """
+        if not tables or tables["loans"].empty:
+            self._real = None
+            self._rebuild()
+            return []
+        refuse_hidden_rows(self.config, self.mode)
+        new = _latest_loans(build_dataset(tables, self.config, as_of=as_of, mode=self.mode))
+        new = new[~new.index.isin(list(self._source_merchants))]
+        self._real = new
+        self._rebuild()
+        return list(new.index)
+
+    def _rebuild(self) -> None:
+        parts = [self._base] + [p for p in (self._imported, self._real) if p is not None]
+        self._latest = pd.concat(parts) if len(parts) > 1 else self._base
 
     def feature_row(self, merchant_id: str) -> pd.Series:
         """The feature row a merchant is scored on: their most recent loan."""

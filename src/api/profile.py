@@ -95,6 +95,9 @@ def build_profile(
         has_trade_license=merchant.has_trade_license,
         consent_valid=consent_valid,
     )
+    shop = session.get(db.MerchantProfile, merchant.merchant_id)
+    if shop is not None:  # a shop created in the app has a name and an area
+        profile.shop_name, profile.area = shop.shop_name, shop.area
     if not consent_valid:
         return profile
 
@@ -277,11 +280,34 @@ def timeline(session: Session, merchant_id: str, as_of: date) -> list[TimelineEv
                 _delivery_label_bn(status, reason),
             )
         )
-    loans = session.execute(
-        select(db.Loan.issued_at, db.Loan.limit_bdt).where(db.Loan.merchant_id == merchant_id)
+    # An application is scored through a loan-shaped row, but it is a request, not a loan:
+    # it is shown as one, with the amount asked for (the row itself carries no amount).
+    requested = dict(
+        session.execute(
+            select(db.Application.loan_id, db.Application.requested_amount_bdt).where(
+                db.Application.merchant_id == merchant_id
+            )
+        ).all()
     )
-    for day, limit in loans:
-        events.append((day, "loan", "Loan issued", limit, "ঋণ দেওয়া হয়েছে"))
+    loans = session.execute(
+        select(db.Loan.loan_id, db.Loan.issued_at, db.Loan.limit_bdt).where(
+            db.Loan.merchant_id == merchant_id
+        )
+    )
+    for loan_id, day, limit in loans:
+        if loan_id in requested:
+            events.append(
+                (
+                    day,
+                    "loan",
+                    "Application received (amount requested, not a loan)",
+                    requested[loan_id],
+                    "আবেদন গ্রহণ করা হয়েছে (চাওয়া অঙ্ক, ঋণ নয়)",
+                    "application",
+                )
+            )
+        else:
+            events.append((day, "loan", "Loan issued", limit, "ঋণ দেওয়া হয়েছে", "loan"))
     payments = session.execute(
         select(
             db.Payment.due_date,
@@ -314,11 +340,12 @@ def timeline(session: Session, merchant_id: str, as_of: date) -> list[TimelineEv
     events.sort(key=lambda event: (event[0], STREAM_ORDER[event[1]], event[2]))
     return [
         TimelineEvent(
-            date=day.isoformat(),
-            stream=stream,
-            label=label,
-            label_bn=label_bn,
-            amount_bdt=None if amount is None else float(amount),
+            date=event[0].isoformat(),
+            stream=event[1],
+            label=event[2],
+            label_bn=event[4],
+            amount_bdt=None if event[3] is None else float(event[3]),
+            kind=event[5] if len(event) > 5 else event[1],
         )
-        for day, stream, label, amount, label_bn in events
+        for event in events
     ]

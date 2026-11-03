@@ -24,7 +24,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from src.api.auth import EVERY_ROLE, CurrentUser, add_audit, require_roles
+from src.api.auth import EVERY_ROLE, READERS, CurrentUser, add_audit, require_roles
 from src.api.common import api_error, band_rules_for, refuse_rows_not_shown
 from src.api.profile import (
     QUESTIONNAIRE_CONSENT_CATEGORY,
@@ -44,6 +44,7 @@ from src.api.schemas import (
 )
 from src.api.scoring_access import card_or_refuse, note_refusal
 from src.api.state import Services, get_scorer, get_services, get_session
+from src.api.tenancy import org_merchant_ids, org_of
 from src.db import models as db
 from src.model.explain import RowsNotShown
 from src.model.scoring import Scorer, UnknownMerchant
@@ -51,7 +52,9 @@ from src.model.scoring import Scorer, UnknownMerchant
 router = APIRouter(tags=["merchants"])
 
 ANY_ROLE = require_roles(*EVERY_ROLE)
-OFFICER_ONLY = require_roles("officer")
+OFFICER_ONLY = require_roles("credit_officer", "fsr")
+# The benchmark review queue: not for a sales representative (assigned shops only).
+QUEUE_READERS = require_roles(*READERS)
 
 
 def _known_merchant(session: Session, merchant_id: str) -> db.Merchant:
@@ -75,7 +78,7 @@ def review_queue(
     status_filter: Literal["pending", "decided"] | None = Query(default=None, alias="status"),
     band: Band | None = None,
     town_tier: str | None = None,
-    user: CurrentUser = Depends(ANY_ROLE),
+    user: CurrentUser = Depends(QUEUE_READERS),
     scorer: Scorer = Depends(get_scorer),
     session: Session = Depends(get_session),
 ) -> list[MerchantQueueItem]:
@@ -121,6 +124,9 @@ def review_queue(
                 "Load the same data into both: python tasks.py data --reset-db",
             )
         is_decided = row.merchant_id in decided
+        if row.merchant_id in scorer.not_updated:
+            # Records saved but not scored: show no score, never an older one.
+            row = row._replace(score=None, coverage=None, band=None, low_score_warning=None)
         items.append(
             MerchantQueueItem(
                 merchant_id=row.merchant_id,
@@ -135,9 +141,15 @@ def review_queue(
                 band=_optional(row.band, str),
                 low_score_warning=_optional(row.low_score_warning, bool),
                 consent_valid=bool(row.consent_valid),
+                assessment_status=(
+                    "not_updated" if row.merchant_id in scorer.not_updated else "current"
+                ),
             )
         )
 
+    # Only the caller's organisation's merchants (tenancy.py).
+    allowed = org_merchant_ids(session, org_of(user, scorer.config), scorer.config)
+    items = [item for item in items if item.merchant_id in allowed]
     if status_filter:
         items = [item for item in items if item.status == status_filter]
     if band:

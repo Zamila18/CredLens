@@ -93,7 +93,7 @@ export function QuestionnaireForm({
                   <span className={cn(lang === 'bn' && item.bn && 'font-bn')}>{text}</span>
                 </legend>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className={cn('w-28 text-right text-xs text-muted max-sm:hidden', lang === 'bn' && 'font-bn')}>{low}</span>
+                  <span className={cn('w-28 text-right text-xs text-muted @max-lg:hidden', lang === 'bn' && 'font-bn')}>{low}</span>
                   <div role="radiogroup" aria-label={text} className="flex gap-1.5">
                     {SCALE.map((n) => {
                       const on = answers[item.key] === n
@@ -115,7 +115,7 @@ export function QuestionnaireForm({
                       )
                     })}
                   </div>
-                  <span className={cn('text-xs text-muted max-sm:hidden', lang === 'bn' && 'font-bn')}>{high}</span>
+                  <span className={cn('text-xs text-muted @max-lg:hidden', lang === 'bn' && 'font-bn')}>{high}</span>
                 </div>
               </fieldset>
             </li>

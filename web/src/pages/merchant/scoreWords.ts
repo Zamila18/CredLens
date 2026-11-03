@@ -10,18 +10,18 @@ type Pair = { en: string; bn: string }
 /** The coverage checklist of the synthetic data (config `coverage_weights`). */
 export const COVERAGE_ITEM: Record<string, Pair> = {
   history_6_months: { en: 'At least 6 months of history', bn: 'অন্তত 6 মাসের ইতিহাস' },
-  purchases_present: { en: 'Regular stock purchases (Mokam)', bn: 'নিয়মিত মাল কেনা (Mokam)' },
-  payments_present: { en: 'Repayment history (Baki)', bn: 'পরিশোধের ইতিহাস (Baki)' },
-  deliveries_present: { en: 'Delivery records (REDX)', bn: 'ডেলিভারির রেকর্ড (REDX)' },
+  purchases_present: { en: 'Regular stock purchases', bn: 'নিয়মিত মাল কেনা' },
+  payments_present: { en: 'Repayment history', bn: 'পরিশোধের ইতিহাস' },
+  deliveries_present: { en: 'Delivery records (optional)', bn: 'ডেলিভারির রেকর্ড (ঐচ্ছিক)' },
   questionnaire_done: { en: 'Questionnaire answered', bn: 'প্রশ্নাবলির উত্তর দেওয়া' },
   recent_activity_30d: { en: 'Active in the last 30 days', bn: 'গত 30 দিনে সক্রিয়' },
 }
 
 /** Where an input's data comes from. */
 export const GROUP: Record<string, Pair> = {
-  purchases: { en: 'Purchases · Mokam', bn: 'কেনাকাটা · Mokam' },
-  payments: { en: 'Repayments · Baki', bn: 'পরিশোধ · Baki' },
-  deliveries: { en: 'Deliveries · REDX', bn: 'ডেলিভারি · REDX' },
+  purchases: { en: 'Purchases', bn: 'কেনাকাটা' },
+  payments: { en: 'Repayments', bn: 'পরিশোধ' },
+  deliveries: { en: 'Deliveries', bn: 'ডেলিভারি' },
   questionnaire: { en: 'Questionnaire', bn: 'প্রশ্নাবলি' },
 }
 
@@ -56,4 +56,10 @@ export function groupText(group: string, lang: Lang): string {
 
 export function inputName(code: string, label: string, lang: Lang): string {
   return lang === 'bn' && INPUT_BN[code] ? INPUT_BN[code] : label
+}
+
+/** The id of the evidence group (on the review's records panel) that a model input group reads. */
+export function groupAnchor(group: string): string | null {
+  const id = ({ purchases: 'purchases', payments: 'repayments', deliveries: 'deliveries' } as Record<string, string>)[group]
+  return id ? `records-${id}` : null
 }

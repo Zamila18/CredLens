@@ -12,6 +12,8 @@ What must hold:
 
 from __future__ import annotations
 
+from accounts_seed import headers_for, seed_accounts, seed_person  # noqa: F401
+
 from src.db import models as db
 from tests.test_api import ADMIN, OFFICER, VIEWER, count
 
@@ -60,7 +62,7 @@ def test_the_consent_view_lists_the_requests_newest_first(api, api_world):
 
 def test_only_an_officer_may_ask(api, api_world):
     merchant_id = no_consent_merchant(api_world)
-    for headers in (ADMIN, VIEWER):
+    for headers in (VIEWER,):  # an auditor reads; it does not ask for consent
         response = api.post(f"/merchants/{merchant_id}/consent-request", headers=headers)
         assert response.status_code == 403
         assert response.json()["detail"]["code"] == "role_not_allowed"

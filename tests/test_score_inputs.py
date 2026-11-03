@@ -14,6 +14,7 @@ What must hold, for every scored merchant:
 from __future__ import annotations
 
 import pytest
+from accounts_seed import headers_for, seed_accounts, seed_person  # noqa: F401
 
 from tests.test_api import OFFICER
 

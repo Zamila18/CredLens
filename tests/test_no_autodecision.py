@@ -14,6 +14,7 @@ from __future__ import annotations
 from datetime import datetime
 
 import pytest
+from accounts_seed import headers_for, seed_accounts, seed_person  # noqa: F401
 from sqlalchemy import insert, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -53,6 +54,241 @@ def every_endpoint(merchant_id: str) -> list[tuple[str, str, dict]]:
         ("POST", "/admin/import/loans", {"content": b"loan_id\nL-X\n"}),
         ("POST", "/admin/import/loans?dry_run=true", {"content": b""}),
         ("POST", "/admin/import-bundle?dry_run=true", {"content": b"not a zip"}),
+        # the demo workflow (src/api/routes_intake.py)
+        ("GET", "/demo/settings", {}),
+        ("GET", "/search/merchants?q=M0", {}),
+        (
+            "POST",
+            "/merchants",
+            {"json": {"shop_name": "Registry shop", "district": "Dhaka", "shop_type": "grocery"}},
+        ),
+        (
+            "POST",
+            f"/merchants/{merchant_id}/consent-responses",
+            {
+                "json": {
+                    "response": "granted",
+                    "categories": ["purchases"],
+                    "method": "assisted_on_phone",
+                }
+            },
+        ),
+        (
+            "POST",
+            f"/merchants/{merchant_id}/purchases",
+            {"json": {"purchase_date": "2026-06-01", "amount_bdt": 100.0}},
+        ),
+        (
+            "POST",
+            f"/merchants/{merchant_id}/deliveries",
+            {"json": {"dispatched_at": "2026-06-01T10:00", "status": "returned", "is_cod": False}},
+        ),
+        (
+            "POST",
+            f"/merchants/{merchant_id}/repayments",
+            {
+                "json": {
+                    "loan_id": "L-X",
+                    "due_date": "2026-06-01",
+                    "amount_due_bdt": 100.0,
+                    "amount_paid_bdt": 0.0,
+                }
+            },
+        ),
+        ("POST", f"/merchants/{merchant_id}/visits", {"json": {"outcome": "shop_open_trading"}}),
+        (
+            "POST",
+            f"/merchants/{merchant_id}/application",
+            {"json": {"requested_amount_bdt": 1000.0, "purpose": "other"}},
+        ),
+        ("GET", f"/merchants/{merchant_id}/application", {}),
+        ("GET", f"/merchants/{merchant_id}/loans", {}),
+        ("GET", f"/merchants/{merchant_id}/workflow", {}),
+        ("GET", f"/merchants/{merchant_id}/review", {}),
+        ("GET", f"/merchants/{merchant_id}/receipt", {}),
+        ("GET", "/applications", {}),
+        ("GET", "/directory/merchants", {}),
+        ("GET", "/import-batches", {}),
+        ("GET", "/import-batches/IB-none", {}),
+        ("GET", "/overview", {}),
+        ("GET", "/organization", {}),
+        ("GET", "/sources/catalog", {}),
+        ("GET", "/sources", {}),
+        (
+            "POST",
+            "/sources",
+            {
+                "json": {
+                    "connector_key": "sandbox_feed",
+                    "display_name": "Registry feed",
+                    "settings": {"feed": "standard"},
+                }
+            },
+        ),
+        ("GET", "/sources/SC-none", {}),
+        ("POST", "/sources/SC-none/test", {}),
+        ("POST", "/sources/SC-none/discover", {}),
+        ("POST", "/sources/SC-none/preview", {"json": {"mapping": {}}}),
+        (
+            "POST",
+            "/sources/SC-none/matches",
+            {"json": {"external_ref": "x", "decision": "rejected"}},
+        ),
+        ("POST", "/sources/SC-none/sync", {"json": {"mapping": {}}}),
+        ("GET", "/sources/SC-none/matches", {}),
+        ("GET", "/quality/issues", {}),
+        ("POST", "/auth/login", {"json": {"identifier": "nobody@example.org", "password": "x"}}),
+        ("POST", "/auth/logout", {}),
+        ("GET", "/auth/me", {}),
+        (
+            "POST",
+            "/auth/password/setup",
+            {
+                "json": {
+                    "identifier": "nobody@example.org",
+                    "code": "AAAA-BBBB-CCCC",
+                    "password": "x",
+                }
+            },
+        ),
+        ("POST", "/auth/password", {"json": {"current": "x", "new": "y"}}),
+        (
+            "POST",
+            "/auth/register/company",
+            {
+                "json": {
+                    "full_name": "x",
+                    "email": "x",
+                    "mobile": "x",
+                    "password": "x",
+                    "confirm_password": "y",
+                    "legal_name": "x",
+                    "org_type": "other",
+                    "sector": "x",
+                    "official_email": "x",
+                    "contact_number": "x",
+                    "division": "x",
+                    "city": "x",
+                    "address": "x",
+                }
+            },
+        ),
+        (
+            "POST",
+            "/auth/register/join",
+            {
+                "json": {
+                    "full_name": "x",
+                    "email": "x",
+                    "mobile": "x",
+                    "password": "x",
+                    "confirm_password": "y",
+                    "invitation_code": "x",
+                    "role": "fsr",
+                }
+            },
+        ),
+        ("GET", "/auth/invitations/preview?code=AAAA-BBBB-CCCC-DDDD", {}),
+        ("GET", "/org/profile", {}),
+        ("PATCH", "/org/profile", {"json": {"fsr_label": "SR"}}),
+        ("GET", "/org/employees", {}),
+        ("POST", "/org/employees/U-none/reset-code", {}),
+        ("POST", "/org/employees/U-none/disable", {}),
+        ("GET", "/org/invitations", {}),
+        ("POST", "/org/invitations", {"json": {"role": "fsr"}}),
+        ("POST", "/org/invitations/IN-none/revoke", {}),
+        ("POST", "/org/invitations/IN-none/regenerate", {}),
+        ("GET", "/platform/orgs", {}),
+        ("POST", "/platform/orgs/ORG-none/status", {"json": {"status": "suspended"}}),
+        ("POST", "/platform/orgs/ORG-none/owner-reset", {}),
+        ("GET", "/org/assignments", {}),
+        ("POST", "/org/assignments", {"json": {"merchant_id": "x", "fsr_user_id": "y"}}),
+        ("POST", "/org/assignments/CL-none/end", {}),
+        (
+            "POST",
+            "/quality/reviews",
+            {"json": {"issue_key": "none:x", "fingerprint": "0" * 64, "outcome": "x", "note": "x"}},
+        ),
+        ("POST", "/sources/SC-none/revoke", {}),
+        ("POST", f"/merchants/{merchant_id}/purchase-import/inspect", {"content": b"not xlsx"}),
+        (
+            "POST",
+            f"/merchants/{merchant_id}/purchase-import/preview",
+            {"content": b"not xlsx", "params": {"sheet": "S", "mapping": "{}"}},
+        ),
+        (
+            "POST",
+            f"/merchants/{merchant_id}/purchase-import/commit",
+            {
+                "content": b"not xlsx",
+                "params": {"sheet": "S", "mapping": "{}", "preview_token": "x"},
+            },
+        ),
+        ("GET", "/field/shops", {}),
+        ("POST", "/registrations", {"json": {"shop_name": "x"}}),
+        ("GET", "/registrations", {}),
+        ("GET", "/registrations/RG-none", {}),
+        ("PATCH", "/registrations/RG-none/details", {"json": {"shop_name": "x"}}),
+        ("GET", "/registrations/RG-none/consent.pdf", {}),
+        ("GET", "/registration-forms/blank", {}),
+        ("POST", "/registrations/from-form", {"content": b"not a file"}),
+        ("POST", "/registrations/RG-none/signed", {"content": b"not a file"}),
+        ("GET", "/registrations/RG-none/extraction", {}),
+        ("PATCH", "/registrations/RG-none/fields/1", {"json": {}}),
+        ("GET", "/registrations/RG-none/document", {}),
+        (
+            "POST",
+            "/registrations/RG-none/verify",
+            {
+                "json": {
+                    "categories": ["purchases"],
+                    "signer_name": "X Y",
+                    "signature_checked": True,
+                    "reference_matches": True,
+                }
+            },
+        ),
+        ("POST", "/registrations/RG-none/reject", {"json": {"reason": "not the owner at all"}}),
+        ("POST", "/registrations/RG-none/return", {"json": {"reason": "photo is cut off here"}}),
+        ("POST", f"/merchants/{merchant_id}/consent/withdraw", {"json": {"reason": "by phone"}}),
+        ("GET", "/platform/consent-templates", {}),
+        (
+            "POST",
+            "/platform/consent-templates/paper-consent-v1/status",
+            {"json": {"status": "draft"}},
+        ),
+        ("GET", "/daily/entry-types", {}),
+        ("GET", "/fsr/overview", {}),
+        ("POST", f"/merchants/{merchant_id}/assessments", {}),
+        ("GET", f"/merchants/{merchant_id}/assessments", {}),
+        ("GET", f"/merchants/{merchant_id}/assessments/AS-none/verify", {}),
+        ("GET", f"/merchants/{merchant_id}/daily", {}),
+        ("POST", f"/merchants/{merchant_id}/daily-import", {"content": b"not a file"}),
+        ("GET", f"/merchants/{merchant_id}/daily-import/XJ-none", {}),
+        (
+            "POST",
+            f"/merchants/{merchant_id}/daily/entries/E-none/amend",
+            {"json": {"reason": "a typo here"}},
+        ),
+        ("GET", f"/merchants/{merchant_id}/daily/2026-01-01", {}),
+        ("PUT", f"/merchants/{merchant_id}/daily/2026-01-01", {"json": {"rows": []}}),
+        ("POST", f"/merchants/{merchant_id}/daily/2026-01-01/accept", {}),
+        (
+            "POST",
+            f"/merchants/{merchant_id}/daily/2026-01-01/return",
+            {"json": {"reason": "figures look off"}},
+        ),
+        ("POST", f"/merchants/{merchant_id}/daily/2026-01-01/submit", {}),
+        ("GET", "/notifications", {}),
+        ("POST", "/notifications/read-all", {}),
+        ("POST", "/org/assignments/bulk", {"json": {"merchant_ids": [], "fsr_user_id": "y"}}),
+        ("GET", "/org/assignments/history", {}),
+        ("GET", "/org/fsrs/U-none", {}),
+        ("GET", "/org/range-policies", {}),
+        ("POST", "/org/range-policies", {"json": {"parameters": {}}}),
+        ("POST", "/org/range-policies/RP-none/approve", {}),
+        ("POST", "/org/range-policies/RP-none/retire", {}),
+        ("GET", "/submissions", {}),
     ]
 
 
@@ -60,7 +296,22 @@ def test_every_endpoint_of_the_api_is_covered_by_this_file(api, consenting):
     covered = set()
     for method, url, _ in every_endpoint(consenting[0]):
         path = url.split("?")[0].replace(consenting[0], "{merchant_id}")
-        path = path.replace("/loans", "/{table}")
+        path = path.replace("/admin/import/loans", "/admin/import/{table}")
+        path = path.replace("/import-batches/IB-none", "/import-batches/{batch_id}")
+        path = path.replace("/sources/SC-none", "/sources/{connection_id}")
+        path = path.replace("/org/employees/U-none", "/org/employees/{user_id}")
+        path = path.replace("/org/invitations/IN-none", "/org/invitations/{invitation_id}")
+        path = path.replace("/platform/orgs/ORG-none", "/platform/orgs/{organization_id}")
+        path = path.replace("/org/assignments/CL-none", "/org/assignments/{merchant_id}")
+        path = path.replace("/registrations/RG-none", "/registrations/{reg_id}")
+        path = path.replace("/fields/1", "/fields/{field_id}")
+        path = path.replace("/assessments/AS-none", "/assessments/{assessment_id}")
+        path = path.replace("/daily-import/XJ-none", "/daily-import/{job_id}")
+        path = path.replace("/entries/E-none", "/entries/{entry_id}")
+        path = path.replace("/daily/2026-01-01", "/daily/{business_date}")
+        path = path.replace("/org/fsrs/U-none", "/org/fsrs/{user_id}")
+        path = path.replace("/range-policies/RP-none", "/range-policies/{policy_id}")
+        path = path.replace("/consent-templates/paper-consent-v1", "/consent-templates/{version}")
         covered.add((method.lower(), path))
     published = {
         (method, path)
@@ -76,6 +327,8 @@ def test_no_endpoint_changes_a_loan_status(api, api_world, consenting):
     merchant_id = consenting[-20]
     for method, url, arguments in every_endpoint(merchant_id):
         for headers in (OFFICER, ADMIN, VIEWER, {}):
+            if url in ("/auth/logout", "/auth/password") and headers:
+                continue  # these end the caller's own (seeded) session; they touch no loan
             api.request(method, url, headers=headers, **arguments)
     assert loans_snapshot(api_world) == before
     assert any(label is not None for _, _, label in before), "the loans table is not empty"
@@ -117,6 +370,7 @@ def test_a_decision_is_only_ever_an_officers_reading(api, api_world, consenting)
             "officer_action",
             "reason_text",
             "decided_at",
+            "assessment_id",
         }
         # band and coverage are a copy of what was on screen, like the score: never a verdict
         assert (stored["band_shown"], stored["coverage_shown"]) == (card["band"], card["coverage"])

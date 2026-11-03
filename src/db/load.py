@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 from datetime import datetime
 from typing import Any
 
@@ -37,7 +38,7 @@ import pandas as pd
 from sqlalchemy import func, insert, select
 
 from src.adapters import check_frame, get_adapter
-from src.config import get_database_url, load_config
+from src.config import PROJECT_ROOT, load_config
 from src.db.models import CONTRACT_TABLES, Base, LoadInfo, User, drop_tables, make_engine
 
 CHUNK_ROWS = 50_000
@@ -200,7 +201,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Data mode '{mode}' is not loaded into the database. Only synthetic data is.")
         return 0
 
-    database_url = get_database_url(config)
+    # The benchmark goes to its own database, never to the operational one companies use.
+    database_url = os.environ.get("CREDLENS_BENCHMARK_DATABASE_URL", "").strip() or (
+        "sqlite:///" + (PROJECT_ROOT / "data" / "benchmark.db").as_posix()
+    )
     kind = "SQLite (local file)" if database_url.startswith("sqlite") else "PostgreSQL (shared)"
     print(f"Loading '{mode}' into the database: {kind}")
     try:

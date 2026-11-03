@@ -156,9 +156,31 @@ def task_lint(_: argparse.Namespace) -> int:
     return run_in_venv(["-m", "ruff", "check", "."])
 
 
+def task_init_db(_: argparse.Namespace) -> int:
+    """Create the empty operational database (companies register in the application)."""
+    return run_in_venv(["-m", "src.db.init"])
+
+
+def task_admins(args: argparse.Namespace) -> int:
+    """Create the platform admins listed in .env (never resets a password unless --reset N)."""
+    extra = [a for n in args.reset for a in ("--reset", str(n))]
+    return run_in_venv(["-m", "src.accounts.bootstrap_platform_admins"] + extra)
+
+
 def task_backup(_: argparse.Namespace) -> int:
     """Copy the SQLite file with a timestamp, or export tables from Postgres."""
     return run_in_venv(["-m", "src.db.backup"])
+
+
+def task_ocr_setup(_: argparse.Namespace) -> int:
+    """Download the OCR models once (needs the network); after this, OCR runs offline."""
+    code = (
+        "from src.config import load_config;"
+        "from src.extraction.engine import get_engine;"
+        "get_engine(load_config()).read(__import__('PIL.Image').Image.new('RGB',(64,32),'white'));"
+        "print('OCR models ready')"
+    )
+    return run_in_venv(["-c", code])
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -193,6 +215,15 @@ def build_parser() -> argparse.ArgumentParser:
     tasks.add_parser("test", help="run pytest").set_defaults(func=task_test)
     tasks.add_parser("lint", help="run ruff").set_defaults(func=task_lint)
     tasks.add_parser("backup", help="back up the database").set_defaults(func=task_backup)
+    tasks.add_parser("init-db", help="create the empty operational database").set_defaults(
+        func=task_init_db
+    )
+    tasks.add_parser("ocr-setup", help="download the OCR models once").set_defaults(
+        func=task_ocr_setup
+    )
+    admins = tasks.add_parser("admins", help="create the platform admins listed in .env")
+    admins.add_argument("--reset", type=int, action="append", default=[], choices=(1, 2, 3, 4))
+    admins.set_defaults(func=task_admins)
     return parser
 
 

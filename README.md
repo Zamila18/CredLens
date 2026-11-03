@@ -89,7 +89,46 @@ python tasks.py backup    # copy the database with a timestamp
 python tasks.py api       # start the API, then open http://localhost:8000/docs
 ```
 
-`python tasks.py data --all-strengths` generates all three delivery signal strengths. `python tasks.py data --reset-db` wipes the local database first, including recorded decisions; it refuses a shared database (Supabase) unless `python -m src.db.load --reset --reset-shared-database` is run on purpose. `app` exists as a command and says "not implemented yet" until Phase 10.
+`python tasks.py data --all-strengths` generates all three delivery signal strengths. **Destructive:** `python tasks.py data --reset-db` wipes the local database first, including recorded decisions and every shop, consent and record entered in the app; take `python tasks.py backup` first. It refuses a shared database (Supabase) unless `python -m src.db.load --reset --reset-shared-database` is run on purpose.
+
+### Field workflow, officer workspace and Excel import (added Oct 2026)
+
+Needs Python 3.10+ with `.venv` (the steps above) and Node.js 20.19 or newer for the dashboard (Vite 8; checked with Node 25.4). `requirements.txt` now pins `openpyxl~=3.1.5` (reads .xlsx purchase sheets); `python tasks.py setup` installs it, or in an existing `.venv` run `.venv\Scripts\python.exe -m pip install openpyxl==3.1.5`.
+
+1. **Bring an existing database up to date (once).** It adds the new tables (shops created in the app, applications, consent answers, visits, record provenance, import batches) and their guard triggers. It never deletes or rewrites a row, and it backs the file up to `data/backups/` first.
+   ```
+   python -m src.db.upgrade --dry-run    # says what it would add; changes nothing
+   python -m src.db.upgrade              # backs up, then adds what is missing
+   ```
+   A new database made by `python tasks.py data` already has everything.
+2. **Start the API and the dashboard** in two terminals:
+   ```
+   python tasks.py api      # http://localhost:8000/docs
+   python tasks.py app      # http://localhost:5173 (on Windows run it from PowerShell or cmd, where node is on PATH)
+   ```
+   To run against a copy instead of `data/app.db`, set `DATABASE_URL=sqlite:///C:/path/to/copy.db` for the API terminal.
+3. **After changing `src/api/schemas.py`,** regenerate the dashboard's API types with the API running: `cd web`, then `npm run types` (uses `openapi-typescript@7.13.0` through npx, so the first run needs internet).
+4. **Checks:** `python tasks.py test` (backend), `python tasks.py lint`, then in `web/`: `npm run lint` and `npm run build`. `python -m src.model.operating_points` re-measures the saved model at each score line on the validation months (see [docs/EVALUATION_AND_TOOLS.md](docs/EVALUATION_AND_TOOLS.md)).
+
+**The demo journey.** Open http://localhost:5173: the public page explains CredLens. "Explore the demo" opens `/demo`, where you choose a demo role (no password: the role is a demo token, and the API enforces it). The workspace lives under `/app`; older addresses such as `/queue` redirect there.
+- **As Officer 1:**
+  1. Dashboard: applications waiting for a decision and recent activity.
+  2. Field work → Add a new shop; record the merchant's consent (labelled simulated).
+  3. Business records: type in one purchase, or "Import them" from an .xlsx sheet (choose the columns, check every row, then save).
+  4. Shop visit, then the application (one per shop: a request, never a loan).
+  5. Applications → open the shop: score, reasons, records and their origin, loans and application, review status, evidence to ask for, range guidance (unavailable: no approved formula).
+  6. Record a decision; an override needs a written reason.
+  7. From the shop's page, show or print the data receipt.
+- **As Administrator:** dashboard, Spreadsheet imports (each import's exact counts), Audit log, Demo settings.
+- **As Viewer:** read-only dashboard, merchants, applications and decisions.
+
+**Common problems**
+- *`npm` or `node` not found:* use PowerShell or cmd, not Git Bash, or add Node.js to PATH.
+- *The page says the API could not be reached:* start `python tasks.py api` and wait until it prints "Application startup complete" (loading the scorer takes about 30 seconds).
+- *Error `no such table: merchant_profiles` or similar:* run step 1 (`python -m src.db.upgrade`).
+- *A field screen says "This merchant is read-only":* the 20,000 benchmark merchants are read-only; create a shop in Field work.
+- *Pages load slowly the first time:* the Vite dev server compiles on first load; later navigation is fast.
+- *Something went wrong with the database:* stop the API and copy back the latest file from `data/backups/`. Never delete `data/app.db` to "start fresh" without a backup.
 
 **No internet at the venue?** One command runs the API and the dashboard on this laptop (get it ready once, with
 internet; the steps are in `docs/DEPLOY.md`, part E): `python deploy/offline_demo.py`. Putting the demo on a

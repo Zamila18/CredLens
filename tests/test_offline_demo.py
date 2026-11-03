@@ -21,6 +21,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from pathlib import Path
 
 import pytest
+from accounts_seed import headers_for, seed_accounts, seed_person  # noqa: F401
 
 from deploy import offline_demo
 

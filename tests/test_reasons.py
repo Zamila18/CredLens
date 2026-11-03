@@ -440,3 +440,31 @@ def test_the_summary_never_recommends_lending_or_not(saved, loans, config):
         text = score_card(saved, row, config, "synthetic_bd")["summary_en"].lower()
         assert not any(word in text for word in words)
 
+
+
+# --- stability (implementation pack, Phase 9.2) -------------------------------------------
+
+
+def test_a_tiny_change_in_one_input_barely_moves_any_points(saved, loans, config):
+    """Explanations are stable: nudging one present input by a hair (relative 1e-9) moves
+    every input's points by less than 0.01 and flips the side of no reason that matters."""
+    for _, row in loans.head(15).iterrows():
+        before = contributions_for_row(saved, row, config)["points"]
+        present = [name for name in saved["features"] if not pd.isna(row[name])]
+        for name in present[:3]:
+            nudged = row.copy()
+            nudged[name] = row[name] * (1 + 1e-9) + 1e-12
+            after = contributions_for_row(saved, nudged, config)["points"]
+            for feature, points in before.items():
+                assert after[feature] == pytest.approx(points, abs=0.01), (name, feature)
+                if abs(points) > 0.05:
+                    assert np.sign(after[feature]) == np.sign(points), (name, feature)
+
+
+def test_the_order_of_the_inputs_does_not_change_the_explanation(saved, loans, config):
+    """The same values given in another column order explain to the same points."""
+    row = loans.iloc[7]
+    shuffled = row[list(reversed(row.index))]
+    assert contributions_for_row(saved, shuffled, config) == contributions_for_row(
+        saved, row, config
+    )

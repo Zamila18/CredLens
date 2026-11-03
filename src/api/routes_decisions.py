@@ -22,15 +22,17 @@ from datetime import timedelta
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Query, Response
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
-from src.api.auth import EVERY_ROLE, CurrentUser, add_audit, require_roles
+from src.api.auth import READERS, CurrentUser, add_audit, require_audit_access, require_roles
 from src.api.common import api_error, band_rules_for, utc_now
 from src.api.model_card_view import load_model_card
 from src.api.schemas import AuditEntry, DataMode, Decision, DecisionCreate, ModelCard
 from src.api.scoring_access import card_or_refuse, has_pending_loan, note_refusal
 from src.api.state import Services, get_scorer, get_services, get_session
+from src.api.tenancy import merchant_in_org, org_of
+from src.assessment.service import run_assessment
 from src.db import models as db
 from src.model.scoring import Scorer
 
@@ -53,6 +55,7 @@ def _decision_out(row: db.Decision) -> Decision:
         officer_action=row.officer_action,
         reason_text=row.reason_text,
         decided_at=row.decided_at.isoformat(timespec="seconds"),
+        assessment_id=row.assessment_id,
     )
 
 
@@ -61,7 +64,7 @@ def record_decision(
     merchant_id: str,
     body: DecisionCreate,
     response: Response,
-    user: CurrentUser = Depends(require_roles("officer")),
+    user: CurrentUser = Depends(require_roles("credit_officer")),
     services: Services = Depends(get_services),
     scorer: Scorer = Depends(get_scorer),
     session: Session = Depends(get_session),
@@ -104,7 +107,18 @@ def record_decision(
     if earlier is not None:
         response.status_code = 200
         return _decision_out(earlier)
+    assessed = session.scalar(
+        select(db.Assessment).where(
+            db.Assessment.merchant_id == merchant_id, db.Assessment.status == "current"
+        )
+    )
+    if assessed is None:  # a decision always rests on a stored assessment
+        assessed = run_assessment(
+            session, scorer, org_of(user, services.config), user.user_id, merchant_id,
+            services.data_today(session),
+        )
     row = db.Decision(
+        assessment_id=assessed.assessment_id,
         decision_id=f"DEC-{uuid4().hex}",
         merchant_id=merchant_id,
         officer_id=user.user_id,
@@ -122,11 +136,11 @@ def record_decision(
     return _decision_out(row)
 
 
-@router.get(
-    "/decisions", response_model=list[Decision], dependencies=[Depends(require_roles(*EVERY_ROLE))]
-)
+@router.get("/decisions", response_model=list[Decision])
 def decision_history(
     response: Response,
+    user: CurrentUser = Depends(require_roles(*READERS)),
+    services: Services = Depends(get_services),
     merchant_id: str | None = None,
     limit: int | None = Query(default=None, ge=1, description="At most this many; default: all"),
     offset: int = Query(default=0, ge=0, description="Skip this many of the newest"),
@@ -137,8 +151,17 @@ def decision_history(
     Without `limit` every decision is returned, as before. With `limit` and `offset` a page is;
     the header `X-Total-Count` always holds how many decisions match (all pages together).
     """
-    query = select(db.Decision).order_by(db.Decision.decided_at.desc(), db.Decision.decision_id)
-    total = select(func.count()).select_from(db.Decision)
+    # Only the caller's organisation's merchants (tenancy.py).
+    org = org_of(user, services.config)
+    in_org = db.Decision.merchant_id.in_(
+        select(db.Merchant.merchant_id).where(merchant_in_org(org, services.config))
+    )
+    query = (
+        select(db.Decision)
+        .where(in_org)
+        .order_by(db.Decision.decided_at.desc(), db.Decision.decision_id)
+    )
+    total = select(func.count()).select_from(db.Decision).where(in_org)
     if merchant_id:
         query = query.where(db.Decision.merchant_id == merchant_id)
         total = total.where(db.Decision.merchant_id == merchant_id)
@@ -153,7 +176,7 @@ def decision_history(
 @router.get(
     "/model/card",
     response_model=ModelCard,
-    dependencies=[Depends(require_roles(*EVERY_ROLE))],
+    dependencies=[Depends(require_roles(*READERS))],
 )
 def model_card(
     mode: DataMode | None = Query(
@@ -182,13 +205,35 @@ def model_card(
 def audit_log(
     merchant_id: str | None = None,
     limit: int = Query(default=AUDIT_DEFAULT_ROWS, ge=1, le=AUDIT_MAX_ROWS),
-    user: CurrentUser = Depends(require_roles("admin")),
+    user: CurrentUser = Depends(require_audit_access),
+    services: Services = Depends(get_services),
     session: Session = Depends(get_session),
 ) -> list[AuditEntry]:
-    """The audit log, newest first. Admin only. This read is itself audited."""
+    """The audit log, newest first: the company owner and auditors only. This read is itself
+    audited."""
     add_audit(session, user, "view_audit_log")
     session.commit()
-    query = select(db.AuditEntry).order_by(db.AuditEntry.id.desc()).limit(limit)
+    # Only this organisation's entries: about its merchants, or by its users (tenancy.py).
+    org = org_of(user, services.config)
+    if org == services.config["organization"]["id"]:
+        org_users = select(db.User.user_id).where(
+            or_(db.User.organization_id.is_(None), db.User.organization_id == org)
+        )
+    else:
+        org_users = select(db.User.user_id).where(db.User.organization_id == org)
+    org_merchants = select(db.Merchant.merchant_id).where(merchant_in_org(org, services.config))
+    query = (
+        select(db.AuditEntry)
+        .where(
+            or_(
+                db.AuditEntry.organization_id == org,
+                db.AuditEntry.merchant_id.in_(org_merchants),
+                and_(db.AuditEntry.merchant_id.is_(None), db.AuditEntry.actor.in_(org_users)),
+            )
+        )
+        .order_by(db.AuditEntry.id.desc())
+        .limit(limit)
+    )
     if merchant_id:
         query = query.where(db.AuditEntry.merchant_id == merchant_id)
     return [
