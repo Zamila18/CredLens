@@ -4,6 +4,7 @@ data/*.db
 data/*.log
 data/backups/
 data/exports/
+data/uploads/
 *.zip
 # Kept: the live import demo file (five synthetic merchants, written by src/synth/demo_batch.py)
 !data/demo/credlens_demo_bundle.zip
@@ -43,3 +44,5 @@ web/dist/
 .idea/
 .DS_Store
 Thumbs.db
+
+data/.secret_key

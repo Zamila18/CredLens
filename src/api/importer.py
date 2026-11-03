@@ -375,12 +375,18 @@ def _check_against_database(session: Session, table: str, rows: list[_Row], key:
                 select(db.Loan.loan_id, db.Loan.merchant_id).where(db.Loan.loan_id.in_(chunk))
             )
             owner.update(dict(found.all()))
+        applications = _existing(session, db.Application.loan_id, set(loan_ids))
         for row in candidates:
             loan = row.values["loan_id"]
             if loan not in owner:
                 row.problems.append(f"loan {loan} is not in the database (import loans first)")
             elif owner[loan] != row.values["merchant_id"]:
                 row.problems.append(f"loan {loan} belongs to a different merchant")
+            elif loan in applications:
+                row.problems.append(
+                    f"{loan} is an application, not an issued loan: a repayment cannot be "
+                    "recorded against it"
+                )
 
 
 def load_rows(session: Session, table: str, accepted: list[dict[str, Any]]) -> None:

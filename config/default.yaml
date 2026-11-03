@@ -143,12 +143,94 @@ features:                        # how features are computed; see docs/FEATURE_D
 
 database:
   url_env: DATABASE_URL          # Supabase Postgres connection string lives in this environment variable (.env, never committed)
-  default_url: sqlite:///data/app.db   # used when the variable is not set: local development, tests, CI
+  default_url: sqlite:///data/credlens.db   # the operational database (starts empty: python -m src.db.init); data/app.db is the old demo database, kept only as a backup
 
 api:                             # the API and the database calls it makes (src/api/, src/db/models.py)
   sqlite_busy_timeout_seconds: 30   # a database call waits this long for another writer before it fails; without it, 24 callers at once got "database is locked" (Phase 13 review)
   reason_max_chars: 2000            # the longest written reason on a decision; a longer one is refused (422)
   duplicate_decision_seconds: 5     # the same officer, the same merchant and the same action again within this many seconds: the earlier decision is returned, none is added
+  upload_max_unpacked_mb: 80        # a zip or .xlsx upload may unpack to at most this much in total (src/api/uploads.py); the sizes written inside a zip are not trusted
+  upload_max_archive_members: 200   # and hold at most this many files
+
+auth:                            # real accounts (src/accounts/): sign-in, sessions, registration, invitations
+  session_idle_minutes: 60       # a session ends after this long without a request
+  session_max_hours: 12          # and this long after sign-in, whatever happens
+  password_min_chars: 12         # plus upper and lower case, a digit and a symbol (src/accounts/passwords.py)
+  max_failed_logins: 5           # this many wrong passwords in a row lock the account ...
+  lockout_minutes: 15            # ... for this long
+  setup_code_hours: 48           # an owner's one-time code to set or reset a password expires after this
+  invitation_default_days: 14    # a new company invitation code works this long unless the owner picks another time
+  invitation_max_days: 90        # the longest an invitation may be valid
+  invitation_max_uses: 200       # the most people one invitation code may admit
+  rate_limit:                    # per address and per identifier; also keep Nginx limit_req in front (deploy/)
+    window_minutes: 10           # tries are counted over this long
+    login_per_ip: 30             # sign-in tries from one address
+    login_per_identifier: 10     # sign-in tries for one email or number
+    register_per_ip: 10          # registrations (company or join) from one address
+    invite_check_per_ip: 20      # invitation-code checks from one address
+    invite_check_per_identifier: 10  # tries of the same invitation code
+
+organization:                    # the reserved BENCHMARK organisation (src/api/tenancy.py): rows with no organisation belong to it.
+                                 # It holds the offline synthetic benchmark (tests, model evidence) and no real company or person:
+                                 # nobody signs in to it in a real deployment, so its data is never shown to a company.
+  id: org-benchmark
+  name: CredLens benchmark data (offline)
+  environment: benchmark         # benchmark | pilot | production. Registered companies are `pilot` until marked otherwise
+  country: BD
+  languages: [en, bn]
+  currency: BDT
+  timezone: Asia/Dhaka
+
+demo:                            # the synthetic demonstration: one place for its rules (src/intake/policy.py)
+  synthetic_only: true           # true: records entered in the app are synthetic demo records. false: every new
+                                 # intake write is refused. There is no real-data path: scoring and consent still
+                                 # run on the demo calendar below
+  calendar_end: "2026-08-30"     # the last business day of the synthetic world ("today" for the data). A business
+                                 # date after it is refused. Real entry times are recorded separately, from the clock
+  consent:
+    wording_version: demo-consent-v1     # which consent text the merchant was shown; change it with the text
+    purpose: credit_readiness_assessment # the purpose the existing consent records use
+    categories: [purchases, deliveries, payments, questionnaire, field_visits]
+    valid_days: 730              # a demo consent holds this long from its business date (the generator uses 2 years)
+    methods: [assisted_on_phone, paper_form_reference, verbal_recorded_by_staff]
+  application:
+    purposes: [inventory_restock, seasonal_stock, shop_equipment, other]
+    max_requested_bdt: 1000000   # a guard against typing errors, not a credit policy
+    note_max_chars: 300
+  visit:
+    outcomes: [shop_open_trading, owner_not_available, shop_closed, follow_up_needed]
+    note_max_chars: 500
+  duplicate_entry_seconds: 10    # the same person saving the same record again within this time
+  purchase_import:               # the .xlsx purchase import (src/intake/spreadsheet.py)
+    max_file_mb: 5               # a larger upload is refused before it is read
+    max_rows: 2000               # rows read from one sheet (below the header)
+
+review:                          # the officer workspace (src/api/review.py); none of this changes the score
+  visit_needed_with_application: true   # an application without a recorded field visit gets "One check needed"
+  recent_records_shown: 5        # latest records listed per evidence group
+  evidence_requests:             # the smallest evidence to ask for (src/api/review.py); never promises a better score
+    material_purchase_bdt: 50000 # a purchase at or above this, typed in or imported, is worth seeing the memo for
+    max_requests: 3              # at most this many asks at once, most important first
+
+registration:                    # merchant registration and paper consent (src/onboarding/)
+  ownership_types: [sole_proprietor, partnership, company, cooperative, other]
+  retention_text: "[to be set by legal review: the period is fixed by regulation and your lawyer]"
+  signed_max_mb: 8               # a larger photo or scan is refused
+  require_approved_template: auto   # auto: only an approved template in production; always | never
+
+documents:                       # uploaded files (signed forms, scans, spreadsheets)
+  upload_dir: data/uploads       # outside git; one folder per organisation
+
+ocr:                             # reading text from scans (src/extraction/)
+  languages: [bn, en]            # EasyOCR models; handwriting is not supported by EasyOCR itself
+  render_scale: 2.0              # PDF pages are drawn at this scale before reading
+  low_confidence_below: 0.6      # a reading below this is flagged for a person to check
+  match_threshold: 0.85          # how alike an entered and a read value must be to count as the same
+  poll_seconds: 2                # how often the background worker looks for new jobs
+
+quality:                         # data-quality issues (src/api/quality.py); an issue never changes a score or a record
+  stale_after_days: 90           # an open application whose newest purchase is older than this (business days before calendar_end)
+  note_min_chars: 10             # a review of an issue needs a written note at least this long
 
 labels:
   good_if_days_late_at_most: 30
@@ -268,3 +350,68 @@ sanity:
   suspicious_auc: 0.95           # synthetic AUC above this => look for leakage
   zero_signal_max_auc_gain: 0.01 # at signal strength 0, delivery features must not add more than this
   min_not_repaid_for_stable_metrics: 100   # fewer not-repaid loans than this: warn that the numbers are shaky
+
+daily:                           # the FSR's daily sheet (src/daily/)
+  max_rows_per_sheet: 300
+  amend_reason_min_chars: 5
+  # Which columns each kind of row uses, and what each is called there. `scored: true` kinds are
+  # also written to the records the assessment reads once submitted; the rest are kept and
+  # shown only. Wholesale purchases (what the shop BUYS) and retail sales (what it SELLS) are
+  # different kinds and are never mixed: the model uses purchases, never sales.
+  entry_types:
+    purchase:
+      en: Wholesale purchase
+      bn: পাইকারি কেনা
+      scored: true
+      fields: [txn_date, category, description, quantity, unit, unit_price, amount_bdt, counterparty, payment_method, payment_status, due_date, note]
+      required: [txn_date, amount_bdt]
+      labels: {counterparty: Supplier, category: Kind of stock}
+    sale:
+      en: Retail sale
+      bn: খুচরা বিক্রি
+      scored: false
+      fields: [txn_date, category, description, quantity, unit, unit_price, amount_bdt, payment_method, note]
+      required: [txn_date, amount_bdt]
+      labels: {category: Kind of goods}
+    supplier_payment:
+      en: Payment to a supplier
+      bn: সরবরাহকারীকে পরিশোধ
+      scored: false
+      fields: [txn_date, counterparty, amount_bdt, payment_method, note]
+      required: [txn_date, counterparty, amount_bdt]
+      labels: {counterparty: Supplier}
+    customer_credit:
+      en: Sale on credit (owed to the shop)
+      bn: বাকিতে বিক্রি
+      scored: false
+      fields: [txn_date, counterparty, amount_bdt, due_date, payment_status, note]
+      required: [txn_date, counterparty, amount_bdt]
+      labels: {counterparty: Customer, payment_status: Paid or open}
+    loan_repayment:
+      en: Loan repayment
+      bn: ঋণ পরিশোধ
+      scored: true
+      fields: [txn_date, counterparty, unit_price, amount_bdt, due_date, note]
+      required: [txn_date, counterparty, unit_price, amount_bdt, due_date]
+      labels: {txn_date: Paid on, counterparty: Loan ID, unit_price: Amount due, amount_bdt: Amount paid}
+    delivery:
+      en: Parcel delivery
+      bn: পার্সেল ডেলিভারি
+      scored: true
+      fields: [txn_date, due_date, category, description, payment_method, payment_status, note]
+      required: [txn_date, category]
+      labels: {txn_date: Dispatched on, due_date: Delivered on, category: "Status (delivered, returned, failed, cancelled)", description: Return reason, payment_method: "Payment (cod or prepaid)", payment_status: "COD passed back (on_time or late)"}
+    expense:
+      en: Business expense
+      bn: ব্যবসার খরচ
+      scored: false
+      fields: [txn_date, category, description, amount_bdt, payment_method, note]
+      required: [txn_date, amount_bdt]
+      labels: {category: Kind of expense}
+    stock_snapshot:
+      en: Stock count
+      bn: স্টক গণনা
+      scored: false
+      fields: [txn_date, description, quantity, unit, amount_bdt, note]
+      required: [txn_date, amount_bdt]
+      labels: {amount_bdt: Value of stock}

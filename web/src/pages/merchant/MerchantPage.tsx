@@ -1,10 +1,13 @@
 /**
- * Merchant detail (approved design: 03-merchant-desktop.png). One scrolling column of
- * full-width sections, in this order: identity → readiness overview → evidence → why this
- * score → unified timeline → financial habits → why might this be wrong → consent →
- * your decision → decisions on this merchant.
+ * Merchant detail: the credit officer's workspace (implementation pack, Phase 6).
+ * Identity and the review summary on top; then, on desktop, an evidence and explanation
+ * column (score overview, evidence, records with provenance, why this score, timeline,
+ * habits, limits, consent) beside an assessment and action column (review status, range
+ * guidance, your decision, decision history). On a phone: summary, assessment, evidence,
+ * explanation, action.
  *
- * Calls: GET /merchants/{id} (profile), GET /merchants/{id}/score, GET /merchants/{id}/consent,
+ * Calls: GET /merchants/{id} (profile), GET /merchants/{id}/score, GET /merchants/{id}/review,
+ * GET /merchants/{id}/consent,
  * GET /decisions?merchant_id=; officers also POST a decision and questionnaire answers.
  * Profile and score reads are audited by the API, so they are asked fresh on every visit.
  * "Pending since" and whether a loan is waiting come from the queue (GET /merchants).
@@ -12,11 +15,11 @@
  * Without consent the API refuses the score (consent_required): the page then shows the
  * locked state, with no evidence, no reasons, no habits and no decision form.
  */
-import { CircleCheck, Lock } from 'lucide-react'
+import { CircleCheck, Lock, MapPinned, ReceiptText } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 
-import type { ConsentView, Decision, Health, MerchantProfile, ModelCard, QueueItem, Score } from '@/api/types'
+import type { ConsentView, Decision, Health, MerchantLoan, MerchantProfile, ModelCard, ReviewStatus, Score } from '@/api/types'
 import { useApi } from '@/api/useApi'
 import { useSession } from '@/app/session-context'
 import { Chip } from '@/components/BandChip'
@@ -28,10 +31,12 @@ import { listInWords, useT, valueText } from '@/lib/i18n'
 import { hasQueue } from '@/lib/modes'
 import { text } from '../model/metrics'
 import { ConsentPanel } from './ConsentPanel'
-import { ConsentRequestPanel } from './ConsentRequestPanel'
 import { DecisionForm, DecisionHistory, NoPendingLoanNote, ReadOnlyDecisionNote } from './DecisionPanels'
-import { EvidenceCards, Timeline } from './Evidence'
+import { EvidenceCards, LoansPanel, Timeline } from './Evidence'
+import { AssessmentPanel } from './AssessmentPanel'
 import { QuestionnaireForm } from './QuestionnaireForm'
+import { MerchantQualityNote } from '@/pages/quality/MerchantQualityNote'
+import { EvidenceRequestsPanel, RangePanel, ReadinessPanel, RecordsPanel, ReviewSummary } from './Review'
 import { HabitsPanel, NoConsentScore, ReadinessOverview, WhyMightThisBeWrong, WhyThisScore } from './ScorePanels'
 
 /** The latest expiry among the records that are not revoked. */
@@ -52,17 +57,25 @@ function Fact({ label, value }: { label: string; value: string }) {
   )
 }
 
-function Header({ profile, consent, queueRow }: { profile: MerchantProfile; consent?: ConsentView; queueRow?: QueueItem }) {
-  const { lang } = useSession()
+function Header({ profile, consent, status }: { profile: MerchantProfile; consent?: ConsentView; status: 'waiting' | 'decided' | null }) {
+  const { lang, role } = useSession()
   const t = useT()
   const until = consent?.valid ? validUntil(consent) : null
   const consentValid = consent ? consent.valid : profile.consent_valid
-  const place = [profile.district, profile.town_tier && valueText(profile.town_tier, lang)].filter(Boolean).join(' · ')
+  const place = [profile.area, profile.district, profile.town_tier && valueText(profile.town_tier, lang)].filter(Boolean).join(' · ')
+  const fieldShop = role === 'credit_officer' && Boolean(profile.shop_name)
+  const base = `/app/field/shops/${encodeURIComponent(profile.merchant_id)}`
 
   return (
     <header className="mint-wash flex flex-col gap-5 rounded-card border border-mint-line p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <h1 className="m-0 text-[32px] leading-10 font-bold tracking-[-0.02em] sm:text-[36px]">{profile.merchant_id}</h1>
+        <div className="flex min-w-0 flex-col gap-1">
+          <h1 className="m-0 text-[30px] leading-9 font-bold tracking-[-0.02em] break-words sm:text-[34px] sm:leading-10">{profile.shop_name ?? profile.merchant_id}</h1>
+          <span className="flex flex-wrap items-center gap-2 text-sm text-body">
+            <span className="rounded bg-white/80 px-1.5 py-0.5 font-mono text-[13px] text-ink-2">{profile.merchant_id}</span>
+            {profile.shop_name ? t('Shop added in the app', 'অ্যাপে যোগ করা দোকান') : t('Synthetic benchmark merchant', 'সিনথেটিক বেঞ্চমার্ক মার্চেন্ট')}
+          </span>
+        </div>
         <div className="flex flex-wrap gap-2">
           {consentValid ? (
             <Chip tone="strong" className="px-3 py-1.5 text-[13px]">
@@ -75,12 +88,12 @@ function Header({ profile, consent, queueRow }: { profile: MerchantProfile; cons
               {t('No valid consent', 'বৈধ অনুমতি নেই')}
             </Chip>
           )}
-          {queueRow?.status === 'pending' && (
+          {status === 'waiting' && (
             <Chip tone="amber" className="px-3 py-1.5 text-[13px]">
-              {t(`Pending since ${fmtDate(queueRow.pending_since)}`, `${fmtDate(queueRow.pending_since)} থেকে অপেক্ষমাণ`)}
+              {t('Waiting for a decision', 'সিদ্ধান্তের অপেক্ষায়')}
             </Chip>
           )}
-          {queueRow?.status === 'decided' && (
+          {status === 'decided' && (
             <Chip tone="strong" className="px-3 py-1.5 text-[13px]">
               {t('Decided', 'সিদ্ধান্ত হয়েছে')}
             </Chip>
@@ -102,6 +115,18 @@ function Header({ profile, consent, queueRow }: { profile: MerchantProfile; cons
           {t(`Consent covers ${listInWords(consent.data_categories, lang)}.`, `অনুমতিতে আছে: ${listInWords(consent.data_categories, lang)}।`)}
         </p>
       )}
+      {fieldShop && (
+        <div className="flex flex-wrap gap-2 print:hidden">
+          <Link to={base} className="inline-flex min-h-10 items-center gap-2 rounded-[10px] border border-mint-line bg-white px-3.5 text-sm font-semibold no-underline hover:bg-mint-2">
+            <MapPinned size={16} aria-hidden="true" />
+            {t('Field work for this shop', 'এই দোকানের মাঠের কাজ')}
+          </Link>
+          <Link to={`${base}/receipt`} className="inline-flex min-h-10 items-center gap-2 rounded-[10px] border border-mint-line bg-white px-3.5 text-sm font-semibold no-underline hover:bg-mint-2">
+            <ReceiptText size={16} aria-hidden="true" />
+            {t('Data receipt', 'তথ্যের রসিদ')}
+          </Link>
+        </div>
+      )}
     </header>
   )
 }
@@ -120,7 +145,8 @@ function MerchantView({ merchantId }: { merchantId: string }) {
   const { lang, role } = useSession()
   const t = useT()
   const id = encodeURIComponent(merchantId)
-  const isOfficer = role === 'officer'
+  // Who may record a credit decision (the server checks the same: src/api/routes_decisions.py).
+  const isOfficer = role === 'credit_officer'
 
   // Public data modes have no merchant pages (and Home Credit rows may never be shown):
   // in those modes the page does not ask for any merchant data at all.
@@ -131,8 +157,10 @@ function MerchantView({ merchantId }: { merchantId: string }) {
   const profile = useApi<MerchantProfile>(ask(`/merchants/${id}`), undefined, { noCache: true })
   const score = useApi<Score>(ask(`/merchants/${id}/score`), undefined, { noCache: true })
   const consent = useApi<ConsentView>(ask(`/merchants/${id}/consent`), undefined, { noCache: true })
-  const queue = useApi<QueueItem[]>(ask('/merchants'))
-  const queueRow = queue.data?.find((r) => r.merchant_id === merchantId)
+  const review = useApi<ReviewStatus>(ask(`/merchants/${id}/review`), undefined, { noCache: true })
+  // The shop's own loans and application say whether something waits for a decision
+  // (no need to load the whole review queue for one merchant).
+  const loans = useApi<MerchantLoan[]>(ask(`/merchants/${id}/loans`), undefined, { noCache: true })
   const decisions = useApi<Decision[]>(ask('/decisions'), { merchant_id: merchantId })
   // The outcome the score predicts, in the model card's own words (the 30-day rule lives in config).
   const card = useApi<ModelCard>('/model/card')
@@ -145,8 +173,8 @@ function MerchantView({ merchantId }: { merchantId: string }) {
 
   const breadcrumb = (
     <nav aria-label={t('Breadcrumb', 'পথ')} className="flex items-center gap-2 text-sm text-body">
-      <Link to="/queue" className="font-medium no-underline">
-        {t('Review queue', 'পর্যালোচনার তালিকা')}
+      <Link to="/app/merchants" className="font-medium no-underline">
+        {t('Merchants', 'মার্চেন্ট')}
       </Link>
       <span aria-hidden="true">/</span>
       <span className="font-mono" aria-current="page">
@@ -167,7 +195,7 @@ function MerchantView({ merchantId }: { merchantId: string }) {
               'এই ডেটার উৎস শুধু তার মডেল কার্ড ও মোট হিসাব দেখায়। আলাদা সারি দেখানো হয় না।',
             )}
           </span>
-          <Link to="/model" className="font-semibold">
+          <Link to="/app/model" className="font-semibold">
             {t('Open the model card', 'মডেল কার্ড খুলুন')}
           </Link>
         </Card>
@@ -194,8 +222,12 @@ function MerchantView({ merchantId }: { merchantId: string }) {
   const noConsent = score.error?.code === 'consent_required' || !profile.data.consent_valid
   const questionnaire = savedAnswers !== undefined ? savedAnswers : profile.data.questionnaire
   const coversQuestionnaire = !consent.data || consent.data.data_categories.includes('questionnaire')
-  // A loan is waiting when the merchant is in the review queue (its latest loan has no outcome).
-  const loanWaiting = queue.data ? Boolean(queueRow) : true
+  // A loan (or the application) is waiting when one has no outcome yet.
+  const loanWaiting = loans.data ? loans.data.some((l) => !l.has_outcome) : true
+  const decided = (decisions.data?.length ?? 0) > 0
+  const status: 'waiting' | 'decided' | null = loans.data ? (decided ? 'decided' : loanWaiting ? 'waiting' : null) : null
+  // A shop with no loan and no application has nothing to assess yet.
+  const notAssessed = score.error?.code === 'unknown_merchant'
 
   let habitsAction = null
   if (justSaved && !answering) {
@@ -216,56 +248,121 @@ function MerchantView({ merchantId }: { merchantId: string }) {
     habitsAction = <span>{t('Consent does not cover the questionnaire.', 'অনুমতিতে প্রশ্নাবলি নেই।')}</span>
   }
 
+  // Desktop (xl): an evidence and explanation column, and an assessment and action column.
+  // Below xl the two columns melt into one (`contents`) and `order-*` stacks the sections as
+  // summary, assessment, evidence, explanation, action. The numbers rise inside each column,
+  // so the desktop order is the source order.
+  const scoreReady = !noConsent && !score.error && score.data
   return (
     <Page>
       {breadcrumb}
-      <Header profile={profile.data} consent={consent.data} queueRow={queueRow} />
-
-      {noConsent ? (
-        <>
-          <NoConsentScore />
-          <ConsentRequestPanel merchantId={merchantId} consent={consent.data} onRequested={consent.reload} />
-          {score.error && score.error.code !== 'consent_required' && <ErrorCallout error={score.error} />}
-        </>
-      ) : score.error ? (
-        <ErrorCallout error={score.error} />
-      ) : !score.data ? (
-        <Loading what={t('Loading the score…', 'স্কোর আসছে…')} />
+      <Header profile={profile.data} consent={consent.data} status={status} />
+      {review.error ? (
+        <ErrorCallout error={review.error} />
+      ) : review.data ? (
+        <ReviewSummary review={review.data} score={score.data} />
       ) : (
-        <>
-          <ReadinessOverview score={score.data} lang={lang} outcome={outcome} />
-          <EvidenceCards profile={profile.data} />
-          <WhyThisScore score={score.data} lang={lang} />
-          <Timeline events={profile.data.timeline ?? []} />
-          <HabitsPanel merchantId={merchantId} questionnaire={questionnaire} action={habitsAction}>
-            {answering && (
-              <QuestionnaireForm
-                merchantId={merchantId}
-                lang={lang}
-                onCancel={() => setAnswering(false)}
-                onSaved={(summary) => {
-                  setSavedAnswers(summary)
-                  setAnswering(false)
-                  setJustSaved(true)
-                }}
-              />
+        <Loading what={t('Loading the review…', 'পর্যালোচনা আসছে…')} />
+      )}
+
+      <div className="@container flex flex-col gap-6 xl:grid xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
+        <div className="contents xl:@container xl:flex xl:min-w-0 xl:flex-col xl:gap-6">
+          {noConsent ? (
+            <div className="order-2 flex flex-col gap-6">
+              <NoConsentScore />
+              {score.error && score.error.code !== 'consent_required' && <ErrorCallout error={score.error} />}
+            </div>
+          ) : notAssessed ? (
+            <Card className="order-2 flex flex-col gap-2 p-5 sm:p-6">
+              <span className="font-display text-xl font-bold text-ink">{t('Not assessed yet', 'এখনও মূল্যায়ন হয়নি')}</span>
+              <span className="text-[15px] text-body">
+                {t(
+                      'This shop has no application and no loan, so there is nothing to assess. The records below are kept; an assessment runs once an application is created in Field work.',
+                      'এই দোকানের কোনো আবেদন বা ঋণ নেই, তাই মূল্যায়নের কিছু নেই। নিচের রেকর্ডগুলো রাখা আছে; মাঠের কাজে আবেদন তৈরি হলে মূল্যায়ন হবে।',
+                    )}
+              </span>
+            </Card>
+          ) : score.error ? (
+            <div className="order-2">
+              <ErrorCallout error={score.error} />
+            </div>
+          ) : !score.data ? (
+            <div className="order-2">
+              <Loading what={t('Loading the score…', 'স্কোর আসছে…')} />
+            </div>
+          ) : (
+            <>
+              <div className="order-2 min-w-0">
+                <ReadinessOverview score={score.data} lang={lang} outcome={outcome} />
+              </div>
+              <div className="order-4 min-w-0">
+                <EvidenceCards profile={profile.data} />
+              </div>
+            </>
+          )}
+          {!noConsent && review.data && <RecordsPanel review={review.data} className="order-4 min-w-0" />}
+          {!noConsent && loans.data && loans.data.length > 0 && (
+            <div className="order-4 min-w-0">
+              <LoansPanel loans={loans.data} />
+            </div>
+          )}
+          {scoreReady && (
+            <>
+              <div className="order-5 min-w-0">
+                <WhyThisScore score={score.data!} lang={lang} />
+              </div>
+              <div className="order-5 min-w-0">
+                <Timeline events={profile.data.timeline ?? []} />
+              </div>
+              <div className="order-5 min-w-0">
+                <HabitsPanel merchantId={merchantId} questionnaire={questionnaire} action={habitsAction}>
+                  {answering && (
+                    <QuestionnaireForm
+                      merchantId={merchantId}
+                      lang={lang}
+                      onCancel={() => setAnswering(false)}
+                      onSaved={(summary) => {
+                        setSavedAnswers(summary)
+                        setAnswering(false)
+                        setJustSaved(true)
+                      }}
+                    />
+                  )}
+                </HabitsPanel>
+              </div>
+              <div className="order-5 min-w-0">
+                <WhyMightThisBeWrong />
+              </div>
+            </>
+          )}
+          <div className="order-6 min-w-0">
+            {consent.error ? (
+              <ErrorCallout error={consent.error} />
+            ) : consent.data ? (
+              <ConsentPanel consent={consent.data} />
+            ) : (
+              <Loading what={t('Loading the consent record…', 'অনুমতির রেকর্ড আসছে…')} />
             )}
-          </HabitsPanel>
-          <WhyMightThisBeWrong />
-        </>
-      )}
+          </div>
+        </div>
 
-      {consent.error ? (
-        <ErrorCallout error={consent.error} />
-      ) : consent.data ? (
-        <ConsentPanel consent={consent.data} />
-      ) : (
-        <Loading what={t('Loading the consent record…', 'অনুমতির রেকর্ড আসছে…')} />
-      )}
-
-      {/* No decision without a score, and none when no loan is waiting. */}
-      {score.data && !noConsent && (!isOfficer ? <ReadOnlyDecisionNote /> : loanWaiting ? <DecisionForm merchantId={merchantId} score={score.data} onRecorded={decisions.reload} /> : <NoPendingLoanNote />)}
-      <DecisionHistory decisions={decisions.data} error={decisions.error} />
+        <div className="contents xl:@container xl:flex xl:min-w-0 xl:flex-col xl:gap-6">
+          {review.data && <ReadinessPanel review={review.data} className="order-1" />}
+          {rowsAllowed && <MerchantQualityNote merchantId={merchantId} className="order-2" />}
+          {review.data && !noConsent && <EvidenceRequestsPanel review={review.data} className="order-3" />}
+          {review.data && <RangePanel review={review.data} className="order-3" />}
+          {!noConsent && <AssessmentPanel merchantId={merchantId} canRun={isOfficer} className="order-3" />}
+          {/* No decision without a score, and none when no loan is waiting. */}
+          {scoreReady && (
+            <div className="order-7 min-w-0">
+              {!isOfficer ? <ReadOnlyDecisionNote /> : loanWaiting ? <DecisionForm merchantId={merchantId} score={score.data!} onRecorded={decisions.reload} /> : <NoPendingLoanNote />}
+            </div>
+          )}
+          <div className="order-8 min-w-0">
+            <DecisionHistory decisions={decisions.data} error={decisions.error} />
+          </div>
+        </div>
+      </div>
     </Page>
   )
 }

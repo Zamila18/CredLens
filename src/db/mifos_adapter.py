@@ -39,7 +39,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-from sqlalchemy import select
+from sqlalchemy import inspect, select
 
 from src.config import PROJECT_ROOT, get_database_url, load_config
 from src.db.models import Base, make_engine
@@ -84,6 +84,10 @@ def build_export(database_url: str) -> dict[str, pd.DataFrame]:
             merchants = _read(connection, "merchants")
             loans = _read(connection, "loans")
             payments = _read(connection, "payments")
+            # An application's loan-shaped row is a request, not a loan: never exported.
+            if inspect(connection).has_table("applications"):
+                requests = set(_read(connection, "applications")["loan_id"])
+                loans = loans[~loans["loan_id"].isin(requests)]
     finally:
         engine.dispose()
 

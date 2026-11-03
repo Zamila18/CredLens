@@ -12,6 +12,7 @@ Every tunable number lives in the YAML file. Code must read it from there.
 from __future__ import annotations
 
 import os
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -253,6 +254,8 @@ def validate_config(config: dict[str, Any]) -> None:
         for name in ("train_months", "validation_months", "test_months"):
             if not _is_positive_int((months or {}).get(name)):
                 problems.append(f"split_by_mode.{mode}.{name} must be a positive whole number")
+    problems.extend(_check_demo(config.get("demo")))
+    problems.extend(_check_accounts(config))
 
     if problems:
         raise ConfigError("Invalid configuration:\n- " + "\n- ".join(problems))
@@ -378,6 +381,97 @@ def _is_number(value: Any) -> bool:
 def _is_positive_int(value: Any) -> bool:
     """True for whole numbers above zero, but not for True/False."""
     return isinstance(value, int) and not isinstance(value, bool) and value > 0
+
+
+ENVIRONMENTS = ("benchmark", "pilot", "production")
+AUTH_KEYS = (
+    "session_idle_minutes",
+    "session_max_hours",
+    "password_min_chars",
+    "max_failed_logins",
+    "lockout_minutes",
+    "setup_code_hours",
+    "invitation_default_days",
+    "invitation_max_days",
+    "invitation_max_uses",
+)
+RATE_LIMIT_KEYS = (
+    "window_minutes",
+    "login_per_ip",
+    "login_per_identifier",
+    "register_per_ip",
+    "invite_check_per_ip",
+    "invite_check_per_identifier",
+)
+UPLOAD_KEYS = ("upload_max_unpacked_mb", "upload_max_archive_members")
+
+
+def _check_accounts(config: dict[str, Any]) -> list[str]:
+    """The organisation environment, the sign-in settings and the upload limits."""
+    problems = []
+    environment = (config.get("organization") or {}).get("environment")
+    if environment not in ENVIRONMENTS:
+        problems.append(f"organization.environment must be one of {', '.join(ENVIRONMENTS)}")
+    auth = config.get("auth") or {}
+    for key in AUTH_KEYS:
+        if not _is_positive_int(auth.get(key)):
+            problems.append(f"auth.{key} must be a positive whole number")
+    limits = auth.get("rate_limit") or {}
+    for key in RATE_LIMIT_KEYS:
+        if not _is_positive_int(limits.get(key)):
+            problems.append(f"auth.rate_limit.{key} must be a positive whole number")
+    if _is_positive_int(auth.get("invitation_default_days")) and _is_positive_int(
+        auth.get("invitation_max_days")
+    ) and auth["invitation_default_days"] > auth["invitation_max_days"]:
+        problems.append("auth.invitation_default_days cannot be more than invitation_max_days")
+    api = config.get("api") or {}
+    for key in UPLOAD_KEYS:
+        if not _is_positive_int(api.get(key)):
+            problems.append(f"api.{key} must be a positive whole number")
+    return problems
+
+
+def _check_demo(demo: Any) -> list[str]:
+    """Check the `demo` section: the synthetic calendar and the intake rules."""
+    if not isinstance(demo, dict):
+        return ["demo is missing"]
+    problems = []
+    if not isinstance(demo.get("synthetic_only"), bool):
+        problems.append("demo.synthetic_only must be true or false")
+    end = demo.get("calendar_end")
+    try:
+        date.fromisoformat(end)
+    except (TypeError, ValueError):
+        problems.append("demo.calendar_end must be a date written in quotes, like \"2026-08-30\"")
+    consent = demo.get("consent") or {}
+    for name in ("wording_version", "purpose"):
+        if not isinstance(consent.get(name), str) or not consent[name].strip():
+            problems.append(f"demo.consent.{name} must be text")
+    if not _is_positive_int(consent.get("valid_days")):
+        problems.append("demo.consent.valid_days must be a positive whole number")
+    lists = (
+        ("demo.consent.categories", consent.get("categories")),
+        ("demo.consent.methods", consent.get("methods")),
+        ("demo.application.purposes", (demo.get("application") or {}).get("purposes")),
+        ("demo.visit.outcomes", (demo.get("visit") or {}).get("outcomes")),
+    )
+    for name, values in lists:
+        names = isinstance(values, list) and all(isinstance(value, str) for value in values)
+        if not names or not values:
+            problems.append(f"{name} must be a non-empty list of names")
+    largest = (demo.get("application") or {}).get("max_requested_bdt")
+    if not _is_number(largest) or largest <= 0:
+        problems.append("demo.application.max_requested_bdt must be a positive number")
+    for name in (
+        "demo.application.note_max_chars",
+        "demo.visit.note_max_chars",
+        "demo.duplicate_entry_seconds",
+        "demo.purchase_import.max_file_mb",
+        "demo.purchase_import.max_rows",
+    ):
+        if not _is_positive_int(_lookup({"demo": demo}, name)):
+            problems.append(f"{name} must be a positive whole number")
+    return problems
 
 
 def _check_weights(name: str, weights: Any) -> list[str]:

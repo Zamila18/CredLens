@@ -1,5 +1,7 @@
 # CredLens: design brief for the new interface
 
+> **Changed on Oct 31, 2026 (team decision):** CredLens now also has a public landing page (`/`) and a "Choose a demo role" page (`/demo`). The demo-role page is not a login (no password, no identity check), and there is still no sign-up, "Apply", pricing or loan offer anywhere. The staff workspace moved to `/app`.
+
 This file is the complete context for designing the CredLens web interface. Read all of it before drawing anything. Everything about the **look** (colours, fonts, layout style, illustrations, icons, spacing) is your choice. Everything about the **content** (pages, fields, words, numbers, rules) is fixed by this file: do not add features, buttons, fields or claims that are not here, and do not leave out the ones that are.
 
 If something you want to draw is not covered here, leave it out rather than invent it.

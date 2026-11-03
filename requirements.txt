@@ -6,6 +6,16 @@ pandas~=2.3.3
 numpy~=2.2.6
 pyyaml~=6.0.3
 xlrd~=2.0.2            # reads the old .xls format of the Taiwan credit-card file
+openpyxl~=3.1.5        # reads .xlsx purchase workbooks (Excel purchase import, Phase 7)
+
+# Accounts
+argon2-cffi~=25.1.0   # Argon2id password hashing (src/accounts/passwords.py)
+fpdf2~=2.8.9          # consent PDFs (src/onboarding/pdf.py)
+uharfbuzz~=0.56.4     # shaping of Bangla text in the PDFs
+segno~=1.6.6          # QR code on the consent form
+pypdfium2~=5.14.0     # reading PDFs: text layer and page images
+python-docx~=1.2.0    # reading Word files (daily-record imports)
+easyocr~=1.7.2        # reading scans and photos (bn + en); pulls in torch (use the CPU build)
 
 # Database
 sqlalchemy~=2.0.54

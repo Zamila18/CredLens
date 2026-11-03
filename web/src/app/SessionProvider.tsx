@@ -1,24 +1,24 @@
 /**
- * Holds the demo session and remembers it in the browser between visits.
- * Switching the demo user changes the X-Demo-Token sent with every later call.
+ * Finds out who is using the application (GET /auth/me) and keeps the language choice.
+ *
+ * On first load the server is asked: if the browser holds a valid session cookie, that is the
+ * session; otherwise nobody is signed in and the workspace sends them to /login. The role
+ * always comes from the server.
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 
-import { setDemoUser } from '@/api/client'
-import { DEMO_USERS, roleOf, type DemoUser } from '@/api/types'
+import { api } from '@/api/client'
+import type { MeOut } from '@/api/types'
+import { clearApiCache } from '@/api/useApi'
 import { readChoice, saveChoice } from '@/lib/storage'
-import { SessionContext, type Lang, type Session } from './session-context'
+import { SessionContext, type Lang, type Session, type SessionMode } from './session-context'
 
-const USER_KEY = 'credlens.demoUser'
 const LANG_KEY = 'credlens.lang'
 
-// Set the token before the first render, so the very first API call already carries it.
-const initialUser = readChoice<DemoUser>(USER_KEY, DEMO_USERS, 'officer-1')
-setDemoUser(initialUser)
-
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [user, setUserState] = useState<DemoUser>(initialUser)
-  // `?lang=bn` (or `?lang=en`) in a link opens the dashboard in that language and keeps it.
+  const [mode, setMode] = useState<SessionMode>('loading')
+  const [me, setMe] = useState<MeOut | null>(null)
+  // `?lang=bn` (or `?lang=en`) in a link opens the application in that language and keeps it.
   const [lang, setLangState] = useState<Lang>(() => {
     const asked = new URLSearchParams(window.location.search).get('lang')
     if (asked === 'en' || asked === 'bn') {
@@ -28,20 +28,50 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return readChoice<Lang>(LANG_KEY, ['en', 'bn'], 'en')
   })
 
-  // The whole page follows the language switch: screen readers and the Bangla font
-  // (index.css, html[lang='bn']) read it from <html lang>.
   useEffect(() => {
     document.documentElement.lang = lang
   }, [lang])
 
+  useEffect(() => {
+    let alive = true
+    api<MeOut>('/auth/me')
+      .then((who) => {
+        if (!alive) return
+        setMe(who)
+        setMode('account')
+      })
+      .catch(() => {
+        if (!alive) return
+        setMe(null)
+        setMode('signed_out')
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+
   const session = useMemo<Session>(
     () => ({
-      user,
-      role: roleOf(user),
-      setUser: (next) => {
-        setDemoUser(next)
-        saveChoice(USER_KEY, next)
-        setUserState(next)
+      mode,
+      me,
+      user: me?.user_id ?? '',
+      role: (me?.role as Session['role']) ?? 'auditor',
+      isOwner: me?.is_owner ?? false,
+      signIn: async (identifier, password) => {
+        const who = await api<MeOut>('/auth/login', { method: 'POST', json: { identifier, password } })
+        clearApiCache()
+        setMe(who)
+        setMode('account')
+        return who
+      },
+      signOut: async () => {
+        try {
+          await api('/auth/logout', { method: 'POST' })
+        } finally {
+          clearApiCache()
+          setMe(null)
+          setMode('signed_out')
+        }
       },
       lang,
       setLang: (next) => {
@@ -49,7 +79,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setLangState(next)
       },
     }),
-    [user, lang],
+    [mode, me, lang],
   )
 
   return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>

@@ -13,6 +13,7 @@ import type { AuditEntry, Role } from '@/api/types'
 import { useApi } from '@/api/useApi'
 import { ErrorCallout } from '@/components/ErrorCallout'
 import { FilterSelect } from '@/components/Filters'
+import { Notice } from '@/components/Notice'
 import { Card, Page, PageHeader } from '@/components/Page'
 import { count, fmtBdTime } from '@/lib/format'
 import { ROLE_TEXT, pick, useLang, useT } from '@/lib/i18n'
@@ -125,8 +126,8 @@ export function AuditPage() {
       ) : (
         <Card className="flex flex-col gap-4 p-4 sm:p-5">
           <div className="flex flex-col gap-1">
-            <h2 className="m-0 text-[22px] leading-7 font-semibold">{t('Who accessed or changed a record?', 'কে রেকর্ড দেখেছেন বা বদলেছেন?')}</h2>
-            <p className="m-0 text-[15px] text-body">
+            <h2 className="m-0 text-[18px] leading-7 font-semibold">{t('Who accessed or changed a record?', 'কে রেকর্ড দেখেছেন বা বদলেছেন?')}</h2>
+            <p className="m-0 text-[14.5px] text-body">
               {t('Each entry identifies the person, action and time, so the work can be traced.', 'প্রতিটি এন্ট্রিতে ব্যক্তি, কাজ আর সময় থাকে, তাই কাজের হিসাব মেলানো যায়।')}
             </p>
           </div>
@@ -160,7 +161,7 @@ export function AuditPage() {
           </div>
 
           <div className="overflow-x-auto rounded-[12px] border border-line" role="region" aria-label={t('Audit entries', 'অডিট এন্ট্রি')} tabIndex={0}>
-            <table className="w-full min-w-[820px] border-collapse text-[15px]">
+            <table className="w-full min-w-[760px] border-collapse text-[14.5px]">
               <thead className="bg-ground">
                 <tr className="text-left text-sm text-ink-2">
                   <th scope="col" className="px-4 py-3 font-semibold">{t('Time (Bangladesh time)', 'সময় (বাংলাদেশ)')}</th>
@@ -178,7 +179,7 @@ export function AuditPage() {
                   const targetNode =
                     target &&
                     (r.merchant_id && !look.target ? (
-                      <Link to={`/merchants/${encodeURIComponent(r.merchant_id)}`} className="font-medium no-underline">
+                      <Link to={`/app/merchants/${encodeURIComponent(r.merchant_id)}`} className="font-medium no-underline">
                         {target}
                       </Link>
                     ) : (
@@ -187,10 +188,10 @@ export function AuditPage() {
                   return (
                     <tr key={r.id} className="border-t border-line">
                       <td className="px-4 py-3 whitespace-nowrap text-ink-2 tabular">{fmtBdTime(r.timestamp)}</td>
-                      <td className="px-4 py-3">
+                      <td className="min-w-[300px] px-4 py-3">
                         <span className="flex items-center gap-3">
-                          <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-[10px]', look.tile)} aria-hidden="true">
-                            <Icon size={19} />
+                          <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-[10px]', look.tile)} aria-hidden="true">
+                            <Icon size={16} />
                           </span>
                           <span className="text-ink">
                             {r.actor} {lang === 'bn' ? <>{targetNode}{look.bnAfter}</> : <>{look.en} {targetNode}</>}
@@ -199,7 +200,7 @@ export function AuditPage() {
                       </td>
                       <td className="px-4 py-3">
                         <span className="rounded-[8px] bg-ground px-2.5 py-1 font-mono text-[13px] whitespace-nowrap text-ink-2">
-                          {r.action} · {t('role', 'ভূমিকা')} {r.role} · #{r.id}
+                          {r.action} · #{r.id}
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -221,20 +222,12 @@ export function AuditPage() {
         </Card>
       )}
 
-      <Card className="mint-wash flex items-start gap-4 border-mint-line p-5">
-        <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-mint text-lens-dark" aria-hidden="true">
-          <Info size={22} />
-        </span>
-        <div className="flex flex-col gap-1">
-          <h2 className="m-0 text-xl font-semibold">{t('Why are reads recorded?', 'দেখাও কেন লেখা হয়?')}</h2>
-          <p className="m-0 text-[15px] text-body">
-            {t(
-              'Opening a merchant profile, reading a score and opening this log all leave an audit record. A refused attempt is recorded too.',
-              'মার্চেন্টের প্রোফাইল খোলা, স্কোর দেখা আর এই লগ খোলা, সবই অডিটে লেখা থাকে। আটকে যাওয়া চেষ্টাও লেখা হয়।',
-            )}
-          </p>
-        </div>
-      </Card>
+      <Notice tone="info" title={t('Why are reads recorded?', 'দেখাও কেন লেখা হয়?')}>
+        {t(
+          'Opening a merchant profile, reading a score and opening this log all leave an audit record. A refused attempt is recorded too.',
+          'মার্চেন্টের প্রোফাইল খোলা, স্কোর দেখা আর এই লগ খোলা, সবই অডিটে লেখা থাকে। আটকে যাওয়া চেষ্টাও লেখা হয়।',
+        )}
+      </Notice>
     </Page>
   )
 }

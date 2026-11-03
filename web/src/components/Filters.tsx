@@ -76,7 +76,7 @@ export function FilterSegments<T extends string>({
   return (
     <div className="flex flex-col gap-1">
       <span className="text-[13px] font-medium text-ink-2">{label}</span>
-      <div role="group" aria-label={label} className="inline-flex gap-0.5 rounded-[10px] border border-control-line bg-card p-[3px]">
+      <div role="group" aria-label={label} className="inline-flex flex-wrap gap-0.5 self-start rounded-[10px] border border-control-line bg-card p-[3px]">
         {options.map((o) => (
           <button
             key={o.value}

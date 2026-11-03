@@ -87,6 +87,9 @@ def api_world(tmp_path_factory):
     url = "sqlite:///" + (tmp_path_factory.mktemp("api_db") / "api.db").as_posix()
     load_tables(tables, url)
     engine = make_engine(url)
+    from accounts_seed import seed_accounts
+
+    seed_accounts(engine, config)
     services = Services(
         config=config, engine=engine, scorer=Scorer(config, tables=tables, saved=saved)
     )

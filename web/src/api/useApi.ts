@@ -43,6 +43,11 @@ export function invalidate(prefix: string) {
   }
 }
 
+/** Forget every cached answer (on sign-in, sign-out or a change of demo user). */
+export function clearApiCache() {
+  cache.clear()
+}
+
 function toApiError(err: unknown): ApiError {
   return err instanceof ApiError ? err : new ApiError(0, 'network', String(err))
 }

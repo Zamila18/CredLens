@@ -16,6 +16,7 @@ import threading
 import time
 
 import pytest
+from accounts_seed import headers_for, seed_accounts, seed_person  # noqa: F401
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -23,8 +24,8 @@ from sqlalchemy.orm import Session
 from src.api.main import app
 from src.db import models as db
 
-OFFICER = {"X-Demo-Token": "officer-1"}
-VIEWER = {"X-Demo-Token": "viewer-1"}
+OFFICER = headers_for("officer-1")
+VIEWER = headers_for("viewer-1")
 LOCK_SECONDS = 7
 
 

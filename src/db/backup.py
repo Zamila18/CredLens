@@ -19,7 +19,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
-from sqlalchemy import select
+from sqlalchemy import inspect, select
 
 from src.config import PROJECT_ROOT, get_database_url, load_config
 from src.db.models import Base, make_engine
@@ -50,7 +50,10 @@ def backup_database(database_url: str, backup_dir: Path | None = None) -> Path:
     engine = make_engine(database_url)
     try:
         with engine.connect() as connection:
+            existing = set(inspect(connection).get_table_names())
             for name, table in Base.metadata.tables.items():
+                if name not in existing:  # an older database: a newer table is not there yet
+                    continue
                 chunks = pd.read_sql(select(table), connection, chunksize=EXPORT_CHUNK_ROWS)
                 for number, chunk in enumerate(chunks):
                     chunk.to_csv(

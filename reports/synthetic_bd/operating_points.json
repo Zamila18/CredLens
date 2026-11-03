@@ -1,0 +1,66 @@
+{
+  "data_mode": "synthetic_bd",
+  "model_version": "synthetic_bd-20261015-005409-9db9d66",
+  "measured_on": "validation months only (the test months are not used)",
+  "event": "not repaid within the rule (label 0)",
+  "lines": {
+    "band_strong_min_score": 90,
+    "band_min_coverage": 0.45,
+    "low_score_warning_below": 70
+  },
+  "at_each_line": {
+    "score_below_70_low_score_warning": {
+      "flagged_not_repaid": 71,
+      "flagged_repaid": 128,
+      "not_flagged_not_repaid": 493,
+      "not_flagged_repaid": 5161,
+      "share_flagged": 0.03399965829489151,
+      "precision": 0.35678391959798994,
+      "recall": 0.12588652482269502,
+      "specificity": 0.9757988277557195
+    },
+    "score_below_90_not_strong": {
+      "flagged_not_repaid": 346,
+      "flagged_repaid": 1616,
+      "not_flagged_not_repaid": 218,
+      "not_flagged_repaid": 3673,
+      "share_flagged": 0.3352127114300359,
+      "precision": 0.1763506625891947,
+      "recall": 0.6134751773049646,
+      "specificity": 0.6944602004159577
+    },
+    "band_is_not_strong": {
+      "flagged_not_repaid": 406,
+      "flagged_repaid": 2173,
+      "not_flagged_not_repaid": 158,
+      "not_flagged_repaid": 3116,
+      "share_flagged": 0.4406287373996241,
+      "precision": 0.15742535866614968,
+      "recall": 0.7198581560283688,
+      "specificity": 0.5891472868217055
+    },
+    "band_is_needs_more_info": {
+      "flagged_not_repaid": 105,
+      "flagged_repaid": 794,
+      "not_flagged_not_repaid": 459,
+      "not_flagged_repaid": 4495,
+      "share_flagged": 0.1535964462668717,
+      "precision": 0.1167964404894327,
+      "recall": 0.18617021276595744,
+      "specificity": 0.849877103422197
+    }
+  },
+  "merchant_overlap": {
+    "merchants": {
+      "train": 8977,
+      "validation": 5328,
+      "test": 5480
+    },
+    "train_and_validation": 2180,
+    "train_and_test": 1099,
+    "validation_and_test": 1603,
+    "validation_loans_whose_merchant_had_a_training_loan": 2338,
+    "validation_loans": 5853
+  },
+  "note": "Synthetic data: an engineering check of the code, not evidence of how the model would do on real Bangladesh retailers."
+}

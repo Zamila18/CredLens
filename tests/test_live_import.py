@@ -21,6 +21,7 @@ import zipfile
 
 import pandas as pd
 import pytest
+from accounts_seed import headers_for, seed_accounts, seed_person  # noqa: F401
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -65,6 +66,9 @@ def template(api_world, tmp_path_factory):
     """A loaded database file and a built scorer, copied by every test (loading is slow)."""
     path = tmp_path_factory.mktemp("live") / "template.db"
     load_tables(api_world.tables, "sqlite:///" + path.as_posix())
+    from src.db.models import make_engine
+
+    seed_accounts(make_engine("sqlite:///" + path.as_posix()), api_world.config)
     return path, Scorer(api_world.config, tables=api_world.tables, saved=api_world.saved)
 
 

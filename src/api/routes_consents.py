@@ -24,10 +24,11 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
-from src.api.auth import EVERY_ROLE, CurrentUser, add_audit, require_roles
+from src.api.auth import READERS, CurrentUser, add_audit, require_roles
 from src.api.common import refuse_rows_not_shown
 from src.api.schemas import ConsentList, ConsentListItem
 from src.api.state import Services, get_services, get_session
+from src.api.tenancy import merchant_in_org, org_of
 from src.db import models as db
 
 router = APIRouter(tags=["consents"])
@@ -69,7 +70,7 @@ def list_consents(
     ),
     limit: int = Query(default=CONSENTS_DEFAULT_ROWS, ge=1, le=CONSENTS_MAX_ROWS),
     offset: int = Query(default=0, ge=0),
-    user: CurrentUser = Depends(require_roles(*EVERY_ROLE)),
+    user: CurrentUser = Depends(require_roles(*READERS)),
     services: Services = Depends(get_services),
     session: Session = Depends(get_session),
 ) -> ConsentList:
@@ -81,6 +82,14 @@ def list_consents(
     refuse_rows_not_shown(services.config)
     as_of = services.data_today(session)
     scope = [db.Consent.merchant_id == merchant_id] if merchant_id else []
+    # Only the caller's organisation's merchants (tenancy.py).
+    scope.append(
+        db.Consent.merchant_id.in_(
+            select(db.Merchant.merchant_id).where(
+                merchant_in_org(org_of(user, services.config), services.config)
+            )
+        )
+    )
 
     counts = {
         name: session.scalar(

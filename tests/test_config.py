@@ -106,7 +106,7 @@ def test_bad_mode_from_the_environment_is_rejected(monkeypatch):
 def test_database_defaults_to_local_sqlite(config, monkeypatch):
     monkeypatch.delenv(config["database"]["url_env"], raising=False)
     url = get_database_url(config, use_dotenv=False)
-    assert url == "sqlite:///" + (PROJECT_ROOT / "data" / "app.db").as_posix()
+    assert url == "sqlite:///" + (PROJECT_ROOT / "data" / "credlens.db").as_posix()
 
 
 def test_database_url_comes_from_the_environment_when_set(config, monkeypatch):

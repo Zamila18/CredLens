@@ -34,7 +34,7 @@ export function useLang(): Lang {
   return useSession().lang
 }
 
-type Pair = { en: string; bn: string }
+export type Pair = { en: string; bn: string }
 
 export function pick(pair: Pair, lang: Lang): string {
   return lang === 'bn' ? pair.bn : pair.en
@@ -97,9 +97,10 @@ export const ACTION_TEXT: Record<OfficerAction, { label: Pair; short: Pair; hint
 }
 
 export const ROLE_TEXT: Record<Role, Pair> = {
-  officer: { en: 'Officer', bn: 'কর্মকর্তা' },
-  admin: { en: 'Admin', bn: 'অ্যাডমিন' },
-  viewer: { en: 'Viewer', bn: 'দর্শক' },
+  platform_admin: { en: 'Platform admin', bn: 'প্ল্যাটফর্ম অ্যাডমিন' },
+  credit_officer: { en: 'Credit officer', bn: 'ক্রেডিট অফিসার' },
+  fsr: { en: 'FSR', bn: 'ফিল্ড সেলস রিপ্রেজেন্টেটিভ' },
+  auditor: { en: 'Auditor', bn: 'অডিটর' },
 }
 
 /** Town tiers and shop types, as the data holds them. Unknown values are shown as they are. */
@@ -128,11 +129,12 @@ export const CATEGORY_TEXT: Record<string, Pair> = {
   deliveries: { en: 'deliveries', bn: 'ডেলিভারি' },
   payments: { en: 'payments', bn: 'পেমেন্ট' },
   questionnaire: { en: 'the questionnaire', bn: 'প্রশ্নাবলি' },
+  field_visits: { en: 'field visit notes', bn: 'মাঠ পরিদর্শনের নোট' },
 }
 
 /** ["purchases", "payments", "questionnaire"] -> "purchases, payments and the questionnaire". */
 export function listInWords(items: string[], lang: Lang): string {
-  const words = items.map((c) => (CATEGORY_TEXT[c] ? pick(CATEGORY_TEXT[c], lang) : c))
+  const words = items.map((c) => (CATEGORY_TEXT[c] ? pick(CATEGORY_TEXT[c], lang) : c.replaceAll('_', ' ')))
   if (words.length <= 1) return words.join('')
   const and = lang === 'bn' ? ' এবং ' : ' and '
   return `${words.slice(0, -1).join(', ')}${and}${words[words.length - 1]}`
@@ -140,8 +142,8 @@ export function listInWords(items: string[], lang: Lang): string {
 
 /** One consent category as a short chip word ("purchases", "কেনাকাটা"). */
 export function categoryWord(code: string, lang: Lang): string {
-  if (lang === 'en') return code
-  return CATEGORY_TEXT[code]?.bn ?? code
+  if (lang === 'en') return code.replaceAll('_', ' ')
+  return CATEGORY_TEXT[code]?.bn ?? code.replaceAll('_', ' ')
 }
 
 /** Consent purposes. */

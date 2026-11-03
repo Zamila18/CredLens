@@ -58,8 +58,17 @@ def card_or_error(scorer: Scorer, merchant_id: str) -> dict[str, Any]:
 
     - no valid consent: 403 `consent_required` (nothing is computed),
     - a data source whose rows may never be shown: 403 `rows_not_shown`,
-    - no loan for that id: 404 `unknown_merchant`.
+    - no loan for that id: 404 `unknown_merchant`,
+    - records saved but the assessment could not be redone: 409 `assessment_not_updated`
+      (an older score is never shown as current).
     """
+    if merchant_id in getattr(scorer, "not_updated", {}):
+        raise api_error(
+            409,
+            "assessment_not_updated",
+            "The latest records are saved, but the assessment could not be updated, so no "
+            "score is shown. Check the records, or ask an administrator.",
+        )
     try:
         return scorer.card(merchant_id)
     except ConsentRequired:

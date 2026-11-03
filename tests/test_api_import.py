@@ -13,6 +13,7 @@ from __future__ import annotations
 from datetime import date
 
 import pytest
+from accounts_seed import headers_for, seed_accounts, seed_person  # noqa: F401
 from fastapi.testclient import TestClient
 from sqlalchemy import insert, select
 from sqlalchemy.orm import Session
@@ -41,6 +42,7 @@ def empty(tmp_path):
     engine = db.make_engine(url)
     with engine.begin() as connection:
         connection.execute(insert(db.User.__table__), DEMO_USERS)
+    seed_accounts(engine)
     # a scorer that knows no merchant: every merchant in these files is new to it
     nobody = type(
         "Scorer",
@@ -114,7 +116,7 @@ def test_the_fixture_files_import_in_order_and_are_reported(empty):
         assert count(world, db.AuditEntry, db.AuditEntry.action == f"import_{table}") == 1
     with Session(world.engine) as session:
         entry = session.scalars(select(db.AuditEntry).order_by(db.AuditEntry.id)).first()
-        assert (entry.actor, entry.role) == ("admin-1", "admin")
+        assert (entry.actor, entry.role) == ("admin-1", "credit_officer")
         assert session.get(db.Merchant, "FIX-M001").questionnaire_done is True
         loan = session.get(db.Loan, "FIX-L001")
         assert (loan.issued_at, loan.outcome_label) == (date(2025, 4, 1), 1)

@@ -18,6 +18,7 @@ import json
 from datetime import date, datetime, timedelta
 
 import pytest
+from accounts_seed import headers_for, seed_accounts, seed_person  # noqa: F401
 from fastapi.testclient import TestClient
 from pydantic import TypeAdapter
 from sqlalchemy import func, select
@@ -44,10 +45,10 @@ from tests.conftest import load_api_fixture
 
 client = TestClient(app)
 
-OFFICER = {"X-Demo-Token": "officer-1"}
-OFFICER_2 = {"X-Demo-Token": "officer-2"}
-ADMIN = {"X-Demo-Token": "admin-1"}
-VIEWER = {"X-Demo-Token": "viewer-1"}
+OFFICER = headers_for("officer-1")
+OFFICER_2 = headers_for("officer-2")
+ADMIN = headers_for("admin-1")
+VIEWER = headers_for("viewer-1")
 ANSWERS = dict.fromkeys(
     ["spend1", "spend2", "save1", "save2", "borrow1", "borrow2", "plan1", "plan2"], 3
 ) | {"stress": 2, "confidence": 4}
@@ -140,14 +141,112 @@ def test_openapi_spec_is_published():
         "/audit",
         "/admin/import/{table}",
         "/admin/import-bundle",
+        # the demo workflow (src/api/routes_intake.py)
+        "/demo/settings",
+        "/search/merchants",
+        "/merchants/{merchant_id}/consent-responses",
+        "/merchants/{merchant_id}/purchases",
+        "/merchants/{merchant_id}/deliveries",
+        "/merchants/{merchant_id}/repayments",
+        "/merchants/{merchant_id}/visits",
+        "/merchants/{merchant_id}/application",
+        "/merchants/{merchant_id}/loans",
+        "/merchants/{merchant_id}/workflow",
+        "/merchants/{merchant_id}/review",
+        "/merchants/{merchant_id}/receipt",
+        "/applications",
+        "/directory/merchants",
+        "/import-batches",
+        "/import-batches/{batch_id}",
+        "/overview",
+        "/organization",
+        "/sources/catalog",
+        "/sources",
+        "/sources/{connection_id}",
+        "/sources/{connection_id}/test",
+        "/sources/{connection_id}/discover",
+        "/sources/{connection_id}/preview",
+        "/sources/{connection_id}/matches",
+        "/sources/{connection_id}/sync",
+        "/sources/{connection_id}/revoke",
+        "/quality/issues",
+        "/quality/reviews",
+        "/auth/login",
+        "/auth/logout",
+        "/auth/me",
+        "/auth/password/setup",
+        "/auth/password",
+        "/auth/register/company",
+        "/auth/register/join",
+        "/auth/invitations/preview",
+        "/org/profile",
+        "/org/employees",
+        "/org/employees/{user_id}/reset-code",
+        "/org/employees/{user_id}/disable",
+        "/org/invitations",
+        "/org/invitations/{invitation_id}/revoke",
+        "/org/invitations/{invitation_id}/regenerate",
+        "/registrations",
+        "/registrations/{reg_id}",
+        "/registrations/{reg_id}/details",
+        "/registrations/{reg_id}/consent.pdf",
+        "/registration-forms/blank",
+        "/registrations/from-form",
+        "/registrations/{reg_id}/signed",
+        "/registrations/{reg_id}/extraction",
+        "/registrations/{reg_id}/fields/{field_id}",
+        "/registrations/{reg_id}/document",
+        "/registrations/{reg_id}/verify",
+        "/registrations/{reg_id}/reject",
+        "/registrations/{reg_id}/return",
+        "/merchants/{merchant_id}/consent/withdraw",
+        "/platform/consent-templates",
+        "/platform/consent-templates/{version}/status",
+        "/platform/orgs",
+        "/platform/orgs/{organization_id}/status",
+        "/platform/orgs/{organization_id}/owner-reset",
+        "/org/assignments",
+        "/org/assignments/{merchant_id}/end",
+        "/merchants/{merchant_id}/purchase-import/inspect",
+        "/merchants/{merchant_id}/purchase-import/preview",
+        "/merchants/{merchant_id}/purchase-import/commit",
+        "/field/shops",
+        "/daily/entry-types",
+        "/fsr/overview",
+        "/merchants/{merchant_id}/assessments",
+        "/merchants/{merchant_id}/assessments/{assessment_id}/verify",
+        "/merchants/{merchant_id}/daily",
+        "/merchants/{merchant_id}/daily-import",
+        "/merchants/{merchant_id}/daily-import/{job_id}",
+        "/merchants/{merchant_id}/daily/entries/{entry_id}/amend",
+        "/merchants/{merchant_id}/daily/{business_date}",
+        "/merchants/{merchant_id}/daily/{business_date}/accept",
+        "/merchants/{merchant_id}/daily/{business_date}/return",
+        "/merchants/{merchant_id}/daily/{business_date}/submit",
+        "/notifications",
+        "/notifications/read-all",
+        "/org/assignments/bulk",
+        "/org/assignments/history",
+        "/org/fsrs/{user_id}",
+        "/org/range-policies",
+        "/org/range-policies/{policy_id}/approve",
+        "/org/range-policies/{policy_id}/retire",
+        "/submissions",
     }
 
 
 def test_the_api_offers_no_way_to_edit_or_delete(api):
-    """Decisions and audit entries are append-only: the API has only GET and POST."""
+    """Decisions and audit entries are append-only: the API has only GET and POST for them.
+    The PATCHes edit the company profile and a registration's details."""
     paths = api.get("/openapi.json").json()["paths"]
     methods = {method for operations in paths.values() for method in operations}
-    assert methods == {"get", "post"}
+    assert methods == {"get", "post", "patch", "put"}
+    patched = {path for path, operations in paths.items() if "patch" in operations}
+    assert patched == {
+        "/org/profile",
+        "/registrations/{reg_id}/details",
+        "/registrations/{reg_id}/fields/{field_id}",
+    }
     assert api.delete("/decisions", headers=ADMIN).status_code == 405
     assert api.put("/audit", headers=ADMIN).status_code == 405
     assert api.patch("/decisions", headers=ADMIN).status_code == 405
@@ -159,6 +258,7 @@ def test_the_api_offers_no_way_to_edit_or_delete(api):
 def role_cases(merchant_id: str) -> list[tuple]:
     """(method, url, request body arguments, roles that may call it)."""
     everyone = {"officer", "admin", "viewer"}
+    deciders = {"officer", "admin"}  # Credit Officers; the viewer is an auditor
     return [
         ("GET", "/merchants", {}, everyone),
         ("GET", f"/merchants/{merchant_id}", {}, everyone),
@@ -167,14 +267,14 @@ def role_cases(merchant_id: str) -> list[tuple]:
         ("GET", "/model/card", {}, everyone),
         ("GET", f"/merchants/{merchant_id}/consent", {}, everyone),
         ("GET", "/consents?limit=5", {}, everyone),
-        ("GET", "/audit", {}, {"admin"}),
+        ("GET", "/audit", {}, {"admin", "viewer"}),  # the owner and auditors
         (
             "POST",
             f"/merchants/{merchant_id}/decision",
             {"json": {"officer_action": "accept"}},
-            {"officer"},
+            deciders,
         ),
-        ("POST", f"/merchants/{merchant_id}/questionnaire", {"json": ANSWERS}, {"officer"}),
+        ("POST", f"/merchants/{merchant_id}/questionnaire", {"json": ANSWERS}, deciders),
         ("POST", "/admin/import/merchants?dry_run=true", {"content": b""}, {"admin"}),
     ]
 
@@ -185,9 +285,11 @@ def test_every_endpoint_refuses_a_missing_or_unknown_token(api, merchants):
         missing = api.request(method, url, **arguments)
         assert missing.status_code == 401, url
         assert missing.json()["detail"]["code"] == "missing_token", url
-        unknown = api.request(method, url, headers={"X-Demo-Token": "nobody"}, **arguments)
+        unknown = api.request(
+            method, url, headers={"Cookie": "credlens_session=nobody"}, **arguments
+        )
         assert unknown.status_code == 401, url
-        assert unknown.json()["detail"]["code"] == "unknown_token", url
+        assert unknown.json()["detail"]["code"] == "session_expired", url
 
 
 @pytest.mark.parametrize(
@@ -203,7 +305,8 @@ def test_each_role_can_do_exactly_what_the_brief_says(api, merchants, role, head
             assert response.status_code in (200, 201), (role, url, response.text)
         else:
             assert response.status_code == 403, (role, url)
-            assert response.json()["detail"]["code"] == "role_not_allowed", (role, url)
+            code = response.json()["detail"]["code"]
+            assert code in ("role_not_allowed", "owner_only"), (role, url)
 
 
 def test_a_viewer_can_never_post(api, merchants, api_world):
@@ -414,9 +517,10 @@ def test_a_profile_follows_the_contract_and_agrees_with_the_data(api, api_world,
                 assert len(events) <= wanted
             else:
                 assert len(events) == wanted, (merchant_id, stream)
-        assert len([e for e in profile.timeline if e.stream == "loan"]) == (
-            tables["loans"]["merchant_id"] == merchant_id
-        ).sum()
+        assert (
+            len([e for e in profile.timeline if e.stream == "loan"])
+            == (tables["loans"]["merchant_id"] == merchant_id).sum()
+        )
         dates = [e.date for e in profile.timeline]
         assert dates == sorted(dates)
         words = " ".join(e.label for e in profile.timeline).lower()
@@ -447,9 +551,9 @@ def test_a_profile_without_consent_shows_no_behaviour(api, merchants):
 
 def test_every_profile_read_writes_an_audit_entry(api, api_world, merchants):
     for headers, user, role, merchant_id in (
-        (OFFICER_2, "officer-2", "officer", merchants["consenting"][0]),
-        (ADMIN, "admin-1", "admin", merchants["consenting"][1]),
-        (VIEWER, "viewer-1", "viewer", merchants["no_consent"][1]),  # a refused one too
+        (OFFICER_2, "officer-2", "credit_officer", merchants["consenting"][0]),
+        (ADMIN, "admin-1", "credit_officer", merchants["consenting"][1]),
+        (VIEWER, "viewer-1", "auditor", merchants["no_consent"][1]),  # a refused one too
     ):
         condition = (
             db.AuditEntry.action == "view_profile",
@@ -478,14 +582,13 @@ def test_reading_a_score_is_audited_too(api, api_world, merchants):
 def test_a_failed_read_writes_no_audit_entry(api, api_world):
     before = count(api_world, db.AuditEntry)
     assert api.get("/merchants/NOBODY", headers=OFFICER).status_code == 404
-    assert api.get("/merchants/NOBODY", headers={"X-Demo-Token": "nobody"}).status_code == 401
+    ghost = {"Cookie": "credlens_session=nobody"}
+    assert api.get("/merchants/NOBODY", headers=ghost).status_code == 401
     assert api.get("/merchants/NOBODY", headers=VIEWER).status_code == 404
     assert count(api_world, db.AuditEntry) == before
 
 
-def test_if_the_audit_entry_cannot_be_written_nothing_is_returned(
-    api, merchants, monkeypatch
-):
+def test_if_the_audit_entry_cannot_be_written_nothing_is_returned(api, merchants, monkeypatch):
     """Audit first, then disclose: a profile or a score is never returned unrecorded."""
     from src.api import routes_merchants
 
@@ -579,7 +682,7 @@ def test_an_override_needs_a_written_reason(api, api_world, merchants):
 def test_only_an_officer_decides(api, api_world, merchants):
     merchant_id = merchants["consenting"][8]
     before = count(api_world, db.Decision)
-    for headers in (ADMIN, VIEWER):
+    for headers in (VIEWER,):  # an auditor reads; only a Credit Officer decides
         response = post_decision(api, merchant_id, {"officer_action": "accept"}, headers)
         assert response.status_code == 403
     assert count(api_world, db.Decision) == before
@@ -826,6 +929,7 @@ def test_consent_status_on_the_day_it_changes(tmp_path):
                 )
             )
         session.commit()
+    seed_accounts(engine)
     services = Services(config=load_config(), engine=engine)
     services._data_today = today
     app.state.services = services
@@ -892,8 +996,7 @@ def test_a_written_model_card_is_served_as_written(tmp_path, monkeypatch):
 
 
 def test_the_audit_log_is_admin_only_and_is_itself_audited(api, api_world, merchants):
-    for headers in (OFFICER, VIEWER):
-        assert api.get("/audit", headers=headers).status_code == 403
+    assert api.get("/audit", headers=OFFICER).status_code == 403  # a Credit Officer, not the owner
     get_profile(api, merchants["consenting"][12])
     before = count(api_world, db.AuditEntry, db.AuditEntry.action == "view_audit_log")
     response = api.get("/audit", headers=ADMIN)
@@ -921,9 +1024,7 @@ def test_the_audit_log_can_be_limited_and_narrowed(api, merchants):
 def test_saving_the_questionnaire_updates_the_panel_but_not_the_score(api, api_world, merchants):
     merchant_id = merchants["with_questionnaire_consent"][0]
     score_before = api.get(f"/merchants/{merchant_id}/score", headers=OFFICER).json()
-    audit_before = count(
-        api_world, db.AuditEntry, db.AuditEntry.action == "record_questionnaire"
-    )
+    audit_before = count(api_world, db.AuditEntry, db.AuditEntry.action == "record_questionnaire")
     answers = ANSWERS | {"spend1": 5, "spend2": 4, "stress": 1}
     response = api.post(f"/merchants/{merchant_id}/questionnaire", headers=OFFICER, json=answers)
     assert response.status_code == 200, response.text
@@ -941,9 +1042,10 @@ def test_saving_the_questionnaire_updates_the_panel_but_not_the_score(api, api_w
     assert count(api_world, db.Questionnaire, db.Questionnaire.merchant_id == merchant_id) == 1
     with Session(api_world.engine) as session:
         assert session.get(db.Merchant, merchant_id).questionnaire_done is True
-    assert count(
-        api_world, db.AuditEntry, db.AuditEntry.action == "record_questionnaire"
-    ) == audit_before + 2
+    assert (
+        count(api_world, db.AuditEntry, db.AuditEntry.action == "record_questionnaire")
+        == audit_before + 2
+    )
     # the score does not move
     score_after = api.get(f"/merchants/{merchant_id}/score", headers=OFFICER).json()
     assert score_after == score_before
@@ -989,14 +1091,26 @@ def test_the_questionnaire_needs_a_consent_that_covers_it(api, api_world, mercha
     # Every generated consent covers the questionnaire, so make a merchant whose does not.
     with Session(api_world.engine) as session:
         as_of = api_world.services.data_today(session)
-        session.add(db.Merchant(merchant_id="TEST-NOQ", onboarded_at=as_of - timedelta(days=200),
-                                consent_data_use=True, questionnaire_done=False))
+        session.add(
+            db.Merchant(
+                merchant_id="TEST-NOQ",
+                onboarded_at=as_of - timedelta(days=200),
+                consent_data_use=True,
+                questionnaire_done=False,
+            )
+        )
         session.flush()
-        session.add(db.Consent(consent_id="TEST-C-NOQ", merchant_id="TEST-NOQ",
-                               purpose="credit_readiness_assessment",
-                               data_categories="purchases|deliveries|payments",
-                               granted_at=as_of - timedelta(days=100),
-                               expires_at=as_of + timedelta(days=300), revoked_at=None))
+        session.add(
+            db.Consent(
+                consent_id="TEST-C-NOQ",
+                merchant_id="TEST-NOQ",
+                purpose="credit_readiness_assessment",
+                data_categories="purchases|deliveries|payments",
+                granted_at=as_of - timedelta(days=100),
+                expires_at=as_of + timedelta(days=300),
+                revoked_at=None,
+            )
+        )
         session.commit()
     covered_elsewhere = ["TEST-NOQ"]
     before = count(api_world, db.Questionnaire)
@@ -1049,9 +1163,12 @@ def test_a_missing_scorer_gives_503_and_names_the_fix_but_health_and_audit_still
         assert response.status_code == 503, url
         assert response.json()["detail"]["code"] == "scorer_not_ready"
         assert "python tasks.py train" in response.json()["detail"]["message"]
-    assert api.post(
-        "/merchants/X/decision", headers=OFFICER, json={"officer_action": "accept"}
-    ).status_code == 503
+    assert (
+        api.post(
+            "/merchants/X/decision", headers=OFFICER, json={"officer_action": "accept"}
+        ).status_code
+        == 503
+    )
     assert api.get("/health").status_code == 200
     assert api.get("/audit", headers=ADMIN).status_code == 200
     card = api.get("/model/card", headers=ADMIN)
@@ -1187,7 +1304,7 @@ def test_a_server_can_allow_no_browser_origin_or_exactly_its_own(monkeypatch):
 def test_the_dashboard_origin_may_call_the_api_and_others_may_not(api):
     preflight = {
         "Access-Control-Request-Method": "POST",
-        "Access-Control-Request-Headers": "x-demo-token,content-type",
+        "Access-Control-Request-Headers": "content-type",
     }
     allowed = api.options("/merchants", headers={"Origin": "http://localhost:5173", **preflight})
     assert allowed.status_code == 200
@@ -1239,7 +1356,6 @@ def test_the_consent_view_is_live_and_audited(api, api_world, merchants):
     assert api.get("/merchants/NOBODY/consent", headers=OFFICER).status_code == 404
 
 
-
 def test_another_modes_model_card_can_be_read(api):
     response = api.get("/model/card?mode=taiwan_cc", headers=VIEWER)
     assert response.status_code == 200
@@ -1255,4 +1371,3 @@ def test_every_timeline_event_has_a_bangla_label(api, merchants):
     for event in events:
         assert event["label_bn"], event
         assert "_" not in event["label_bn"], "codes are put into words"
-

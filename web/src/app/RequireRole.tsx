@@ -9,9 +9,17 @@ import { ErrorCallout } from '@/components/ErrorCallout'
 import { Page } from '@/components/Page'
 import { useSession } from './session-context'
 
-export function RequireRole({ roles, children }: { roles: Role[]; children: ReactNode }) {
-  const { role } = useSession()
-  if (roles.includes(role)) return <>{children}</>
+export function RequireRole({
+  roles,
+  owner = false,
+  children,
+}: {
+  roles: Role[]
+  owner?: boolean
+  children: ReactNode
+}) {
+  const { role, isOwner } = useSession()
+  if (roles.includes(role) && (!owner || isOwner)) return <>{children}</>
   return (
     <Page>
       <ErrorCallout error={{ status: 403, code: 'role_not_allowed', message: '' }} className="max-w-[640px]" />

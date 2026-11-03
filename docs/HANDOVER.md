@@ -1,7 +1,34 @@
 # HANDOVER.md: where the project stands and what each person does next
 
 Kept up to date at the end of every phase, so a handover can happen at any time.
-Last updated: closing work done; hosting is next (Oct 18, 2026).
+Last updated: implementation pack Phases 1 to 10 done (Oct 31, 2026); hosting is still next.
+
+## 0a. Oct 31: platform workstreams (provider-independent plan)
+
+| Workstream | What exists | Where |
+|---|---|---|
+| B. Organisations | `organizations` table, `organization_id` on merchants and users (empty = the default organisation in config); every merchant address and list scoped; another organisation's merchant answers 404 | `src/api/tenancy.py` |
+| C. Data sources | Source registry (built-in, connectable, planned), one connector contract, a synthetic sandbox feed, mapping, human-confirmed merchant matching, lineage (`source_records`), sync history, credentials by environment-variable name only | `src/connectors/`, `src/api/routes_sources.py`, `web/src/pages/sources/` |
+| D. Data quality | Issues worked out from the records (look-alike shops, withdrawn source matches, possible duplicate purchases, rows a sync or file left out, failing sources, missing or old evidence, lapsed consent) and an append-only review with a note (`quality_reviews`). A review never changes, merges or deletes a record; a changed record reopens the issue. Source match decisions can be listed and withdrawn | `src/api/quality.py`, `src/api/routes_quality.py`, `web/src/pages/quality/` |
+| E. Dashboard and workspace | Dashboard: data-quality panel, evidence coverage of the shops added in the app, where the evidence comes from (by kind and source, with a table view) and records by business month. Merchant page: records per source on each evidence group. All counted from the records (`GET /overview` `evidence`, `EvidenceGroup.by_source`); no schema change | `src/api/routes_workspace.py`, `web/src/pages/dashboard/`, `web/src/components/EvidenceViz.tsx` |
+| F. Restyle | Decisions, Consent records, Portfolio, Audit log and Data files use the workspace pieces (page header, metric tiles, 18px section titles, notices); the shared `Section` matches the dashboard panels, which also restyles the Model card and merchant page sections. The Decisions table fits without being cut off | `web/src/components/Page.tsx`, `web/src/pages/` |
+| G. Full check | Whole journey through the screens on a throwaway database (new shop, consent, typed-in records, visit, application, assessment, data-quality flag, decision, receipt, decision log); 14 pages at 390/768/1280/1440 px in English and Bangla with no sideways scroll; full test suite 1130 passed. Fixed: the first request after any save took about 10 s (the last day in the data was re-read from millions of rows; now only app-entered rows are re-read, `src/api/state.py`); provider names removed from the merchant workspace, consent preview and receipt; browser tab title | `src/api/state.py`, `web/src/pages/merchant/`, `web/index.html` |
+
+`data/app.db` has the tables of B, C and D (upgraded Oct 31 with approval; backups in `data/backups/`).
+
+## 0. Oct 30 to 31: the field workflow and officer workspace (implementation pack)
+
+Built with Claude Code from `CredLens_Implementation_Prompt_Pack_Reviewed.md`. **Nothing is committed yet**: review `git status`, then commit in parts.
+
+| Part | What exists | Where |
+|---|---|---|
+| Database | New tables: `merchant_profiles`, `applications`, `consent_events`, `visits`, `record_provenance`, `import_batches`, with append-only and application guard triggers. `python -m src.db.upgrade` adds them to an existing database (backup first, never deletes). `data/app.db` was upgraded on Oct 30 (backup in `data/backups/`). | `src/db/models.py`, `src/db/upgrade.py` |
+| Field Mode (officer role) | Find or add a shop (permanent `CL-M-…` id, duplicate warning, never merged), simulated consent, typed-in purchases, deliveries and repayments, Excel purchase import, visit, one application, data receipt | `src/intake/`, `src/api/routes_intake.py`, `web/src/pages/field/` |
+| Officer workspace | Summary, review status (fixed rules), records with where each came from, evidence to ask for, range guidance (switched off: no approved formula), decision | `src/api/review.py`, `web/src/pages/merchant/` |
+| Evaluation | Score lines, merchant overlap, explanation stability, tool decisions | `docs/EVALUATION_AND_TOOLS.md`, `src/model/operating_points.py` |
+| Setup and demo steps | Upgrade, run, types, checks, common problems | `README.md`, section "Field workflow, officer workspace and Excel import" |
+
+Open items: native-speaker review of the new Bangla; correction requests (Phase 8.2, needs a new table); institution boundary before any multi-lender pilot (any officer can open any merchant by id); automated browser tests (Playwright, needs approval).
 
 ## 1. What is finished and tested
 

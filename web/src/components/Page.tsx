@@ -34,7 +34,8 @@ export function Card({ children, className, id }: { children: ReactNode; classNa
   )
 }
 
-/** A section card with a title that says what it answers, and an optional plain answer. */
+/** A section card with a title that says what it answers, and an optional plain answer.
+ * Same title size and padding as the workspace Panel, so every page reads alike. */
 export function Section({
   title,
   answer,
@@ -51,11 +52,11 @@ export function Section({
   id?: string
 }) {
   return (
-    <Card id={id} className={cn('flex flex-col gap-4 p-5 sm:p-6', className)}>
+    <Card id={id} className={cn('flex flex-col gap-4 p-4 sm:p-5', className)}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
-          <h2 className="m-0 text-[20px] leading-7 font-semibold sm:text-[22px]">{title}</h2>
-          {answer && <p className="m-0 max-w-[860px] text-[15px] text-body">{answer}</p>}
+          <h2 className="m-0 text-[18px] leading-7 font-semibold">{title}</h2>
+          {answer && <p className="m-0 max-w-[860px] text-[14.5px] leading-[22px] text-body">{answer}</p>}
         </div>
         {aside}
       </div>

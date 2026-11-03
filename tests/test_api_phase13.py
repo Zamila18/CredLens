@@ -17,6 +17,7 @@ import copy
 import time
 
 import pytest
+from accounts_seed import headers_for, seed_accounts, seed_person  # noqa: F401
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -65,9 +66,9 @@ def last_audit(world) -> db.AuditEntry:
 @pytest.mark.parametrize(
     "headers,actor,role",
     [
-        (OFFICER, "officer-1", "officer"),
-        (ADMIN, "admin-1", "admin"),
-        (VIEWER, "viewer-1", "viewer"),
+        (OFFICER, "officer-1", "credit_officer"),
+        (ADMIN, "admin-1", "credit_officer"),
+        (VIEWER, "viewer-1", "auditor"),
     ],
 )
 def test_every_read_of_the_queue_writes_one_audit_entry(api, api_world, headers, actor, role):
@@ -90,7 +91,7 @@ def test_a_filtered_queue_is_one_entry_too_and_a_bad_request_is_none(api, api_wo
     assert api.get("/merchants?band=Strong&town_tier=metro", headers=OFFICER).status_code == 200
     assert audit_rows(api_world, "view_queue") == before + 1
     assert api.get("/merchants?band=Excellent", headers=OFFICER).status_code == 422
-    assert api.get("/merchants", headers={"X-Demo-Token": "nobody"}).status_code == 401
+    assert api.get("/merchants", headers={"Cookie": "credlens_session=nobody"}).status_code == 401
     assert audit_rows(api_world, "view_queue") == before + 1
 
 
@@ -126,7 +127,8 @@ def test_a_refused_score_is_written_down_with_who_and_which_merchant(api, api_wo
     assert response.json()["detail"]["code"] == "consent_required"
     assert audit_rows(api_world, "refused_score", merchant_id) == before + 1
     entry = last_audit(api_world)
-    assert (entry.action, entry.actor, entry.role) == ("refused_score", "officer-2", "officer")
+    entry_ = (entry.action, entry.actor, entry.role)
+    assert entry_ == ("refused_score", "officer-2", "credit_officer")
     assert audit_rows(api_world, "view_score", merchant_id) == shown  # nothing was shown
 
 

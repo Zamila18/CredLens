@@ -19,6 +19,7 @@ Both are refused with HTTP 409 `import_not_allowed`, load nothing, and leave an 
 from __future__ import annotations
 
 import pytest
+from accounts_seed import headers_for, seed_accounts, seed_person  # noqa: F401
 from fastapi.testclient import TestClient
 from sqlalchemy import insert
 from sqlalchemy.orm import Session
@@ -75,6 +76,7 @@ def site(tmp_path):
     engine = db.make_engine(url)
     with engine.begin() as connection:
         connection.execute(insert(db.User.__table__), DEMO_USERS)
+    seed_accounts(engine)
 
     def serve(known=(), scorer=True):
         app.state.services = Services(
@@ -136,7 +138,7 @@ def test_a_refused_consent_import_is_in_the_audit_log_and_loads_nothing(site):
     assert count(world, db.Consent) == 0
     with Session(world.engine) as session:
         entry = session.query(db.AuditEntry).one()
-        assert (entry.actor, entry.role) == ("admin-1", "admin")
+        assert (entry.actor, entry.role) == ("admin-1", "credit_officer")
 
 
 def test_other_roles_still_get_403_not_the_reason(site):
@@ -145,7 +147,7 @@ def test_other_roles_still_get_403_not_the_reason(site):
     for headers in (OFFICER, VIEWER):
         response = upload(api, "consents", fixture_csv("consents"), headers=headers)
         assert response.status_code == 403
-        assert response.json()["detail"]["code"] == "role_not_allowed"
+        assert response.json()["detail"]["code"] == "owner_only"
 
 
 # --- F10: a scored merchant's history is not imported ------------------------------------

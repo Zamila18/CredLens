@@ -476,8 +476,8 @@ export function DeliverySection({ card }: { card: ModelCard }) {
       id="delivery"
       title={t('Does delivery data add useful information?', 'ডেলিভারির ডেটা কি কাজের তথ্য যোগ করে?')}
       answer={t(
-        'The method can find a planted signal. This does not show that REDX data predicts repayment.',
-        'পদ্ধতিটি বসানো সংকেত খুঁজে পায়। এতে দেখা যায় না যে REDX-এর ডেটা পরিশোধের পূর্বাভাস দেয়।',
+        'The method can find a planted signal. This does not show that real delivery data predicts repayment.',
+        'পদ্ধতিটি বসানো সংকেত খুঁজে পায়। এতে দেখা যায় না যে আসল ডেলিভারির ডেটা পরিশোধের পূর্বাভাস দেয়।',
       )}
     >
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
