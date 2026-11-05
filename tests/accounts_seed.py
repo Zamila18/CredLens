@@ -12,7 +12,7 @@ The people (user ids are the ones the benchmark loader creates):
     officer-2  credit officer                           OFFICER_2
     admin-1    credit officer, the company owner        ADMIN
     viewer-1   auditor                                  VIEWER
-    fsr-1      field sales representative               FSR
+    records-1  records desk officer                     RECORDS
 All belong to the reserved benchmark organisation (config `organization.id`).
 """
 
@@ -33,7 +33,7 @@ PEOPLE = (
     ("officer-2", "credit_officer", False),
     ("admin-1", "credit_officer", True),
     ("viewer-1", "auditor", False),
-    ("fsr-1", "fsr", False),
+    ("records-1", "records_officer", False),
 )
 
 
@@ -49,7 +49,7 @@ OFFICER = headers_for("officer-1")
 OFFICER_2 = headers_for("officer-2")
 ADMIN = headers_for("admin-1")
 VIEWER = headers_for("viewer-1")
-FSR = headers_for("fsr-1")
+RECORDS = headers_for("records-1")
 
 
 def seed_person(

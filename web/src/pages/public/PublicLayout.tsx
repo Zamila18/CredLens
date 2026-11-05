@@ -117,7 +117,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           </div>
           <div className="flex flex-col gap-2 text-sm leading-6">
             <span className="font-semibold text-white">{t('This deployment', 'এই ইনস্টলেশন')}</span>
-            <span>{t('A sandbox with synthetic data: no real customer appears.', 'সিনথেটিক ডেটার স্যান্ডবক্স: কোনো আসল গ্রাহক নেই।')}</span>
+            <span>{t('Built for lenders who serve small shops in Bangladesh.', 'বাংলাদেশের ছোট দোকানে ঋণ দেওয়া প্রতিষ্ঠানের জন্য তৈরি।')}</span>
             <span>{t('Decision support only: a person decides, never the software.', 'শুধু সিদ্ধান্তে সহায়তা: সিদ্ধান্ত নেন একজন মানুষ, সফটওয়্যার নয়।')}</span>
             <div className="pt-2">
               <LanguageSwitch />

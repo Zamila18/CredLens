@@ -59,7 +59,7 @@ from src.api.schemas import (
 )
 from src.api.scoring_access import note_refusal
 from src.api.state import Services, get_services, get_session
-from src.api.tenancy import merchant_scope, org_of
+from src.api.tenancy import merchant_scope
 from src.config import load_config
 from src.db import models as db
 from src.intake import spreadsheet
@@ -83,8 +83,8 @@ router = APIRouter(tags=["demo workflow"])
 ANY_ROLE = require_roles(*EVERY_ROLE)
 # Field work: the sandbox officer, or a sales representative on an assigned shop (the
 # merchant guard in tenancy.py checks the assignment).
-OFFICER_ONLY = require_roles("credit_officer", "fsr")
-SHOP_CREATORS = require_roles("credit_officer", "fsr")
+OFFICER_ONLY = require_roles("credit_officer")
+SHOP_CREATORS = require_roles("credit_officer")
 
 # Refusals worth a line in the audit log: someone tried to write what they may not.
 AUDITED_REFUSALS = {
@@ -219,6 +219,13 @@ def _application_out(services: Services, application: db.Application) -> Applica
         status = "current"
     else:
         status = "not_scored"
+    with Session(services.engine) as own:
+        by_merchant = (
+            own.scalar(
+                select(db.Membership.role).where(db.Membership.user_id == application.created_by)
+            )
+            == "merchant"
+        )
     return ApplicationOut(
         application_id=application.application_id,
         loan_id=application.loan_id,
@@ -229,6 +236,7 @@ def _application_out(services: Services, application: db.Application) -> Applica
         business_date=application.business_date.isoformat(),
         entered_at=application.entered_at.isoformat(timespec="seconds"),
         created_by=application.created_by,
+        submitted_by_merchant=by_merchant,
         assessment_status=status,
     )
 
@@ -319,19 +327,6 @@ def new_merchant(
         )
     except IntakeRefused as error:
         raise _refused(error, session, user, "create_merchant", None) from None
-    if user.role == "fsr":  # a shop an FSR registers is theirs to work on
-        from src.accounts.service import assign_shop
-
-        assign_shop(
-            session,
-            org_of(user, config),
-            merchant.merchant_id,
-            user.user_id,
-            user.user_id,
-            default_org=config["organization"]["id"],
-        )
-        add_audit(session, user, "assign_shop", merchant.merchant_id)
-        session.commit()
     return _summary(session, merchant)
 
 

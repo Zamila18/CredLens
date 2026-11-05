@@ -4,9 +4,10 @@
  */
 import type { Pair } from '@/lib/i18n'
 
-export const SOURCE_ORDER = ['typed_in', 'spreadsheet', 'data_source', 'data_file', 'generated'] as const
+export const SOURCE_ORDER = ['receipts', 'typed_in', 'spreadsheet', 'data_source', 'data_file', 'generated'] as const
 
 export const SOURCE_COLOR: Record<string, string> = {
+  receipts: '#00735a',
   typed_in: '#2a78d6',
   spreadsheet: '#eb6834',
   data_source: '#1baf7a',
@@ -15,6 +16,7 @@ export const SOURCE_COLOR: Record<string, string> = {
 }
 
 export const SOURCE_WORDS: Record<string, Pair> = {
+  receipts: { en: 'Checked receipts', bn: 'যাচাই করা রসিদ' },
   typed_in: { en: 'Typed in', bn: 'হাতে লেখা' },
   spreadsheet: { en: 'Spreadsheet', bn: 'স্প্রেডশিট' },
   data_source: { en: 'Data source', bn: 'ডেটার উৎস' },

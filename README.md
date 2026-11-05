@@ -1,39 +1,52 @@
 # CredLens
 
-**Explainable merchant readiness for lenders.**
+**Checked records and a clear credit summary for lenders who serve small shops.**
 
-CredLens is a staff-facing dashboard that helps a credit officer assess a small merchant who is new to credit. It brings the merchant's wholesale purchases, parcel deliveries and repayment history into one view, shows a readiness score with plain-language reasons, and records the officer's decision.
+CredLens is a platform for a lender (our partner is ShopUp) that wants to lend to small shops it can see but cannot judge. A lender registers; its **Records Desk** uploads each shop's paper receipts; a reader fills a table and flags every doubtful figure; a person checks and publishes the record; the **shop owner** confirms it or reports a mistake; and a **Credit Officer** reads one plain summary: a confidence score out of 100, a suggested loan range, what looks good and what to watch. The officer decides.
 
-> **Synthetic and public data only. Decision support only.**
-> The score is advice. An officer decides, and every decision is logged. No part of this system approves or declines credit.
+> **Decision support only.** The score is advice. A person decides, and every decision is kept with its reason. No part of this system approves or declines credit.
+> The model was trained on practice (synthetic) data and has not been checked on real repayments. No ShopUp data was used: the ShopUp demonstration is fictional.
 
 Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2026 Data, AI & Policy APAC Hackathon: Financial Health Frontiers. It is a prototype to demonstrate and defend, not a production system.
 
-## Status
+## The product in one minute
 
-**The build is complete except hosting (Oct 18, 2026).** Phases 0 to 11 and 13 are done: synthetic data, database, features and labels, two models with a rule for choosing between them, calibration, score, coverage and bands, exact reasons, four public data sources, the ablation and group audit, model cards, the held-back test period, the API, and the React dashboard (redesigned on Oct 17 from the approved designs, English and Bangla, phone layouts). A live import scores a lender's file of new merchants with the saved model. Hosting on Hostinger (Phase 12) is next.
+| Who | Signs in with | What they do |
+|---|---|---|
+| **Records Officer** (the lender's processing team) | email and password ("I am on the Records Desk") | Uploads a shop's receipts, compares the table with the picture, fixes anything wrong, publishes. Answers a merchant's report. |
+| **Merchant** (the shop owner) | Merchant ID and the owner's name ("I am a merchant") | Sees their own receipts as tables, says "looks right" or reports a wrong line with a photo of their own copy, applies for a loan. |
+| **Credit Officer** (the first one in a company owns it) | email and password ("I am a company") | Adds shops (paper consent form, signed copy read, then checked by a second officer), reads the credit summary, records a decision. |
+| **Platform admin** | email and password from `.env` | Lists companies. Sees no shop's personal data by default. |
 
-| Works now | Not done yet |
+Only **published** lines reach the officers and the score. A line the merchant reports leaves the score until the Records Desk answers. An auditor role can read the log.
+
+### What a Credit Officer reads
+
+1. **Credit score, out of 100.** A *confidence score* built from the shop's checked records: the higher it is, the more the records support repayment. It comes from the model's calibrated estimate, never a bare yes or no. A shop with too few checked receipts shows **no score** (a number there would be a guess).
+2. **Suggested loan range**, worked out from the company's own range rule and the shop's checked purchases only (sales are not used), capped at the amount the shop asked for.
+3. **What looks good** and **what to watch**: plain sentences, and how late earlier instalments were paid, taken straight from the records.
+4. **Your decision**: go with the suggestion, lend more or less than suggested (a written reason is needed), or ask for more records.
+
+The technical panels (coverage, inputs, how the range was worked out) are collapsed below. The range rule is set once by the company owner (Settings → Loan range rule).
+
+## Status (November 2026)
+
+| Works now | Simulated or not done |
 |---|---|
-| Project structure, config loading and checks | Hosting on the Hostinger VPS (follow [docs/DEPLOY.md](docs/DEPLOY.md)); the site must sit behind a password |
-| Data contract and adapter interface; adapters and features for all four public sources (Taiwan, India, Home Credit, Kiva) | Native-speaker review of the Bangla |
-| Synthetic data generator: 20,000 merchants, three delivery signal strengths | Backup video, slides, rehearsal |
-| Database (SQLite locally, PostgreSQL path checked): tables, loader, backup; append-only decisions and audit log | |
-| Mifos X: the export was loaded into a running Mifos X (Apache Fineract in Docker): 50 merchants, 85 loans, 73 repayments, nothing refused, loan statuses matched for all 85 ([tools/mifos/](tools/mifos/README.md)) | |
-| Features built only from data before each loan, labels from the 30-day rule, and a leakage guard | |
-| Logistic regression and LightGBM, trained on 12 months and measured on the next 3; the simple model stays unless the other is clearly better | |
-| Calibration; score, coverage, band and low-score warning | |
-| Reasons in English and Bangla, with numbers that add up to the score (exact Shapley values); every input and the coverage checklist on the score card | |
-| Ablation A to D with the negative control ([reports/ablation/](reports/ablation/ABLATION.md)) | |
-| Group audit on every data mode, with a planted-gap test ([reports/FAIRNESS.md](reports/FAIRNESS.md)) | |
-| One model card per data mode ([docs/model_card_synthetic_bd.md](docs/model_card_synthetic_bd.md) and the others), served by `GET /model/card` | |
-| The held-back test period, once per model, with a ledger of every look ([reports/REAL_LABEL_RESULTS.md](reports/REAL_LABEL_RESULTS.md)) | |
-| API: queue, profile, score, consent, decisions, questionnaire, model card, audit, import; demo roles; consent before scoring; every read audited ([docs/API_NOTES.md](docs/API_NOTES.md)) | |
-| Dashboard: Home, review queue, merchant page, decision log, portfolio, model card, consent, phone consent demo, audit log, data import | |
-| Live import of a lender's file of new merchants, scored by the saved model; officers can ask a merchant without consent for it | |
-| Starter kit and data inventory ([docs/starter_kit.md](docs/starter_kit.md), [docs/data_inventory.md](docs/data_inventory.md)); acceptance checklist with evidence ([docs/ACCEPTANCE_CHECKLIST.md](docs/ACCEPTANCE_CHECKLIST.md)) | |
-| How to run and show it: [docs/LIVE_DEMO_GUIDE.md](docs/LIVE_DEMO_GUIDE.md) | |
-| Lint, 1,021 tests and CI | |
+| Lender sign-up, invitation codes, roles, merchant sign-in with a Merchant ID | All shops and records are synthetic; there is no live link to ShopUp's systems |
+| Paper consent form (English and Bangla) with a reference, signed copy read, checked by a person | Consent wording is a draft awaiting review by Bangladeshi lawyers |
+| Receipt reading (EasyOCR) with built-in checks: quantity × rate, lines against the total, impossible dates, outliers, low confidence | The reader does not read handwriting: those receipts are typed in by the Records Desk |
+| Records Desk check and publish; merchant confirms or reports a line; reported lines leave the score | The model has not been retrained on real repayments (retraining is an offline, versioned step) |
+| Credit summary: score, range, reasons, decision with a written reason in an append-only log | Hosting on a server ([docs/DEPLOY.md](docs/DEPLOY.md)); native-speaker review of the Bangla |
+| Stored assessments that can be recomputed from their own inputs and range rule | Email delivery: work emails are unverified and password resets are admin-issued codes |
+| The ShopUp demonstration: nine fictional shops with months of history (`python tasks.py demo`) | |
+| Lint, about 1,200 tests and CI | |
+
+Fuller status, limits and the latest numbers: [docs/product/PLATFORM_STATUS.md](docs/product/PLATFORM_STATUS.md).
+
+### How well are receipts read? (measured)
+
+`python -m src.receipts.ocr_check` makes printed memos from known contents, damages them like phone photos, reads them with the real engine and counts what was right ([reports/receipt_ocr_check.md](reports/receipt_ocr_check.md)). On 20 fresh receipts (90 lines): amounts right **73.3%** after straightening tilted photos (54.7% before); English 90.2%, Bangla 59.2%. All 24 wrong amounts carried a flag a person would see. That is a small sample, not a guarantee, so a person checks every receipt before it counts.
 
 ### Where the model stands (synthetic data, validation months, seed 42)
 
@@ -41,126 +54,97 @@ Built by Team 4Bytes (Ahsanullah University of Science and Technology) for the 2
 |---|---|
 | Model in use | Logistic regression on 10 behaviour inputs |
 | AUC | 0.710 (95% range 0.688 to 0.729); purchases only 0.667; a coin toss 0.500 |
-| LightGBM, for comparison | 0.722 (0.701 to 0.742); gain +0.013 (+0.003 to +0.021), not enough to replace the simple model |
-| First loans / repeat loans | 0.665 / 0.770 |
+| LightGBM, for comparison | 0.722 (0.701 to 0.742); gain +0.013, not enough to replace the simple model |
 | Calibration error | 0.012 (no correction needed) |
 | Bands | Strong 56% of loans (95.2% repaid), Review 29% (82.1%), Needs more info 15% (88.3%) |
 
-These numbers show that the pipeline works on generated data. They are not a claim about real merchants, and the last three months of data have not been looked at yet. Say "around 0.70", not "above 0.70". Details and limits: [PROJECT_BRIEF.md](PROJECT_BRIEF.md) section 18, items 23 to 28.
-
-The plan, phase by phase, is in [docs/PROMPTS.md](docs/PROMPTS.md). The full brief is [PROJECT_BRIEF.md](PROJECT_BRIEF.md); section 18 holds the latest decisions.
-
-## What the officer will see
-
-1. One view of the merchant's purchases (Mokam-style: what the shop buys), deliveries (REDX-style) and payments (Baki-style).
-2. A readiness score from 0 to 100. It is a calibrated repayment probability times 100, never a bare yes or no.
-3. Three reasons that raise the score and three that lower it, in English and Bangla.
-4. A separate coverage percentage: how much history the score rests on. Low coverage gives the band "Needs more info", whatever the score.
-5. Accept, override or needs-more-info buttons. An override needs a written reason.
+These numbers show that the pipeline works on generated data. They are not a claim about real merchants. Say "around 0.70", not "above 0.70". One thing the demonstration showed: the model leans hardest on supplier loyalty (the share of repeat purchases from the same wholesalers), while payment delays inside the 30-day "repaid in time" rule barely move the score. Recalibrating on real repayments is the first job after a pilot. Details and limits: [PROJECT_BRIEF.md](PROJECT_BRIEF.md) section 18.
 
 ## Data
 
-No partner data is used. Every screen names its data source.
+No partner data is used. The public data checks test the method; none of them is ShopUp data.
 
 | Data mode | Source | What it is for |
 |---|---|---|
-| `synthetic_bd` | Generated, calibrated to public Bangladesh figures | The main demo, with every data stream |
-| `kiva_asia` | Kiva loans to shops in Asia, 2009 to 2013 (2016 archive: 65,304 loans, 2,512 defaulted; no Bangladesh loans) | Real Asian small-business outcomes, but with no borrower behaviour to score: it shows the limits, not the method |
-| `taiwan_cc` | UCI Taiwan credit-card default data | Checks the method on real Asian payment behaviour |
-| `india_ltfs` | India L&T vehicle loans (Kaggle) | Checks the method on real Indian borrowers, half of them with no credit record |
-| `homecredit` | Kaggle Home Credit (country not stated) | Checks the method at larger scale |
+| `synthetic_bd` | Generated, calibrated to public Bangladesh figures (20,000 merchants) | Trains the model and checks the pipeline end to end (offline) |
+| `taiwan_cc` | UCI Taiwan credit-card default data | Checks the method on real Asian payment behaviour (AUC 0.743) |
+| `india_ltfs` | India L&T vehicle loans (Kaggle) | Real borrowers, half with no credit record (AUC 0.611) |
+| `homecredit` | Kaggle Home Credit (country not stated) | Larger scale (AUC 0.746; 0.601 without its outside score) |
+| `kiva_asia` | Kiva loans to shops in Asia, 2009 to 2013 | Shows the limits: no borrower behaviour to score (AUC 0.644) |
 
-`synthetic_bd` runs end to end today; All five modes train with the same code (`python tasks.py train --all-modes`). Validation AUC on the public sources: Taiwan 0.743, India 0.611, Home Credit 0.746 (0.601 without its outside score), Kiva 0.644. On the held-back test period, looked at once: Taiwan 0.752, India 0.599, Home Credit 0.723, Kiva 0.435 (the wrong way round). Only Taiwan is evidence that the method works; the others show where it cannot, and why. See [reports/REAL_LABEL_RESULTS.md](reports/REAL_LABEL_RESULTS.md). Results on synthetic data show that the pipeline is sound. They say nothing about real merchants. The public datasets test the method; none of them is ShopUp data. Sources and licences: [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md).
+Only Taiwan is evidence that the method works; the others show where it cannot, and why ([reports/REAL_LABEL_RESULTS.md](reports/REAL_LABEL_RESULTS.md)). Group audit: [reports/FAIRNESS.md](reports/FAIRNESS.md). Sources and licences: [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md).
 
 ## Run it
 
-You need Python 3.10 or newer. On Windows, use `python`; on Mac or Linux, `python3` (or `make <task>`).
+You need Python 3.10 or newer and, for the dashboard, Node.js 20.19 or newer. On Windows use `python` (PowerShell or cmd, not Git Bash, so `node` is on the PATH); on Mac or Linux `python3`.
 
 ```
-python tasks.py setup     # create .venv and install dependencies
-python tasks.py test      # run the tests
-python tasks.py lint      # run ruff
-python tasks.py data      # generate the synthetic data and load the local database (about 55 seconds)
-python tasks.py train     # train both models, choose one, measure it on the validation period, save it (about 1 minute)
-python tasks.py train --mode taiwan_cc   # the same for a public data mode (needs its raw file in data/raw/)
-python tasks.py train --all-modes        # all five modes, about 4 minutes
-python -m src.model.scoring   # print one real score card with its reasons (needs data and train first)
-python tasks.py backup    # copy the database with a timestamp
-python tasks.py api       # start the API, then open http://localhost:8000/docs
+python tasks.py setup       # create .venv and install dependencies (once, and when requirements.txt changes)
+python tasks.py init-db     # create the empty operational database (data/credlens.db)
+python tasks.py admins      # create the platform admins listed in .env (never prints passwords)
+python tasks.py ocr-setup   # download the receipt reader's models once (needs internet; then it runs offline)
+python tasks.py api         # API on :8000 (docs at http://localhost:8000/docs); also reads receipts in the background
+python tasks.py app         # dashboard on :5173
 ```
 
-`python tasks.py data --all-strengths` generates all three delivery signal strengths. **Destructive:** `python tasks.py data --reset-db` wipes the local database first, including recorded decisions and every shop, consent and record entered in the app; take `python tasks.py backup` first. It refuses a shared database (Supabase) unless `python -m src.db.load --reset --reset-shared-database` is run on purpose.
+The scorer takes about 30 seconds to build when the API starts. It needs the synthetic data and the trained model (`python tasks.py data`, then `python tasks.py train`) once.
 
-### Field workflow, officer workspace and Excel import (added Oct 2026)
+**Settings (`.env`, never committed).** Copy `.env.example` to `.env`. It holds `CREDLENS_SECRET_KEY` (at least 32 characters; it signs invitation codes) and up to four platform admins (`CREDLENS_PLATFORM_ADMIN_1_EMAIL` and `_PASSWORD`, up to `_4_`). `DATABASE_URL` is optional; without it a local SQLite file is used. Existing databases made before the Records Desk redesign must be recreated: delete `data/credlens.db`, then `init-db` and `admins`. The old `data/app.db` is untouched.
 
-Needs Python 3.10+ with `.venv` (the steps above) and Node.js 20.19 or newer for the dashboard (Vite 8; checked with Node 25.4). `requirements.txt` now pins `openpyxl~=3.1.5` (reads .xlsx purchase sheets); `python tasks.py setup` installs it, or in an existing `.venv` run `.venv\Scripts\python.exe -m pip install openpyxl==3.1.5`.
+**The ShopUp demonstration** (its own database; the real one is never touched):
 
-1. **Bring an existing database up to date (once).** It adds the new tables (shops created in the app, applications, consent answers, visits, record provenance, import batches) and their guard triggers. It never deletes or rewrites a row, and it backs the file up to `data/backups/` first.
-   ```
-   python -m src.db.upgrade --dry-run    # says what it would add; changes nothing
-   python -m src.db.upgrade              # backs up, then adds what is missing
-   ```
-   A new database made by `python tasks.py data` already has everything.
-2. **Start the API and the dashboard** in two terminals:
-   ```
-   python tasks.py api      # http://localhost:8000/docs
-   python tasks.py app      # http://localhost:5173 (on Windows run it from PowerShell or cmd, where node is on PATH)
-   ```
-   To run against a copy instead of `data/app.db`, set `DATABASE_URL=sqlite:///C:/path/to/copy.db` for the API terminal.
-3. **After changing `src/api/schemas.py`,** regenerate the dashboard's API types with the API running: `cd web`, then `npm run types` (uses `openapi-typescript@7.13.0` through npx, so the first run needs internet).
-4. **Checks:** `python tasks.py test` (backend), `python tasks.py lint`, then in `web/`: `npm run lint` and `npm run build`. `python -m src.model.operating_points` re-measures the saved model at each score line on the validation months (see [docs/EVALUATION_AND_TOOLS.md](docs/EVALUATION_AND_TOOLS.md)).
+```
+python tasks.py demo        # builds data/credlens_demo.db (about 8 minutes; --fast skips the real receipt reader)
+python tasks.py api --demo  # serves it on :8000 (stop any other API on :8000 first)
+python tasks.py app
+```
 
-**The demo journey.** Open http://localhost:5173: the public page explains CredLens. "Explore the demo" opens `/demo`, where you choose a demo role (no password: the role is a demo token, and the API enforces it). The workspace lives under `/app`; older addresses such as `/queue` redirect there.
-- **As Officer 1:**
-  1. Dashboard: applications waiting for a decision and recent activity.
-  2. Field work → Add a new shop; record the merchant's consent (labelled simulated).
-  3. Business records: type in one purchase, or "Import them" from an .xlsx sheet (choose the columns, check every row, then save).
-  4. Shop visit, then the application (one per shop: a request, never a loan).
-  5. Applications → open the shop: score, reasons, records and their origin, loans and application, review status, evidence to ask for, range guidance (unavailable: no approved formula).
-  6. Record a decision; an override needs a written reason.
-  7. From the shop's page, show or print the data receipt.
-- **As Administrator:** dashboard, Spreadsheet imports (each import's exact counts), Audit log, Demo settings.
-- **As Viewer:** read-only dashboard, merchants, applications and decisions.
+Each build writes [docs/product/DEMO_SHOPUP.md](docs/product/DEMO_SHOPUP.md): the logins, the nine shop stories, the scores the model gave and a suggested order for a video (`python tasks.py demo --guide-only` rewrites just that guide from the existing database). To rebuild it, stop the demo API first (Windows will not delete an open database). Everything about ShopUp in it is invented.
+
+**Checks.** `python tasks.py test`, `python tasks.py lint`, then in `web/`: `npx tsc -b`, `npm run lint` and `npm run build`. After changing `src/api/schemas.py`, regenerate the dashboard's API types with the API running: `cd web`, then `npm run types` (uses `openapi-typescript@7.13.0` through npx, so the first run needs internet).
 
 **Common problems**
-- *`npm` or `node` not found:* use PowerShell or cmd, not Git Bash, or add Node.js to PATH.
-- *The page says the API could not be reached:* start `python tasks.py api` and wait until it prints "Application startup complete" (loading the scorer takes about 30 seconds).
-- *Error `no such table: merchant_profiles` or similar:* run step 1 (`python -m src.db.upgrade`).
-- *A field screen says "This merchant is read-only":* the 20,000 benchmark merchants are read-only; create a shop in Field work.
-- *Pages load slowly the first time:* the Vite dev server compiles on first load; later navigation is fast.
-- *Something went wrong with the database:* stop the API and copy back the latest file from `data/backups/`. Never delete `data/app.db` to "start fresh" without a backup.
+- *The sign-in page says "check your connection":* the API is not running, or it answered 503 because the database is missing or made for an older version. Start `python tasks.py api` (or `api --demo`), and recreate an old database as above.
+- *A page says "Page not found" after a link:* reload; the retired pages (Field work, spreadsheet imports, data sources, data quality) no longer exist.
+- *Receipts stay "reading":* the reader runs inside the API process; run `python tasks.py ocr-setup` once with internet, and keep the API running.
+- *Pages load slowly the first time:* the Vite dev server compiles on first load.
+- *Something went wrong with the database:* stop the API and copy back the latest file from `data/backups/` (`python tasks.py backup` makes one). Never delete a database you cannot recreate.
 
-**No internet at the venue?** One command runs the API and the dashboard on this laptop (get it ready once, with
-internet; the steps are in `docs/DEPLOY.md`, part E): `python deploy/offline_demo.py`. Putting the demo on a
-server: `docs/DEPLOY.md`.
-
-To use a shared database, copy `.env.example` to `.env` and fill in `DATABASE_URL`. Without it, a local SQLite file is used. Never commit `.env`.
+Putting it on a server, or running offline at a venue: [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Layout
 
 ```
 config/default.yaml   every tunable number
-src/config.py         loads and checks the config
-src/adapters/         one adapter per data source, all returning the same seven tables
-src/synth/            synthetic data generator
-src/db/               database tables, loading, Mifos X export and loader
-src/features/         feature builder and the reason-sentence dictionary
-src/model/            labels, split, training, calibration, score, reasons, evaluation;
-                      scoring.py is what the API calls for the queue and a score card
+src/accounts/         sign-up, invitations, sessions, merchant sign-in, platform admins
+src/onboarding/       merchant registration, consent form PDF, signed-copy checks
+src/extraction/       the receipt and form reader (EasyOCR), its queue and worker
+src/receipts/         parsing, built-in checks, check-and-publish, merchant reports
+src/assessment/       stored assessments, the company range rule, the credit summary
+src/intake/           record rules (purchases, deliveries, repayments, applications, visits)
 src/api/              FastAPI app; schemas.py is the API contract
-web/                  React dashboard (Phase 10)
-tests/                tests; tests/fixtures/ holds tiny hand-made sample files
-docs/                 specifications, data plan, wording rules, checklist
+src/demo/             the ShopUp demonstration (fictional cast, seeding, drawn receipts)
+src/model/            labels, training, calibration, score, reasons, evaluation
+src/features/         feature builder and the reason-sentence dictionary
+src/adapters/         one adapter per data source, all returning the same seven tables
+src/synth/            synthetic data generator (offline)
+src/db/               database tables, init, loaders, backup
+web/                  React dashboard (Vite, TypeScript, Tailwind), English and Bangla
+tests/                about 1,200 tests; tests/fixtures/ holds tiny hand-made sample files
+reports/              measured results: model, public data, fairness, receipt reading
+docs/                 specifications, data plan, wording rules, product status and demo guide
 ```
 
 ## Rules this project keeps
 
-- The model outputs a calibrated probability. The 0/1 values are training labels only.
+- A person decides. The model gives a calibrated estimate; the 0/1 values are training labels only.
+- Only checked lines count: every number is checked by the Records Desk, and the merchant can report a wrong line, which then leaves the score.
+- No consent, no assessment. Scoring is refused without a valid consent record.
+- A shop with too little checked data gets "not enough receipts yet", never a low score; missing data never lowers a score by itself.
 - Features use only data from before each loan's decision date. Splits are by time where dates exist.
-- Town tier, shop type, licence status and similar group columns are used to audit results, never as model inputs.
-- Missing delivery data lowers coverage, never the score by itself.
+- Town, shop type, licence status and similar group columns are used to audit results, never as model inputs.
 - The questionnaire is shown beside the score, not inside it.
-- Scoring is refused without a valid consent record, and merchants without one are never used for training.
-- A reason is shown only when its sentence is true for the merchant, and the parts always add up to the score.
+- A reason is shown only when its sentence is true for the shop.
 - The simpler model stays in use unless the more complex one is clearly better.
+- The merchant sees their own records and decision status, never the score.
 - No real merchant data and no secrets in the repository.

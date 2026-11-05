@@ -8,13 +8,11 @@ import { Link } from 'react-router'
 
 import type { ApplicationRow } from '@/api/types'
 import { useApi } from '@/api/useApi'
-import { useSession } from '@/app/session-context'
 import { ActionChip } from '@/components/ActionChip'
 import { EmptyState, ErrorCallout, LoadingState } from '@/components/ErrorCallout'
 import { FilterSegments, SearchBox } from '@/components/Filters'
 import { Page, PageHeader } from '@/components/Page'
 import { StatusTag } from '@/components/StatusTag'
-import { Button } from '@/components/ui/button'
 import { count, fmtDate, taka } from '@/lib/format'
 import { PURPOSE_WORDS, wordsFor } from '@/lib/fieldWords'
 import { useLang, useT } from '@/lib/i18n'
@@ -37,7 +35,6 @@ function Decision({ row }: { row: ApplicationRow }) {
 export function ApplicationsPage() {
   const t = useT()
   const lang = useLang()
-  const { role } = useSession()
   const list = useApi<ApplicationRow[]>('/applications', undefined, { noCache: true })
   const [status, setStatus] = useState<Status>('waiting')
   const [ready, setReady] = useState<Ready>('any')
@@ -62,13 +59,6 @@ export function ApplicationsPage() {
           'Working-capital requests from shops added in the app. A request is not a loan: nothing here has been approved or issued.',
           'অ্যাপে যোগ করা দোকানের কার্যকরী মূলধনের অনুরোধ। অনুরোধ মানে ঋণ নয়: এখানে কিছুই অনুমোদিত বা প্রদত্ত নয়।',
         )}
-        aside={
-          role === 'credit_officer' ? (
-            <Link to="/app/field" className="no-underline">
-              <Button variant="outline">{t('Create one in Field work', 'মাঠের কাজে তৈরি করুন')}</Button>
-            </Link>
-          ) : undefined
-        }
       />
 
       <div className="flex flex-col gap-4 rounded-card border border-card-line bg-card p-4">

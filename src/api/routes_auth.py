@@ -39,6 +39,7 @@ from src.api.schemas import (
     JoinRegisterIn,
     LoginIn,
     MeOut,
+    MerchantLoginIn,
     RegisteredOut,
     SetupPasswordIn,
 )
@@ -72,7 +73,6 @@ def me_out(session: Session, services: Services, user: CurrentUser) -> MeOut:
         )
     org_id = org_of(user, services.config)
     org = organization_out(session, services.config, org_id)
-    row = session.get(db.Organization, org_id)
     return MeOut(
         user_id=user.user_id,
         display_name=user.display_name,
@@ -81,7 +81,7 @@ def me_out(session: Session, services: Services, user: CurrentUser) -> MeOut:
         organization_id=org["organization_id"],
         organization_name=org["name"],
         environment=org["environment"],
-        fsr_label=row.fsr_label if row is not None else None,
+        merchant_id=user.merchant_id,
     )
 
 
@@ -144,8 +144,68 @@ def login(
             organization_id=membership.organization_id,
             display_name=user.display_name,
             is_owner=bool(membership.is_owner),
+            merchant_id=membership.merchant_id,
         )
     add_audit(session, caller, "login")
+    session.commit()
+    response.set_cookie(
+        SESSION_COOKIE,
+        token,
+        max_age=int(services.config["auth"]["session_max_hours"]) * 3600,
+        httponly=True,
+        samesite="strict",
+        secure=_secure_cookies(),
+        path="/",
+    )
+    return me_out(session, services, caller)
+
+
+@router.post("/auth/merchant-login", response_model=MeOut)
+def merchant_login(
+    body: MerchantLoginIn,
+    request: Request,
+    response: Response,
+    services: Services = Depends(get_services),
+    session: Session = Depends(get_session),
+) -> MeOut:
+    """A merchant signs in with the Merchant ID from their slip and the owner's name."""
+    from src.accounts import merchant_access
+    from src.intake.policy import real_today
+
+    identifier = merchant_access.clean_portal_id(body.merchant_id)
+    ip = _limited(
+        session,
+        services,
+        request,
+        "login",
+        identifier,
+        per_ip="login_per_ip",
+        per_identifier="login_per_identifier",
+        failures_only=True,
+    )
+    try:
+        token, row, membership = merchant_access.login(
+            session,
+            services.config,
+            body.merchant_id,
+            body.owner_name,
+            real_today(services.config),
+        )
+    except AccountError as error:
+        if error.code == "login_failed":
+            ratelimit.record(session, "login", ip, identifier, False)
+            session.commit()
+        raise refused(error) from None
+    ratelimit.record(session, "login", ip, identifier, True)
+    user = session.get(db.User, row.user_id)
+    caller = CurrentUser(
+        user_id=user.user_id,
+        role=membership.role,
+        organization_id=membership.organization_id,
+        display_name=user.display_name,
+        merchant_id=membership.merchant_id,
+    )
+    add_audit(session, caller, "merchant_login", membership.merchant_id)
     session.commit()
     response.set_cookie(
         SESSION_COOKIE,
@@ -269,7 +329,7 @@ def preview_invitation(
     session.commit()
     org = session.get(db.Organization, row.organization_id)
     return InvitationPreviewOut(
-        organization_name=org.name, role=row.role, default_territory=row.default_territory
+        organization_name=org.name, role=row.role
     )
 
 

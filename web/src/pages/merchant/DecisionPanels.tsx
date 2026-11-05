@@ -12,7 +12,7 @@
 import { useState } from 'react'
 
 import { ApiError, api } from '@/api/client'
-import type { Decision, OfficerAction, Score } from '@/api/types'
+import type { Decision, OfficerAction } from '@/api/types'
 import { invalidate } from '@/api/useApi'
 import { useSession } from '@/app/session-context'
 import { ActionCard } from '@/components/ActionCard'
@@ -34,7 +34,7 @@ function reasonPlaceholder(action: OfficerAction | null, t: T) {
   return t('Add a note about your decision (optional).', 'আপনার সিদ্ধান্ত নিয়ে একটি নোট লিখুন (ঐচ্ছিক)।')
 }
 
-export function DecisionForm({ merchantId, score, onRecorded }: { merchantId: string; score: Score; onRecorded: () => void }) {
+export function DecisionForm({ merchantId, onRecorded }: { merchantId: string; onRecorded: () => void }) {
   const t = useT()
   const lang = useLang()
   const [action, setAction] = useState<OfficerAction | null>(null)
@@ -80,7 +80,7 @@ export function DecisionForm({ merchantId, score, onRecorded }: { merchantId: st
     <Section
       id="decision"
       title={t('Your decision', 'আপনার সিদ্ধান্ত')}
-      answer={t('The score suggests. You decide, and the record keeps why.', 'স্কোর পরামর্শ দেয়। সিদ্ধান্ত আপনার, আর রেকর্ডে কারণ থাকে।')}
+      answer={t('The summary above suggests. You decide, and the record keeps why.', 'উপরের সারসংক্ষেপ পরামর্শ দেয়। সিদ্ধান্ত আপনার, আর রেকর্ডে কারণ থাকে।')}
     >
       {recorded ? (
         <div className="flex flex-col gap-2.5 rounded-[12px] border border-mint-line bg-mint-2 p-4" role="status">
@@ -89,11 +89,7 @@ export function DecisionForm({ merchantId, score, onRecorded }: { merchantId: st
           </span>
           <span className="text-[15px]">{recorded.reason_text ? `“${recorded.reason_text}”` : t('No note added.', 'কোনো নোট নেই।')}</span>
           <span className="text-[13px] text-body">
-            {recorded.officer_id} · {fmtBdTime(recorded.decided_at)} {t('(Bangladesh time)', '(বাংলাদেশ সময়)')} · {t('score shown', 'দেখানো স্কোর')}{' '}
-            {recorded.score_shown}
-            {recorded.band_shown && ` · ${recorded.band_shown}`}
-            {recorded.coverage_shown != null && ` · ${pct(recorded.coverage_shown)} ${t('coverage', 'কভারেজ')}`} · {t('model', 'মডেল')}{' '}
-            <span className="font-mono">{recorded.model_version}</span>
+            {fmtBdTime(recorded.decided_at)} {t('(Bangladesh time)', '(বাংলাদেশ সময়)')} · {t('summary shown: score', 'দেখানো সারসংক্ষেপ: স্কোর')} {recorded.score_shown}
           </span>
           <span className="text-[13px] text-body">
             {t('Decisions are append-only. To change course, record a new decision.', 'সিদ্ধান্ত শুধু যোগ করা যায়, বদলানো যায় না। মত বদলালে নতুন সিদ্ধান্ত রাখুন।')}
@@ -145,10 +141,7 @@ export function DecisionForm({ merchantId, score, onRecorded }: { merchantId: st
           )}
           {error && <ErrorCallout error={error} />}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="text-[13px] text-body">
-              {t('Saved with score', 'সাথে রাখা হবে: স্কোর')} {score.score} · {score.band} · {pct(score.coverage)} {t('coverage', 'কভারেজ')} ·{' '}
-              {t('model', 'মডেল')} <span className="font-mono">{score.model_version}</span>
-            </span>
+            <span className="text-[13px] text-body">{t('Saved together with the summary above.', 'উপরের সারসংক্ষেপের সাথে রাখা হবে।')}</span>
             <Button size="lg" disabled={disabled} onClick={record}>
               {saving ? t('Recording…', 'রাখা হচ্ছে…') : t('Record decision', 'সিদ্ধান্ত রাখুন')}
             </Button>

@@ -79,7 +79,13 @@ PROTECTED_TABLES = APPEND_ONLY_TABLES + RECORD_HISTORY_TABLES
 
 CONSENT_RESPONSES = ("granted", "refused")
 # How a record entered the system. An import or a save never makes a record verified.
-ENTRY_METHODS = ("synthetic_demo", "staff_entered", "imported_spreadsheet", "admin_import")
+ENTRY_METHODS = (
+    "synthetic_demo",
+    "staff_entered",
+    "imported_spreadsheet",
+    "admin_import",
+    "receipt_desk",
+)
 # What is known about a record (implementation pack, appendix A6). "reviewed" and
 # "independently_verified" need a named person and a recorded procedure; nothing sets them yet.
 RECORD_STATUSES = (
@@ -359,7 +365,6 @@ class Organization(Base):
     city: Mapped[str | None] = mapped_column(String(80))
     address: Mapped[str | None] = mapped_column(Text)
     website: Mapped[str | None] = mapped_column(String(200))
-    fsr_label: Mapped[str | None] = mapped_column(String(48))  # what this company calls an FSR
     created_by: Mapped[str | None] = mapped_column(String(32))
 
     __table_args__ = (
@@ -465,7 +470,7 @@ class SourceMerchantLink(Base):
 # and is its owner), the Field Sales Representative (FSR) and the Auditor. Platform
 # administrators belong to no organisation (`platform_admins`).
 
-STAFF_ROLES = ("credit_officer", "fsr", "auditor")
+STAFF_ROLES = ("credit_officer", "records_officer", "merchant", "auditor")
 MEMBERSHIP_STATUSES = ("active", "disabled")
 
 
@@ -500,6 +505,7 @@ class Membership(Base):
     role: Mapped[str] = mapped_column(String(24))
     status: Mapped[str] = mapped_column(String(16))
     is_owner: Mapped[bool] = mapped_column(Boolean, default=False)  # the company's first officer
+    merchant_id: Mapped[str | None] = mapped_column(String(32))  # the one shop a merchant sees
     created_by: Mapped[str | None] = mapped_column(String(32))
     created_at: Mapped[datetime] = mapped_column(DateTime)
 
@@ -553,8 +559,8 @@ class PlatformAdmin(Base):
 
 
 class StaffProfile(Base):
-    """What an organisation knows about its employee: job title, department, employee ID and
-    (for an FSR) territory. The employee ID is unique within an organisation."""
+    """What an organisation knows about its employee: job title, department and employee ID.
+    The employee ID is unique within an organisation."""
 
     __tablename__ = "staff_profiles"
 
@@ -565,7 +571,6 @@ class StaffProfile(Base):
     department: Mapped[str | None] = mapped_column(String(80))
     employee_id: Mapped[str | None] = mapped_column(String(40))
     employee_id_norm: Mapped[str | None] = mapped_column(String(40))  # lower-case, no spaces
-    territory: Mapped[str | None] = mapped_column(String(120))
     mobile: Mapped[str | None] = mapped_column(String(20))
     created_at: Mapped[datetime] = mapped_column(DateTime)
 
@@ -574,7 +579,7 @@ class StaffProfile(Base):
     )
 
 
-INVITATION_ROLES = ("fsr", "credit_officer")
+INVITATION_ROLES = ("records_officer", "credit_officer")
 INVITATION_STATUSES = ("active", "revoked")
 
 
@@ -591,7 +596,6 @@ class Invitation(Base):
     role: Mapped[str] = mapped_column(String(24))
     code_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     code_hint: Mapped[str] = mapped_column(String(8))
-    default_territory: Mapped[str | None] = mapped_column(String(120))
     label: Mapped[str | None] = mapped_column(String(80))
     expires_at: Mapped[datetime] = mapped_column(DateTime)
     max_uses: Mapped[int] = mapped_column(Integer)
@@ -634,22 +638,6 @@ class AuthAttempt(Base):
     identifier_hash: Mapped[str | None] = mapped_column(String(64), index=True)
     succeeded: Mapped[bool] = mapped_column(Boolean, default=False)
     at: Mapped[datetime] = mapped_column(DateTime, index=True)
-
-
-class ShopAssignment(Base):
-    """A shop given to a Field Sales Representative. An FSR sees and works on assigned shops only.
-    Ending an assignment keeps the row (with who ended it and when): the history stays."""
-
-    __tablename__ = "shop_assignments"
-
-    assignment_id: Mapped[str] = mapped_column(String(48), primary_key=True)
-    organization_id: Mapped[str] = mapped_column(String(48), index=True)
-    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.merchant_id"), index=True)
-    fsr_user_id: Mapped[str] = mapped_column(ForeignKey("users.user_id"), index=True)
-    assigned_by: Mapped[str] = mapped_column(String(32))
-    assigned_at: Mapped[datetime] = mapped_column(DateTime)
-    ended_at: Mapped[datetime | None] = mapped_column(DateTime)
-    ended_by: Mapped[str | None] = mapped_column(String(32))
 
 
 class QualityReview(Base):
@@ -837,79 +825,113 @@ class ExtractionField(Base):
     bbox: Mapped[str | None] = mapped_column(String(80))
 
 
-SHEET_STATUSES = ("draft", "submitted", "returned", "accepted")
-ENTRY_STATUSES = ("draft", "submitted", "superseded")
+RECEIPT_KINDS = ("purchase", "delivery", "repayment")
+RECEIPT_STATUSES = ("extracted", "checked", "published", "rejected")
+LINE_STATUSES = ("extracted", "checked", "published", "disputed", "void")
+FLAG_STATUSES = ("open", "accepted", "rejected")
 
 
-class DailySheet(Base):
-    """One merchant's records for one business day, kept by the FSR assigned to the shop
-    (src/daily/service.py). Rows are drafts until the FSR submits the sheet; a submitted row never
-    changes silently: a correction is a new row that supersedes it, with a reason."""
+class MerchantAccess(Base):
+    """How a merchant signs in to their own portal: a random Merchant ID printed on their
+    handover slip, plus the owner's name. The ID is not the CredLens shop id (CL-M-...), which
+    is sequential and easy to guess. Sign-in works only once the shop's consent is verified."""
 
-    __tablename__ = "daily_sheets"
+    __tablename__ = "merchant_access"
 
-    sheet_id: Mapped[str] = mapped_column(String(48), primary_key=True)
+    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.merchant_id"), primary_key=True)
+    organization_id: Mapped[str] = mapped_column(String(48), index=True)
+    portal_id: Mapped[str] = mapped_column(String(16), unique=True, index=True)
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.user_id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class Receipt(Base):
+    """One receipt (a photo, scan or PDF) that the Records Desk uploaded for a shop. The OCR
+    reading and the Records Officer's corrections live in its lines; nothing here reaches the
+    credit officers or the score until the receipt is published."""
+
+    __tablename__ = "receipts"
+
+    receipt_id: Mapped[str] = mapped_column(String(48), primary_key=True)
     organization_id: Mapped[str] = mapped_column(String(48), index=True)
     merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.merchant_id"), index=True)
-    business_date: Mapped[date] = mapped_column(Date, index=True)
-    fsr_user_id: Mapped[str] = mapped_column(ForeignKey("users.user_id"), index=True)
-    status: Mapped[str] = mapped_column(String(12), default="draft", index=True)
-    submitted_at: Mapped[datetime | None] = mapped_column(DateTime)
-    returned_reason: Mapped[str | None] = mapped_column(Text)
-    returned_by: Mapped[str | None] = mapped_column(String(32))
-    reviewed_by: Mapped[str | None] = mapped_column(String(32))
-    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime)
-    created_at: Mapped[datetime] = mapped_column(DateTime)
-    updated_at: Mapped[datetime] = mapped_column(DateTime)
+    kind: Mapped[str] = mapped_column(String(12))
+    status: Mapped[str] = mapped_column(String(12), default="extracted", index=True)
+    document_id: Mapped[str | None] = mapped_column(String(48))
+    job_id: Mapped[str | None] = mapped_column(String(48))
+    method: Mapped[str] = mapped_column(String(8), default="ocr")  # ocr | typed
+    supplier: Mapped[str | None] = mapped_column(String(120))
+    receipt_date: Mapped[date | None] = mapped_column(Date)
+    memo_no: Mapped[str | None] = mapped_column(String(60))
+    stated_total: Mapped[float | None] = mapped_column(Float)
+    notes: Mapped[str | None] = mapped_column(Text)  # JSON list of plain-words remarks
+    reject_reason: Mapped[str | None] = mapped_column(String(300))
+    uploaded_by: Mapped[str] = mapped_column(String(32))
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    checked_by: Mapped[str | None] = mapped_column(String(32))
+    published_by: Mapped[str | None] = mapped_column(String(32))
+    published_at: Mapped[datetime | None] = mapped_column(DateTime)
+    merchant_confirmed_at: Mapped[datetime | None] = mapped_column(DateTime)
 
     __table_args__ = (
-        UniqueConstraint("merchant_id", "business_date", name="one_sheet_per_shop_per_day"),
-        CheckConstraint(f"status IN {SHEET_STATUSES}", name="sheet_status_is_known"),
+        CheckConstraint(f"kind IN {RECEIPT_KINDS}", name="receipt_kind_is_known"),
+        CheckConstraint(f"status IN {RECEIPT_STATUSES}", name="receipt_status_is_known"),
     )
 
 
-class DailyEntry(Base):
-    """One row of a daily sheet: a purchase, a sale, a payment, a repayment, a delivery, an
-    expense or a stock count. Which columns apply to each kind is the `daily.entry_types`
-    configuration; unused columns stay empty. Purchases, deliveries and repayments, once
-    submitted, are also written to the records the assessment reads (`projected_record_id`);
-    sales, expenses, credit sales, supplier payments and stock are kept and shown but are
-    never scored."""
+class ReceiptLine(Base):
+    """One row of a receipt: an item bought, a parcel, or a repayment. Columns that do not
+    apply to the receipt's kind stay empty. `flags` lists the cells that need a person's eye
+    (JSON); `projected_record_id` is the purchase, delivery or payment written on publishing."""
 
-    __tablename__ = "daily_entries"
+    __tablename__ = "receipt_lines"
 
-    entry_id: Mapped[str] = mapped_column(String(48), primary_key=True)
-    sheet_id: Mapped[str] = mapped_column(ForeignKey("daily_sheets.sheet_id"), index=True)
+    line_id: Mapped[str] = mapped_column(String(48), primary_key=True)
+    receipt_id: Mapped[str] = mapped_column(ForeignKey("receipts.receipt_id"), index=True)
     organization_id: Mapped[str] = mapped_column(String(48), index=True)
     merchant_id: Mapped[str] = mapped_column(String(32), index=True)
     row_no: Mapped[int] = mapped_column(Integer)
-    entry_type: Mapped[str] = mapped_column(String(24))
-    status: Mapped[str] = mapped_column(String(12), default="draft")
-    txn_date: Mapped[date | None] = mapped_column(Date)
-    category: Mapped[str | None] = mapped_column(String(64))
-    description: Mapped[str | None] = mapped_column(String(200))
+    status: Mapped[str] = mapped_column(String(12), default="extracted", index=True)
+    item: Mapped[str | None] = mapped_column(String(120))
     quantity: Mapped[float | None] = mapped_column(Float)
     unit: Mapped[str | None] = mapped_column(String(24))
     unit_price: Mapped[float | None] = mapped_column(Float)
     amount_bdt: Mapped[float | None] = mapped_column(Float)
-    counterparty: Mapped[str | None] = mapped_column(String(80))
-    payment_method: Mapped[str | None] = mapped_column(String(24))
-    payment_status: Mapped[str | None] = mapped_column(String(24))
+    line_date: Mapped[date | None] = mapped_column(Date)
     due_date: Mapped[date | None] = mapped_column(Date)
-    note: Mapped[str | None] = mapped_column(String(300))
-    document_id: Mapped[str | None] = mapped_column(String(48))
-    source: Mapped[str] = mapped_column(String(16), default="typed")  # typed | import | ocr
-    extraction_confidence: Mapped[float | None] = mapped_column(Float)
-    supersedes_entry_id: Mapped[str | None] = mapped_column(String(48))
-    amend_reason: Mapped[str | None] = mapped_column(String(300))
+    outcome: Mapped[str | None] = mapped_column(String(16))  # delivery: delivered|returned|failed
+    reference: Mapped[str | None] = mapped_column(String(60))
+    confidence: Mapped[str | None] = mapped_column(Text)  # JSON: cell -> 0..1
+    flags: Mapped[str | None] = mapped_column(Text)  # JSON: [{cell, code, text}]
+    edited: Mapped[bool] = mapped_column(Boolean, default=False)
     projected_record_id: Mapped[str | None] = mapped_column(String(48))
-    created_by: Mapped[str] = mapped_column(String(32))
     created_at: Mapped[datetime] = mapped_column(DateTime)
-    updated_at: Mapped[datetime] = mapped_column(DateTime)
 
-    __table_args__ = (
-        CheckConstraint(f"status IN {ENTRY_STATUSES}", name="entry_status_is_known"),
-    )
+    __table_args__ = (CheckConstraint(f"status IN {LINE_STATUSES}", name="line_status_is_known"),)
+
+
+class ReceiptFlag(Base):
+    """A merchant's report that a published line is wrong, with the correct amount they claim
+    and a photo of their own copy as proof. While open, the line is left out of the score."""
+
+    __tablename__ = "receipt_flags"
+
+    flag_id: Mapped[str] = mapped_column(String(48), primary_key=True)
+    line_id: Mapped[str] = mapped_column(ForeignKey("receipt_lines.line_id"), index=True)
+    receipt_id: Mapped[str] = mapped_column(String(48), index=True)
+    organization_id: Mapped[str] = mapped_column(String(48), index=True)
+    merchant_id: Mapped[str] = mapped_column(String(32), index=True)
+    note: Mapped[str] = mapped_column(Text)
+    claimed_amount_bdt: Mapped[float | None] = mapped_column(Float)
+    proof_document_id: Mapped[str | None] = mapped_column(String(48))
+    status: Mapped[str] = mapped_column(String(10), default="open", index=True)
+    raised_by: Mapped[str] = mapped_column(String(32))
+    raised_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    resolved_by: Mapped[str | None] = mapped_column(String(32))
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime)
+    resolution_note: Mapped[str | None] = mapped_column(String(300))
+
+    __table_args__ = (CheckConstraint(f"status IN {FLAG_STATUSES}", name="flag_status_is_known"),)
 
 
 class Notification(Base):
@@ -992,6 +1014,7 @@ class Assessment(Base):
     currency: Mapped[str] = mapped_column(String(3), default="BDT")
     range_inputs: Mapped[str | None] = mapped_column(Text)  # JSON
     range_reasoning: Mapped[str | None] = mapped_column(Text)  # JSON: the steps, in words
+    plain: Mapped[str | None] = mapped_column(Text)  # JSON: the plain-language summary
     assessed_by: Mapped[str] = mapped_column(String(32))
     assessed_at: Mapped[datetime] = mapped_column(DateTime, index=True)
 

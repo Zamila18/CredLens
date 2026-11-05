@@ -64,6 +64,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setMode('account')
         return who
       },
+      signInMerchant: async (merchantId, ownerName) => {
+        const who = await api<MeOut>('/auth/merchant-login', { method: 'POST', json: { merchant_id: merchantId, owner_name: ownerName } })
+        clearApiCache()
+        setMe(who)
+        setMode('account')
+        return who
+      },
       signOut: async () => {
         try {
           await api('/auth/logout', { method: 'POST' })

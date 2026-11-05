@@ -116,14 +116,24 @@ def _value(value: Any) -> Any:
 
 def tables_for_merchants(session: Session, merchant_ids: list[str]) -> dict[str, pd.DataFrame]:
     """The seven contract tables, holding only these merchants' rows."""
+    from src.receipts.service import disputed_record_ids
+
+    # A line the merchant has reported as wrong stays out of the score until it is answered.
+    held_out = disputed_record_ids(session, merchant_ids)
     tables: dict[str, pd.DataFrame] = {}
     for name, model in MODELS.items():
         columns = CONTRACT[name]
         rows: list[dict[str, Any]] = []
+        ids = {"purchases": "purchase_id", "deliveries": "delivery_id", "payments": "payment_id"}
+        key = ids.get(name)
         for start in range(0, len(merchant_ids), BATCH):
             chunk = merchant_ids[start : start + BATCH]
             found = session.scalars(select(model).where(model.merchant_id.in_(chunk))).all()
-            rows += [{c: _value(getattr(r, c)) for c in columns} for r in found]
+            rows += [
+                {c: _value(getattr(r, c)) for c in columns}
+                for r in found
+                if not (key and getattr(r, key) in held_out)
+            ]
         tables[name] = check_frame(name, pd.DataFrame(rows, columns=columns))
     return tables
 

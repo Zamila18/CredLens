@@ -104,6 +104,9 @@ def applications(
         for m in session.scalars(select(db.Merchant).where(db.Merchant.merchant_id.in_(ids)))
     }
     decisions = _latest_decisions(session, ids)
+    merchant_users = set(
+        session.scalars(select(db.Membership.user_id).where(db.Membership.role == "merchant"))
+    )
     out = []
     for row in rows:
         status = build_review(services, session, row.merchant_id)
@@ -127,6 +130,7 @@ def applications(
                 open_checks=sum(1 for c in status.checks if c.kind != "info" and not c.passed),
                 decision=decided.officer_action if decided else None,
                 decided_at=decided.decided_at.isoformat(timespec="seconds") if decided else None,
+                submitted_by_merchant=row.created_by in merchant_users,
             )
         )
     add_audit(session, user, "view_applications")
@@ -334,8 +338,17 @@ def overview(
             db.RecordProvenance.merchant_id.in_(ids),
         )
         .order_by(db.RecordProvenance.entered_at.desc())
-        .limit(12)
+        .limit(200)
     ).all()
+    # A receipt with many lines saves many records at once: show that as one event.
+    seen: set[tuple] = set()
+    collapsed = []
+    for r in recent_records:
+        key = (r.record_type, r.merchant_id, r.actor, r.entered_at.date())
+        if key not in seen:
+            seen.add(key)
+            collapsed.append(r)
+    recent_records = collapsed[:12]
     recent_decisions = session.scalars(
         select(db.Decision)
         .where(db.Decision.merchant_id.in_(ids))
@@ -351,13 +364,24 @@ def overview(
         profile = names.get(merchant_id)
         return profile.shop_name if profile else None
 
+    who = {
+        u.user_id: u.display_name
+        for u in session.scalars(
+            select(db.User).where(
+                db.User.user_id.in_(
+                    {r.actor for r in recent_records} | {d.officer_id for d in recent_decisions}
+                )
+            )
+        )
+    }
+
     events = [
         ActivityItem(
             kind="record",
             record_type=r.record_type,
             merchant_id=r.merchant_id,
             shop_name=name(r.merchant_id),
-            actor=r.actor,
+            actor=who.get(r.actor, r.actor),
             at=r.entered_at.isoformat(timespec="seconds"),
             business_date=r.business_date.isoformat() if r.business_date else None,
             entry_method=r.entry_method,
@@ -368,7 +392,7 @@ def overview(
             kind="decision",
             merchant_id=d.merchant_id,
             shop_name=name(d.merchant_id),
-            actor=d.officer_id,
+            actor=who.get(d.officer_id, d.officer_id),
             at=d.decided_at.isoformat(timespec="seconds"),
             officer_action=d.officer_action,
         )
@@ -388,50 +412,22 @@ def overview(
             or 0
         )
 
-    def fsr_count(*, active_only: bool) -> int:
-        query = (
+    from src.api.routes_receipts import counts as receipt_counts
+
+    from_merchants = int(
+        session.scalar(
             select(func.count())
-            .select_from(db.Membership)
-            .where(db.Membership.organization_id == org, db.Membership.role == "fsr")
+            .select_from(db.Application)
+            .join(db.Membership, db.Membership.user_id == db.Application.created_by)
+            .where(db.Membership.role == "merchant", db.Membership.organization_id == org)
         )
-        if active_only:
-            query = query.where(db.Membership.status == "active")
-        return int(session.scalar(query) or 0)
-
-    assigned = select(db.ShopAssignment.merchant_id).where(
-        db.ShopAssignment.organization_id == org, db.ShopAssignment.ended_at.is_(None)
+        or 0
     )
-    today = calendar_end(services.config)
-
-    def sheets(*where) -> int:
-        return int(
-            session.scalar(
-                select(func.count())
-                .select_from(db.DailySheet)
-                .where(db.DailySheet.merchant_id.in_(ids), *where)
-            )
-            or 0
-        )
-
     result = Overview(
         registrations_open=registrations("draft", "form_issued", "needs_correction"),
         documents_to_review=registrations("signed_uploaded", "under_review"),
-        fsrs_total=fsr_count(active_only=False),
-        fsrs_active=fsr_count(active_only=True),
-        merchants_unassigned=int(
-            session.scalar(
-                select(func.count())
-                .select_from(db.Merchant)
-                .where(db.Merchant.merchant_id.in_(ids), db.Merchant.merchant_id.not_in(assigned))
-            )
-            or 0
-        ),
-        submissions_today=sheets(
-            db.DailySheet.business_date == today,
-            db.DailySheet.status.in_(("submitted", "accepted")),
-        ),
-        sheets_returned=sheets(db.DailySheet.status == "returned"),
-        sheets_with_drafts=sheets(db.DailySheet.status == "draft"),
+        **receipt_counts(session, org),
+        applications_from_merchants=from_merchants,
         merchants_total=count(db.Merchant),
         shops_created_in_app=count(db.MerchantProfile),
         applications_total=len(applications_list),

@@ -119,11 +119,141 @@ def run_assessment(
         range_max_bdt=result.high_bdt,
         range_inputs=json.dumps(result.inputs),
         range_reasoning=json.dumps(result.steps),
+        plain=json.dumps(plain_summary(session, card, result, merchant_id), ensure_ascii=False),
         assessed_by=user_id,
         assessed_at=now(),
     )
     session.add(record)
     return record
+
+
+OUTLOOK = {"Strong": "strong", "Review": "moderate"}
+
+
+def _sentence(reason: Any, lang: str) -> str:
+    if isinstance(reason, dict):
+        return reason.get("sentence_bn" if lang == "bn" else "sentence_en") or ""
+    return str(reason)
+
+
+def plain_summary(
+    session: Session, card: dict[str, Any], result: range_engine.RangeResult, merchant_id: str
+) -> dict[str, Any]:
+    """What an officer reads first: an outlook in one word, why, what it rests on, what would
+    make it firmer. No percentages of coverage, no points: only things a person can check."""
+    published = session.scalars(
+        select(db.Receipt).where(
+            db.Receipt.merchant_id == merchant_id, db.Receipt.status == "published"
+        )
+    ).all()
+    confirmed = sum(1 for r in published if r.merchant_confirmed_at is not None)
+    disputed = int(
+        session.scalar(
+            select(func.count())
+            .select_from(db.ReceiptLine)
+            .where(db.ReceiptLine.merchant_id == merchant_id, db.ReceiptLine.status == "disputed")
+        )
+        or 0
+    )
+    repayments = int(
+        session.scalar(
+            select(func.count())
+            .select_from(db.Payment)
+            .where(db.Payment.merchant_id == merchant_id)
+        )
+        or 0
+    )
+    inputs = result.inputs or {}
+    basis = {
+        "receipts": len(published),
+        "receipts_confirmed": confirmed,
+        "purchase_records": inputs.get("records", 0),
+        "months_with_purchases": inputs.get("months_with_purchases", 0),
+        "window_days": inputs.get("window_days"),
+        "monthly_purchases_bdt": inputs.get("monthly_purchases_bdt"),
+        "lines_disputed": disputed,
+        "repayments_on_file": repayments,
+    }
+    outlook = OUTLOOK.get(card["band"], "not_enough")
+    why = {"en": [], "bn": []}
+    for lang in ("en", "bn"):
+        for reason in card["reasons_positive"][:2] + card["reasons_negative"][:2]:
+            sentence = _sentence(reason, lang).strip()
+            if sentence:
+                why[lang].append(sentence)
+    improve = {"en": [], "bn": []}
+
+    def ask(en: str, bn: str) -> None:
+        improve["en"].append(en)
+        improve["bn"].append(bn)
+
+    if result.missing:
+        ask(
+            "Add more checked purchase receipts: " + "; ".join(result.missing) + ".",
+            "আরও যাচাই করা ক্রয়ের রসিদ যোগ করুন: " + "; ".join(result.missing) + "।",
+        )
+    if card["band"] == "Needs more info":
+        ask(
+            "Add checked receipts for earlier months: the model rates a shop once it has about "
+            "six months of purchases.",
+            "আগের মাসগুলোর যাচাই করা রসিদ যোগ করুন: প্রায় ছয় মাসের ক্রয় থাকলে মডেল দোকানটিকে মূল্যায়ন করে।",
+        )
+    if disputed:
+        ask(
+            f"Answer the {disputed} line(s) the merchant reported; they are left out until then.",
+            f"ব্যবসায়ীর জানানো {disputed}টি লাইনের উত্তর দিন; উত্তর না দেওয়া পর্যন্ত সেগুলো বাদ থাকবে।",
+        )
+    if published and confirmed < len(published):
+        ask(
+            "Ask the merchant to look over their receipts and press 'Looks right'.",
+            "ব্যবসায়ীকে তাঁর রসিদগুলো দেখে 'ঠিক আছে' চাপতে বলুন।",
+        )
+    if not published:
+        ask(
+            "No receipts have been published yet: the Records Desk uploads and checks them first.",
+            "এখনও কোনো রসিদ প্রকাশ হয়নি: আগে রেকর্ড ডেস্ক সেগুলো আপলোড ও যাচাই করবে।",
+        )
+    if repayments == 0:
+        ask(
+            "There is no repayment history yet; it appears after a first loan is repaid.",
+            "এখনও পরিশোধের ইতিহাস নেই; প্রথম ঋণ শোধের পর তা দেখা যাবে।",
+        )
+    if result.available:
+        line_en = (
+            f"Suggested range to consider: {result.low_bdt:,.0f} to {result.high_bdt:,.0f} BDT."
+        )
+        line_bn = (
+            f"বিবেচনার জন্য প্রস্তাবিত পরিসীমা: {result.low_bdt:,.0f} থেকে {result.high_bdt:,.0f} টাকা।"
+        )
+    else:
+        reasons = {
+            range_engine.NO_POLICY: (
+                "No range yet: the company has not approved a range policy.",
+                "এখনও পরিসীমা নেই: প্রতিষ্ঠান কোনো পরিসীমা-নীতি অনুমোদন করেনি।",
+            ),
+            range_engine.NOT_ENOUGH: (
+                "No range yet: there are not enough checked purchases.",
+                "এখনও পরিসীমা নেই: যথেষ্ট যাচাই করা ক্রয় নেই।",
+            ),
+            range_engine.NEEDS_MORE_INFO: (
+                "No range yet: this shop has less purchase history than the model needs to rate "
+                "it (about six months).",
+                "এখনও পরিসীমা নেই: দোকানটিকে মূল্যায়নের জন্য মডেলের প্রয়োজনীয় ক্রয়ের ইতিহাস "
+                "(প্রায় ছয় মাস) এখনও নেই।",
+            ),
+            range_engine.NO_APPLICATION: (
+                "No range yet: the merchant has not applied for a loan.",
+                "এখনও পরিসীমা নেই: ব্যবসায়ী ঋণের জন্য আবেদন করেননি।",
+            ),
+        }
+        line_en, line_bn = reasons.get(result.reason or "", ("No range.", "পরিসীমা নেই।"))
+    return {
+        "outlook": outlook,
+        "range_line": {"en": line_en, "bn": line_bn},
+        "why": why,
+        "basis": basis,
+        "improve": improve,
+    }
 
 
 def _summary(card: dict[str, Any], result: range_engine.RangeResult, lang: str) -> str:

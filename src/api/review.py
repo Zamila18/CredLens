@@ -133,12 +133,13 @@ def _provenance(session: Session, merchant_id: str) -> dict[tuple[str, str], db.
 
 # Where a record came from, in the words the workspace uses. A record with no entry
 # (provenance) row is a generated benchmark row.
-SOURCES = ("typed_in", "spreadsheet", "data_source", "data_file", "generated")
+SOURCES = ("receipts", "typed_in", "spreadsheet", "data_source", "data_file", "generated")
 _SOURCE_OF_METHOD = {
     "staff_entered": "typed_in",
     "imported_spreadsheet": "spreadsheet",
     "admin_import": "data_file",
     "synthetic_demo": "generated",
+    "receipt_desk": "receipts",
 }
 
 
@@ -197,17 +198,29 @@ def evidence_groups(
         for i in ids:
             key = source_of(known.get((kind, i)), i in from_source)
             by_source[key] = by_source.get(key, 0) + 1
+        latest = [
+            _record(kind, getattr(r, id_col), getattr(r, date_col.key), amount(r), detail(r), known)
+            for r in rows[:shown]
+        ]
+        # show who entered a record by name, not by account id
+        wanted = {rec.entered_by for rec in latest if rec.entered_by}
+        names = (
+            dict(
+                session.execute(
+                    select(db.User.user_id, db.User.display_name).where(db.User.user_id.in_(wanted))
+                ).all()
+            )
+            if wanted
+            else {}
+        )
+        for rec in latest:
+            rec.entered_by = names.get(rec.entered_by, rec.entered_by)
         return EvidenceGroup(
             group=name,
             total=len(rows),
             with_entry_record=sum((kind, i) in known for i in ids),
             by_source=by_source,
-            latest=[
-                _record(
-                    kind, getattr(r, id_col), getattr(r, date_col.key), amount(r), detail(r), known
-                )
-                for r in rows[:shown]
-            ],
+            latest=latest,
         )
 
     return [

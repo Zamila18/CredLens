@@ -62,6 +62,7 @@ class AssessmentOut(BaseModel):
     currency: str
     range_inputs: dict[str, Any]
     range_reasoning: list[str]
+    plain: dict[str, Any]
     assessed_by: str
     assessed_at: str
 
@@ -115,6 +116,7 @@ def _out(row: db.Assessment) -> AssessmentOut:
         currency=row.currency,
         range_inputs=json.loads(row.range_inputs or "{}"),
         range_reasoning=json.loads(row.range_reasoning or "[]"),
+        plain=json.loads(row.plain or "{}"),
         assessed_by=row.assessed_by,
         assessed_at=row.assessed_at.isoformat(timespec="seconds"),
     )

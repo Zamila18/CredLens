@@ -71,7 +71,7 @@ const AREAS: { en: string; bn: string; now: Pair[]; next: Pair[] }[] = [
   {
     en: 'Deployment boundaries',
     bn: 'ইনস্টলেশনের সীমা',
-    now: [{ en: 'This installation is a sandbox: it accepts synthetic records only', bn: 'এই ইনস্টলেশন একটি স্যান্ডবক্স: শুধু সিনথেটিক রেকর্ড নেয়' }],
+    now: [{ en: 'Each company sees only its own shops, receipts and people; a merchant sees only their own shop', bn: 'প্রতিটি প্রতিষ্ঠান শুধু নিজের দোকান, রসিদ ও মানুষ দেখে; ব্যবসায়ী শুধু নিজের দোকান দেখেন' }],
     next: [{ en: 'A pilot or production needs verified security, backups, monitoring and an independent review first', bn: 'পাইলট বা প্রোডাকশনের আগে যাচাইকৃত নিরাপত্তা, ব্যাকআপ, পর্যবেক্ষণ ও স্বাধীন পর্যালোচনা দরকার' }],
   },
 ]

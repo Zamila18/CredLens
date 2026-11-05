@@ -13,7 +13,7 @@ import { Slot } from 'radix-ui'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  'inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 font-sans font-semibold whitespace-nowrap transition-colors disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:shrink-0',
+  'inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 font-sans font-semibold whitespace-nowrap transition-all duration-200 ease-out hover:-translate-y-px hover:shadow-md active:translate-y-0 active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:translate-y-0 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none [&_svg]:pointer-events-none [&_svg]:shrink-0',
   {
     variants: {
       variant: {
@@ -24,9 +24,9 @@ const buttonVariants = cva(
         ghost: 'border-0 bg-transparent text-lens hover:bg-open-hover',
       },
       size: {
-        sm: 'min-h-10 rounded-lg px-3.5 text-[13px]',
-        md: 'min-h-11 rounded-[10px] px-4 text-sm',
-        lg: 'min-h-12 rounded-[10px] px-5 text-[15px]',
+        sm: 'min-h-11 rounded-[10px] px-4 text-[14px]',
+        md: 'min-h-12 rounded-[11px] px-5 text-[15px]',
+        lg: 'min-h-14 rounded-[12px] px-6 text-[16px]',
       },
     },
     defaultVariants: {

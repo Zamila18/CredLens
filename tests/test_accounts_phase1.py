@@ -4,7 +4,8 @@ Owner role: D (full-stack).
 Implements: acceptance scenarios 1 to 3 and the basics of 9 (docs: the implementation plan).
 
 Every caller here is a real account with its own browser session (a TestClient cookie jar):
-the platform admins from the (test) environment, a company's owner Credit Officer, an FSR
+the platform admins from the (test) environment, a company's owner Credit Officer, a Records
+Desk officer
 and a second Credit Officer who joined with invitation codes, and a second company. Nothing
 touches data/app.db: each test module gets an empty temporary database.
 """
@@ -68,9 +69,8 @@ def join_body(code: str, **over) -> dict:
         "password": STRONG,
         "confirm_password": STRONG,
         "invitation_code": code,
-        "role": "fsr",
+        "role": "records_officer",
         "employee_id": "E-1001",
-        "territory": "Mirpur",
     }
     body.update(over)
     return body
@@ -120,16 +120,16 @@ def sign_in(email: str, password: str = STRONG) -> TestClient:
 
 @pytest.fixture(scope="module")
 def company(world):
-    """Padma: owner, then an FSR and a second Credit Officer who joined with codes."""
+    """Padma: owner, then a Records Desk officer and a second officer who joined with codes."""
     anon = client()
     made = anon.post("/auth/register/company", json=company_body())
     assert made.status_code == 201, made.text
     owner = sign_in("rina@padma.example")
-    fsr_code = owner.post(
+    desk_code = owner.post(
         "/org/invitations",
-        json={"role": "fsr", "days": 7, "max_uses": 2, "default_territory": "Dhaka North"},
+        json={"role": "records_officer", "days": 7, "max_uses": 2},
     ).json()["code"]
-    assert anon.post("/auth/register/join", json=join_body(fsr_code)).status_code == 201
+    assert anon.post("/auth/register/join", json=join_body(desk_code)).status_code == 201
     officer_code = owner.post("/org/invitations", json={"role": "credit_officer"}).json()["code"]
     second = join_body(
         officer_code,
@@ -138,7 +138,6 @@ def company(world):
         email="nasrin@padma.example",
         mobile="01733333333",
         employee_id="E-2001",
-        territory="",
     )
     assert anon.post("/auth/register/join", json=second).status_code == 201
     return type(
@@ -146,9 +145,9 @@ def company(world):
         (),
         {
             "owner": owner,
-            "fsr": sign_in("karim@padma.example"),
+            "desk": sign_in("karim@padma.example"),
             "officer": sign_in("nasrin@padma.example"),
-            "fsr_code": fsr_code,
+            "desk_code": desk_code,
         },
     )
 
@@ -165,7 +164,7 @@ def test_a_first_credit_officer_registers_a_company_and_owns_it(world, company):
     assert profile["legal_name"] == "Padma Microfinance Limited"
     assert profile["registration_number"] == "MFI-2024-0042" and profile["status"] == "active"
     people = company.owner.get("/org/employees").json()
-    assert [p["role"] for p in people] == ["credit_officer", "fsr", "credit_officer"]
+    assert [p["role"] for p in people] == ["credit_officer", "records_officer", "credit_officer"]
     assert people[0]["is_owner"] and not people[2]["is_owner"]
 
 
@@ -273,23 +272,27 @@ def test_an_older_scrypt_hash_still_signs_in_and_is_replaced(world, company):
 # --- scenario 3: employee registration --------------------------------------------------
 
 
-def test_an_fsr_joins_the_right_company_and_role_from_the_code(world, company):
-    me = company.fsr.get("/auth/me").json()
-    assert me["role"] == "fsr" and me["organization_name"] == "Padma MFI" and not me["is_owner"]
+def test_a_records_officer_joins_the_right_company_and_role_from_the_code(world, company):
+    me = company.desk.get("/auth/me").json()
+    assert (
+        me["role"] == "records_officer"
+        and me["organization_name"] == "Padma MFI"
+        and not me["is_owner"]
+    )
     with Session(world.engine) as session:
         profile = session.scalar(
             select(db.StaffProfile).where(db.StaffProfile.employee_id == "E-1001")
         )
-        assert profile.territory == "Mirpur" and profile.job_title == "Field Sales Representative"
+        assert profile.job_title == "Records Officer"
         membership = service.active_membership(session, profile.user_id)
-        assert membership.role == "fsr" and membership.is_owner is False
+        assert membership.role == "records_officer" and membership.is_owner is False
 
 
 def test_the_form_cannot_pick_the_company_or_the_role(world, company):
     """Extra fields are refused; the role and company can only come from the code."""
-    owner_code = company.owner.post("/org/invitations", json={"role": "fsr", "max_uses": 3}).json()[
-        "code"
-    ]
+    owner_code = company.owner.post(
+        "/org/invitations", json={"role": "records_officer", "max_uses": 3}
+    ).json()["code"]
     body = join_body(
         owner_code, email="sneaky@padma.example", mobile="01744444444", employee_id="E-3001"
     )
@@ -314,7 +317,7 @@ def test_wrong_expired_revoked_and_used_up_codes_are_refused_alike(world, compan
     assert wrong.status_code == 422 and "invitation_code" in wrong.json()["detail"]["fields"]
     messages.add(wrong.json()["detail"]["fields"]["invitation_code"])
 
-    code = company.owner.post("/org/invitations", json={"role": "fsr"}).json()
+    code = company.owner.post("/org/invitations", json={"role": "records_officer"}).json()
     # expire it
     with Session(world.engine) as session:
         row = session.get(db.Invitation, code["invitation"]["invitation_id"])
@@ -328,7 +331,7 @@ def test_wrong_expired_revoked_and_used_up_codes_are_refused_alike(world, compan
     )
     messages.add(expired.json()["detail"]["fields"]["invitation_code"])
 
-    fresh = company.owner.post("/org/invitations", json={"role": "fsr"}).json()
+    fresh = company.owner.post("/org/invitations", json={"role": "records_officer"}).json()
     revoked = company.owner.post(f"/org/invitations/{fresh['invitation']['invitation_id']}/revoke")
     assert revoked.json()["state"] == "revoked"
     gone = anon.post(
@@ -339,7 +342,9 @@ def test_wrong_expired_revoked_and_used_up_codes_are_refused_alike(world, compan
     )
     messages.add(gone.json()["detail"]["fields"]["invitation_code"])
 
-    single = company.owner.post("/org/invitations", json={"role": "fsr", "max_uses": 1}).json()
+    single = company.owner.post(
+        "/org/invitations", json={"role": "records_officer", "max_uses": 1}
+    ).json()
     first = anon.post(
         "/auth/register/join",
         json=join_body(
@@ -358,9 +363,9 @@ def test_wrong_expired_revoked_and_used_up_codes_are_refused_alike(world, compan
 
 
 def test_duplicate_email_and_employee_id_are_refused(world, company):
-    code = company.owner.post("/org/invitations", json={"role": "fsr", "max_uses": 5}).json()[
-        "code"
-    ]
+    code = company.owner.post(
+        "/org/invitations", json={"role": "records_officer", "max_uses": 5}
+    ).json()["code"]
     anon = client()
     email = anon.post(
         "/auth/register/join",
@@ -382,10 +387,15 @@ def test_duplicate_email_and_employee_id_are_refused(world, company):
 def test_a_second_credit_officer_joins_only_through_an_officer_invitation(world, company):
     me = company.officer.get("/auth/me").json()
     assert me["role"] == "credit_officer" and me["is_owner"] is False
-    # an FSR code cannot make an officer, and an officer cannot make invitations
-    assert company.officer.post("/org/invitations", json={"role": "fsr"}).status_code == 403
+    # a Records Desk officer code cannot make an officer, and an officer cannot make invitations
+    assert (
+        company.officer.post("/org/invitations", json={"role": "records_officer"}).status_code
+        == 403
+    )
     assert company.officer.get("/org/invitations").json()["detail"]["code"] == "owner_only"
-    assert company.fsr.post("/org/invitations", json={"role": "fsr"}).status_code == 403
+    assert (
+        company.desk.post("/org/invitations", json={"role": "records_officer"}).status_code == 403
+    )
 
 
 def test_invitations_store_only_a_hash_and_show_who_joined(world, company):
@@ -406,10 +416,10 @@ def test_invitations_store_only_a_hash_and_show_who_joined(world, company):
 
 
 def test_the_invitation_preview_names_the_company_only_for_a_valid_code(world, company):
-    code = company.owner.post("/org/invitations", json={"role": "fsr"}).json()["code"]
+    code = company.owner.post("/org/invitations", json={"role": "records_officer"}).json()["code"]
     ok = client().get("/auth/invitations/preview", params={"code": code})
     assert ok.status_code == 200 and ok.json()["organization_name"] == "Padma MFI"
-    assert ok.json()["role"] == "fsr"
+    assert ok.json()["role"] == "records_officer"
     bad = client().get("/auth/invitations/preview", params={"code": "ZZZZ-ZZZZ-ZZZZ-ZZZZ"})
     assert bad.status_code == 400 and bad.json()["detail"]["code"] == "invalid_invitation"
 
@@ -452,12 +462,14 @@ def test_a_platform_admin_signs_in_and_sees_companies_but_never_merchant_data(wo
     assert me["role"] == "platform_admin" and me["is_platform"] and me["organization_id"] is None
     orgs = one.get("/platform/orgs").json()
     padma = next(o for o in orgs if o["name"] == "Padma MFI")
-    assert padma["credit_officers"] == 2 and padma["fsrs"] >= 2 and padma["merchants"] == 0
+    assert (
+        padma["credit_officers"] == 2 and padma["records_officers"] >= 2 and padma["merchants"] == 0
+    )
     # no company data, no company pages
     for path in ("/org/employees", "/org/invitations", "/applications", "/merchants", "/audit"):
         assert one.get(path).status_code == 403, path
     # company users cannot reach the platform
-    for who in (company.owner, company.officer, company.fsr):
+    for who in (company.owner, company.officer, company.desk):
         assert who.get("/platform/orgs").status_code == 403
 
 
@@ -566,7 +578,7 @@ def test_two_companies_never_see_each_other(world, company):
     assert joya.post(f"/org/employees/{padma_user}/disable").status_code == 404
     assert joya.post(f"/org/employees/{padma_user}/reset-code").status_code == 404
     # a Sagar invitation brings someone to Sagar, not to Padma
-    code = joya.post("/org/invitations", json={"role": "fsr"}).json()["code"]
+    code = joya.post("/org/invitations", json={"role": "records_officer"}).json()["code"]
     assert (
         client()
         .post(
@@ -583,7 +595,7 @@ def test_two_companies_never_see_each_other(world, company):
 
 
 def test_a_disabled_employee_is_signed_out_and_cannot_return(world, company):
-    code = company.owner.post("/org/invitations", json={"role": "fsr"}).json()["code"]
+    code = company.owner.post("/org/invitations", json={"role": "records_officer"}).json()["code"]
     assert (
         client()
         .post(
@@ -660,13 +672,16 @@ def test_the_role_chosen_must_match_the_code_and_the_job_title_is_not_asked(worl
     wrong = client().post(
         "/auth/register/join",
         json=join_body(code, email="wrongrole@padma.example", mobile="01766680001"),
-    )  # role defaults to fsr: the code is for a Credit Officer
+    )  # role defaults to records_officer: the code is for a Credit Officer
     assert wrong.status_code == 422 and "role" in wrong.json()["detail"]["fields"]
     right = client().post(
         "/auth/register/join",
         json=join_body(
-            code, role="credit_officer", email="rightrole@padma.example",
-            mobile="01766680002", employee_id="E-7771",
+            code,
+            role="credit_officer",
+            email="rightrole@padma.example",
+            mobile="01766680002",
+            employee_id="E-7771",
         ),
     )
     assert right.status_code == 201, right.text  # the failed try did not use up the code

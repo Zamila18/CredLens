@@ -52,6 +52,11 @@ export function RangePolicyPage() {
     )
     if (done) list.reload()
   }
+  // A starting point to adjust, not a recommendation: the owner changes it and approves it.
+  const useStarting = () => {
+    setF({ ...f, window_days: '120', min_verified_months: '2', min_purchase_records: '4', round_to_bdt: '1000', cap_at_requested: true })
+    setMult({ Strong: ['0.5', '1'], Review: ['0.25', '0.5'] })
+  }
   const move = async (id: string, what: 'approve' | 'retire') => {
     await act.submit(() => api<PolicyOut>(`/org/range-policies/${encodeURIComponent(id)}/${what}`, { method: 'POST' }))
     list.reload()
@@ -110,6 +115,12 @@ export function RangePolicyPage() {
       {isOwner ? (
         <section className="flex flex-col gap-3 rounded-card border border-card-line bg-card p-4">
           <h2 className="m-0 text-[17px] font-semibold">{t('Write a new policy (a draft until approved)', 'নতুন নীতি লিখুন (অনুমোদনের আগে খসড়া)')}</h2>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button type="button" variant="outline" onClick={useStarting}>
+              {t('Fill in starting values', 'শুরুর মান বসান')}
+            </Button>
+            <span className="text-[13.5px] text-muted-2">{t('Only a starting point: change anything, then save and approve it. Nothing takes effect until you approve.', 'এটি শুধু শুরুর মান: যা খুশি বদলান, তারপর সংরক্ষণ ও অনুমোদন করুন। অনুমোদন না করা পর্যন্ত কিছুই কার্যকর হয় না।')}</span>
+          </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {num('window_days', t('Days of purchases looked at', 'কত দিনের ক্রয় দেখা হবে'))}
             {num('min_verified_months', t('Months with verified purchases needed', 'কত মাসের যাচাইকৃত ক্রয় লাগবে'))}

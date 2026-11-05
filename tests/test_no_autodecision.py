@@ -184,26 +184,23 @@ def every_endpoint(merchant_id: str) -> list[tuple[str, str, dict]]:
                     "password": "x",
                     "confirm_password": "y",
                     "invitation_code": "x",
-                    "role": "fsr",
+                    "role": "records_officer",
                 }
             },
         ),
         ("GET", "/auth/invitations/preview?code=AAAA-BBBB-CCCC-DDDD", {}),
         ("GET", "/org/profile", {}),
-        ("PATCH", "/org/profile", {"json": {"fsr_label": "SR"}}),
+        ("PATCH", "/org/profile", {"json": {"website": "https://x.example"}}),
         ("GET", "/org/employees", {}),
         ("POST", "/org/employees/U-none/reset-code", {}),
         ("POST", "/org/employees/U-none/disable", {}),
         ("GET", "/org/invitations", {}),
-        ("POST", "/org/invitations", {"json": {"role": "fsr"}}),
+        ("POST", "/org/invitations", {"json": {"role": "records_officer"}}),
         ("POST", "/org/invitations/IN-none/revoke", {}),
         ("POST", "/org/invitations/IN-none/regenerate", {}),
         ("GET", "/platform/orgs", {}),
         ("POST", "/platform/orgs/ORG-none/status", {"json": {"status": "suspended"}}),
         ("POST", "/platform/orgs/ORG-none/owner-reset", {}),
-        ("GET", "/org/assignments", {}),
-        ("POST", "/org/assignments", {"json": {"merchant_id": "x", "fsr_user_id": "y"}}),
-        ("POST", "/org/assignments/CL-none/end", {}),
         (
             "POST",
             "/quality/reviews",
@@ -257,38 +254,43 @@ def every_endpoint(merchant_id: str) -> list[tuple[str, str, dict]]:
             "/platform/consent-templates/paper-consent-v1/status",
             {"json": {"status": "draft"}},
         ),
-        ("GET", "/daily/entry-types", {}),
-        ("GET", "/fsr/overview", {}),
+        (
+            "POST",
+            "/auth/merchant-login",
+            {"json": {"merchant_id": "MR-AAAA-BBBB", "owner_name": "x y"}},
+        ),
+        ("GET", "/merchant-reports", {}),
+        ("GET", "/merchant-reports/RF-none/proof", {}),
+        ("POST", "/merchant-reports/RF-none/resolve", {"json": {"accept": False, "note": "no"}}),
+        ("GET", f"/merchants/{merchant_id}/access", {}),
+        ("POST", f"/merchants/{merchant_id}/access/reissue", {}),
+        ("POST", f"/merchants/{merchant_id}/receipts", {"content": b"not a file"}),
+        ("POST", f"/merchants/{merchant_id}/receipts/typed", {"json": {"kind": "purchase"}}),
+        ("GET", "/portal/application", {}),
+        ("POST", "/portal/application", {"json": {"requested_amount_bdt": 1, "purpose": "other"}}),
+        ("POST", "/portal/lines/RL-none/report", {"json": {"note": "wrong amount here"}}),
+        ("GET", "/portal/me", {}),
+        ("POST", "/portal/proof", {"content": b"not a file"}),
+        ("POST", "/portal/receipts/RC-none/confirm", {}),
+        ("GET", "/portal/receipts/RC-none/picture", {}),
+        ("GET", "/portal/records", {}),
+        ("GET", "/portal/reports", {}),
+        ("GET", "/receipt-shops", {}),
+        ("GET", "/receipts", {}),
+        ("GET", "/receipts/RC-none", {}),
+        ("PUT", "/receipts/RC-none", {"json": {"lines": []}}),
+        ("GET", "/receipts/RC-none/document", {}),
+        ("POST", "/receipts/RC-none/publish", {"json": {}}),
+        ("POST", "/receipts/RC-none/reject", {"json": {"reason": "not valid"}}),
         ("POST", f"/merchants/{merchant_id}/assessments", {}),
         ("GET", f"/merchants/{merchant_id}/assessments", {}),
         ("GET", f"/merchants/{merchant_id}/assessments/AS-none/verify", {}),
-        ("GET", f"/merchants/{merchant_id}/daily", {}),
-        ("POST", f"/merchants/{merchant_id}/daily-import", {"content": b"not a file"}),
-        ("GET", f"/merchants/{merchant_id}/daily-import/XJ-none", {}),
-        (
-            "POST",
-            f"/merchants/{merchant_id}/daily/entries/E-none/amend",
-            {"json": {"reason": "a typo here"}},
-        ),
-        ("GET", f"/merchants/{merchant_id}/daily/2026-01-01", {}),
-        ("PUT", f"/merchants/{merchant_id}/daily/2026-01-01", {"json": {"rows": []}}),
-        ("POST", f"/merchants/{merchant_id}/daily/2026-01-01/accept", {}),
-        (
-            "POST",
-            f"/merchants/{merchant_id}/daily/2026-01-01/return",
-            {"json": {"reason": "figures look off"}},
-        ),
-        ("POST", f"/merchants/{merchant_id}/daily/2026-01-01/submit", {}),
         ("GET", "/notifications", {}),
         ("POST", "/notifications/read-all", {}),
-        ("POST", "/org/assignments/bulk", {"json": {"merchant_ids": [], "fsr_user_id": "y"}}),
-        ("GET", "/org/assignments/history", {}),
-        ("GET", "/org/fsrs/U-none", {}),
         ("GET", "/org/range-policies", {}),
         ("POST", "/org/range-policies", {"json": {"parameters": {}}}),
         ("POST", "/org/range-policies/RP-none/approve", {}),
         ("POST", "/org/range-policies/RP-none/retire", {}),
-        ("GET", "/submissions", {}),
     ]
 
 
@@ -302,15 +304,14 @@ def test_every_endpoint_of_the_api_is_covered_by_this_file(api, consenting):
         path = path.replace("/org/employees/U-none", "/org/employees/{user_id}")
         path = path.replace("/org/invitations/IN-none", "/org/invitations/{invitation_id}")
         path = path.replace("/platform/orgs/ORG-none", "/platform/orgs/{organization_id}")
-        path = path.replace("/org/assignments/CL-none", "/org/assignments/{merchant_id}")
         path = path.replace("/registrations/RG-none", "/registrations/{reg_id}")
         path = path.replace("/fields/1", "/fields/{field_id}")
         path = path.replace("/assessments/AS-none", "/assessments/{assessment_id}")
-        path = path.replace("/daily-import/XJ-none", "/daily-import/{job_id}")
-        path = path.replace("/entries/E-none", "/entries/{entry_id}")
-        path = path.replace("/daily/2026-01-01", "/daily/{business_date}")
-        path = path.replace("/org/fsrs/U-none", "/org/fsrs/{user_id}")
         path = path.replace("/range-policies/RP-none", "/range-policies/{policy_id}")
+        path = path.replace("/merchant-reports/RF-none", "/merchant-reports/{flag_id}")
+        path = path.replace("/portal/lines/RL-none", "/portal/lines/{line_id}")
+        path = path.replace("/portal/receipts/RC-none", "/portal/receipts/{receipt_id}")
+        path = path.replace("/receipts/RC-none", "/receipts/{receipt_id}")
         path = path.replace("/consent-templates/paper-consent-v1", "/consent-templates/{version}")
         covered.add((method.lower(), path))
     published = {

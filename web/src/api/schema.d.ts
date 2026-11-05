@@ -24,6 +24,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/merchant-login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Merchant Login
+         * @description A merchant signs in with the Merchant ID from their slip and the owner's name.
+         */
+        post: operations["merchant_login_auth_merchant_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/logout": {
         parameters: {
             query?: never;
@@ -268,7 +288,7 @@ export interface paths {
         put?: never;
         /**
          * Create Invitation
-         * @description Make an invitation code for FSRs or for another Credit Officer. The code is returned
+         * @description Make an invitation code for a Records Desk officer or a Credit Officer. The code is returned
          *     once; copy it and share it with the right people.
          */
         post: operations["create_invitation_org_invitations_post"];
@@ -309,113 +329,9 @@ export interface paths {
         put?: never;
         /**
          * Regenerate Invitation
-         * @description Revoke a code and make a new one with the same role, limits and territory.
+         * @description Revoke a code and make a new one with the same role and limits.
          */
         post: operations["regenerate_invitation_org_invitations__invitation_id__regenerate_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/org/assignments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Assignments
-         * @description Every shop of the organisation with its current FSR (if any).
-         */
-        get: operations["list_assignments_org_assignments_get"];
-        put?: never;
-        /**
-         * Assign
-         * @description Give a shop to an FSR (it leaves its earlier FSR, if any; the history is kept).
-         */
-        post: operations["assign_org_assignments_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/org/assignments/{merchant_id}/end": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * End Assignment
-         * @description Take a shop away from its FSR. The history stays.
-         */
-        post: operations["end_assignment_org_assignments__merchant_id__end_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/org/assignments/bulk": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Assign Many
-         * @description Give several shops to one FSR at once (all or none).
-         */
-        post: operations["assign_many_org_assignments_bulk_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/org/assignments/history": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Assignment History
-         * @description Who had which shop and when, newest first. Ended assignments stay in the history.
-         */
-        get: operations["assignment_history_org_assignments_history_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/org/fsrs/{user_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Fsr Detail
-         * @description One FSR: their details, their current shops, and what they have been submitting.
-         */
-        get: operations["fsr_detail_org_fsrs__user_id__get"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1175,270 +1091,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/daily/entry-types": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Entry Types
-         * @description The kinds of rows a daily sheet has and the columns each one uses (from the config).
-         */
-        get: operations["entry_types_daily_entry_types_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/merchants/{merchant_id}/daily/{business_date}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Day
-         * @description One day's sheet for a shop (none yet: an empty answer).
-         */
-        get: operations["get_day_merchants__merchant_id__daily__business_date__get"];
-        /**
-         * Save Day
-         * @description Save the draft rows of a day (also creates the sheet). Incomplete rows are kept; the
-         *     problems of each row come back so the grid can show them.
-         */
-        put: operations["save_day_merchants__merchant_id__daily__business_date__put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/merchants/{merchant_id}/daily/{business_date}/submit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Submit Day
-         * @description Submit the day: drafts are frozen and the scored kinds join the assessment records.
-         */
-        post: operations["submit_day_merchants__merchant_id__daily__business_date__submit_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/merchants/{merchant_id}/daily/entries/{entry_id}/amend": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Amend
-         * @description Correct a submitted row. The old row is kept, marked superseded, with the reason.
-         */
-        post: operations["amend_merchants__merchant_id__daily_entries__entry_id__amend_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/merchants/{merchant_id}/daily/{business_date}/return": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Return Day
-         * @description Send a submitted sheet back to its FSR with a reason.
-         */
-        post: operations["return_day_merchants__merchant_id__daily__business_date__return_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/merchants/{merchant_id}/daily/{business_date}/accept": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Accept Day
-         * @description Mark a submitted sheet as reviewed.
-         */
-        post: operations["accept_day_merchants__merchant_id__daily__business_date__accept_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/merchants/{merchant_id}/daily": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * History
-         * @description A shop's daily records over time: sheets and rows, filtered (default: the last 30 days).
-         */
-        get: operations["history_merchants__merchant_id__daily_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/submissions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Submissions
-         * @description Daily sheets across the company, newest first.
-         */
-        get: operations["submissions_submissions_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/fsr/overview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Fsr Overview
-         * @description An FSR's start page: their shops, today's status for each, and what needs attention.
-         */
-        get: operations["fsr_overview_fsr_overview_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/notifications": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Notifications
-         * @description The caller's latest notifications (unread first).
-         */
-        get: operations["notifications_notifications_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/notifications/read-all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Read All */
-        post: operations["read_all_notifications_read_all_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/merchants/{merchant_id}/daily-import": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Import Upload
-         * @description Upload a file of daily figures. CSV, Excel and Word tables and PDFs with text are read at
-         *     once; a photo or a scanned PDF is read by the background worker (poll the job). Nothing is
-         *     saved as a record: the FSR maps, corrects and loads the rows as draft rows.
-         */
-        post: operations["import_upload_merchants__merchant_id__daily_import_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/merchants/{merchant_id}/daily-import/{job_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Import Result
-         * @description The state of an import job (and the table, once read).
-         */
-        get: operations["import_result_merchants__merchant_id__daily_import__job_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/merchants/{merchant_id}/assessments": {
         parameters: {
             query?: never;
@@ -1538,6 +1190,430 @@ export interface paths {
          * @description Take a policy out of force; ranges are then unavailable until another is approved.
          */
         post: operations["retire_policy_org_range_policies__policy_id__retire_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/merchants/{merchant_id}/receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Receipt
+         * @description Upload a receipt photo, scan or PDF for a shop. It is read in the background.
+         */
+        post: operations["upload_receipt_merchants__merchant_id__receipts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/merchants/{merchant_id}/receipts/typed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Typed Receipt
+         * @description Start a receipt with no file: the officer types the lines (handwritten or lost paper).
+         */
+        post: operations["typed_receipt_merchants__merchant_id__receipts_typed_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Receipts
+         * @description The company's receipts, newest first.
+         */
+        get: operations["list_receipts_receipts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/receipts/{receipt_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Receipt Detail */
+        get: operations["receipt_detail_receipts__receipt_id__get"];
+        /**
+         * Save Receipt
+         * @description Save the officer's corrections. The checks run again on the new numbers.
+         */
+        put: operations["save_receipt_receipts__receipt_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/receipts/{receipt_id}/document": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Receipt Document
+         * @description The uploaded receipt, as stored (every view is audited).
+         */
+        get: operations["receipt_document_receipts__receipt_id__document_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/receipts/{receipt_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish Receipt
+         * @description Publish the checked receipt: its lines reach the credit officers and the score.
+         */
+        post: operations["publish_receipt_receipts__receipt_id__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/receipts/{receipt_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject Receipt */
+        post: operations["reject_receipt_receipts__receipt_id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/merchant-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Reports
+         * @description Mistakes merchants reported on their receipts, oldest open first.
+         */
+        get: operations["list_reports_merchant_reports_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/merchant-reports/{flag_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve Report
+         * @description Accept (correct the line) or reject a report, with a note the merchant will read.
+         */
+        post: operations["resolve_report_merchant_reports__flag_id__resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/merchant-reports/{flag_id}/proof": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Report Proof */
+        get: operations["report_proof_merchant_reports__flag_id__proof_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/merchants/{merchant_id}/access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Merchant Access Info
+         * @description The shop's Merchant ID, to print on its handover slip (every view is audited).
+         */
+        get: operations["merchant_access_info_merchants__merchant_id__access_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/merchants/{merchant_id}/access/reissue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reissue Merchant Id
+         * @description Give the shop a new Merchant ID (the old one stops working and open sessions end).
+         */
+        post: operations["reissue_merchant_id_merchants__merchant_id__access_reissue_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portal/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Portal Me */
+        get: operations["portal_me_portal_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portal/records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Portal Records
+         * @description Every receipt the lender has published for this shop, with each line and its state.
+         */
+        get: operations["portal_records_portal_records_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portal/receipts/{receipt_id}/picture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Portal Picture */
+        get: operations["portal_picture_portal_receipts__receipt_id__picture_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portal/receipts/{receipt_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Portal Confirm
+         * @description The merchant says this receipt looks right.
+         */
+        post: operations["portal_confirm_portal_receipts__receipt_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portal/proof": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Portal Proof
+         * @description Upload a photo of the merchant's own copy, to attach to a report.
+         */
+        post: operations["portal_proof_portal_proof_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portal/lines/{line_id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Portal Report
+         * @description Report a published line as wrong. It leaves the score until the Records Desk answers.
+         */
+        post: operations["portal_report_portal_lines__line_id__report_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portal/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Portal Reports */
+        get: operations["portal_reports_portal_reports_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portal/application": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Portal Application */
+        get: operations["portal_application_portal_application_get"];
+        put?: never;
+        /**
+         * Portal Apply
+         * @description The merchant applies for a loan. It appears to the Credit Officers like any application.
+         */
+        post: operations["portal_apply_portal_application_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Notifications
+         * @description The caller's latest notifications (unread first).
+         */
+        get: operations["notifications_notifications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read All */
+        post: operations["read_all_notifications_read_all_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2268,35 +2344,6 @@ export interface components {
             /** Officer Action */
             officer_action?: ("accept" | "override_up" | "override_down" | "needs_more_info") | null;
         };
-        /** AmendIn */
-        AmendIn: {
-            /** Reason */
-            reason: string;
-            /** Txn Date */
-            txn_date?: string | null;
-            /** Category */
-            category?: string | null;
-            /** Description */
-            description?: string | null;
-            /** Quantity */
-            quantity?: string | number | null;
-            /** Unit */
-            unit?: string | null;
-            /** Unit Price */
-            unit_price?: string | number | null;
-            /** Amount Bdt */
-            amount_bdt?: string | number | null;
-            /** Counterparty */
-            counterparty?: string | null;
-            /** Payment Method */
-            payment_method?: string | null;
-            /** Payment Status */
-            payment_status?: string | null;
-            /** Due Date */
-            due_date?: string | null;
-            /** Note */
-            note?: string | null;
-        };
         /**
          * ApplicationCreate
          * @description POST /merchants/{id}/application: the working-capital request (one per merchant).
@@ -2337,6 +2384,11 @@ export interface components {
             entered_at: string;
             /** Created By */
             created_by: string;
+            /**
+             * Submitted By Merchant
+             * @default false
+             */
+            submitted_by_merchant: boolean;
             /**
              * Assessment Status
              * @enum {string}
@@ -2393,6 +2445,46 @@ export interface components {
             decision?: ("accept" | "override_up" | "override_down" | "needs_more_info") | null;
             /** Decided At */
             decided_at?: string | null;
+            /**
+             * Submitted By Merchant
+             * @default false
+             */
+            submitted_by_merchant: boolean;
+        };
+        /** ApplicationStatus */
+        ApplicationStatus: {
+            /** Has Application */
+            has_application: boolean;
+            /** Requested Amount Bdt */
+            requested_amount_bdt?: number | null;
+            /** Purpose */
+            purpose?: string | null;
+            /** Applied On */
+            applied_on?: string | null;
+            /**
+             * Status
+             * @description received | decided
+             */
+            status?: string | null;
+            /** Status Text */
+            status_text?: string | null;
+            /** Max Requested Bdt */
+            max_requested_bdt: number;
+            /** Purposes */
+            purposes: string[];
+            /** Can Apply */
+            can_apply: boolean;
+            /** Cannot Apply Reason */
+            cannot_apply_reason?: string | null;
+        };
+        /** ApplyIn */
+        ApplyIn: {
+            /** Requested Amount Bdt */
+            requested_amount_bdt: number;
+            /** Purpose */
+            purpose: string;
+            /** Purpose Note */
+            purpose_note?: string | null;
         };
         /** AssessmentOut */
         AssessmentOut: {
@@ -2448,6 +2540,10 @@ export interface components {
             };
             /** Range Reasoning */
             range_reasoning: string[];
+            /** Plain */
+            plain: {
+                [key: string]: unknown;
+            };
             /** Assessed By */
             assessed_by: string;
             /** Assessed At */
@@ -2465,32 +2561,6 @@ export interface components {
             status: "refreshed" | "not_updated" | "no_application" | "not_assessed";
             /** Message */
             message: string;
-        };
-        /** AssignIn */
-        AssignIn: {
-            /** Merchant Id */
-            merchant_id: string;
-            /** Fsr User Id */
-            fsr_user_id: string;
-        };
-        /** AssignmentHistoryOut */
-        AssignmentHistoryOut: {
-            /** Merchant Id */
-            merchant_id: string;
-            /** Shop Name */
-            shop_name: string | null;
-            /** Fsr User Id */
-            fsr_user_id: string;
-            /** Fsr Name */
-            fsr_name: string | null;
-            /** Assigned At */
-            assigned_at: string;
-            /** Assigned By */
-            assigned_by: string;
-            /** Ended At */
-            ended_at: string | null;
-            /** Ended By */
-            ended_by: string | null;
         };
         /**
          * AuditEntry
@@ -2535,13 +2605,6 @@ export interface components {
              */
             low_score_warning_below: number;
         };
-        /** BulkAssignIn */
-        BulkAssignIn: {
-            /** Merchant Ids */
-            merchant_ids: string[];
-            /** Fsr User Id */
-            fsr_user_id: string;
-        };
         /**
          * BundleReport
          * @description POST /admin/import-bundle: a zip of contract CSVs, checked (and loaded) together.
@@ -2570,6 +2633,15 @@ export interface components {
             new_merchants: string[];
             /** Note */
             note: string;
+        };
+        /** CellFlag */
+        CellFlag: {
+            /** Cell */
+            cell: string;
+            /** Code */
+            code: string;
+            /** Text */
+            text: string;
         };
         /** ChangePasswordIn */
         ChangePasswordIn: {
@@ -2913,167 +2985,6 @@ export interface components {
             present: boolean;
         };
         /**
-         * DailyDayOut
-         * @description GET and PUT /merchants/{id}/daily/{date}: the sheet, its rows, and row problems.
-         */
-        DailyDayOut: {
-            sheet: components["schemas"]["DailySheetOut"] | null;
-            /** Entries */
-            entries: components["schemas"]["DailyEntryOut"][];
-            /**
-             * Errors
-             * @default {}
-             */
-            errors: {
-                [key: string]: {
-                    [key: string]: string;
-                };
-            };
-        };
-        /** DailyEntryOut */
-        DailyEntryOut: {
-            /** Entry Id */
-            entry_id: string;
-            /** Sheet Id */
-            sheet_id: string;
-            /** Business Date */
-            business_date: string;
-            /** Row No */
-            row_no: number;
-            /** Entry Type */
-            entry_type: string;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "draft" | "submitted" | "superseded";
-            /** Txn Date */
-            txn_date: string | null;
-            /** Category */
-            category: string | null;
-            /** Description */
-            description: string | null;
-            /** Quantity */
-            quantity: number | null;
-            /** Unit */
-            unit: string | null;
-            /** Unit Price */
-            unit_price: number | null;
-            /** Amount Bdt */
-            amount_bdt: number | null;
-            /** Counterparty */
-            counterparty: string | null;
-            /** Payment Method */
-            payment_method: string | null;
-            /** Payment Status */
-            payment_status: string | null;
-            /** Due Date */
-            due_date: string | null;
-            /** Note */
-            note: string | null;
-            /** Source */
-            source: string;
-            /** Extraction Confidence */
-            extraction_confidence: number | null;
-            /** Supersedes Entry Id */
-            supersedes_entry_id: string | null;
-            /** Amend Reason */
-            amend_reason: string | null;
-            /**
-             * Scored
-             * @description True when this kind of row is also used by the assessment.
-             */
-            scored: boolean;
-            /** Created By */
-            created_by: string;
-        };
-        /** DailyListOut */
-        DailyListOut: {
-            /** Sheets */
-            sheets: components["schemas"]["DailySheetOut"][];
-            /** Entries */
-            entries: components["schemas"]["DailyEntryOut"][];
-        };
-        /**
-         * DailyRowIn
-         * @description One row of a daily sheet as the grid sends it. Dates are YYYY-MM-DD; numbers may be text.
-         */
-        DailyRowIn: {
-            /** Entry Id */
-            entry_id?: string | null;
-            /** Entry Type */
-            entry_type: string;
-            /** Txn Date */
-            txn_date?: string | null;
-            /** Category */
-            category?: string | null;
-            /** Description */
-            description?: string | null;
-            /** Quantity */
-            quantity?: string | number | null;
-            /** Unit */
-            unit?: string | null;
-            /** Unit Price */
-            unit_price?: string | number | null;
-            /** Amount Bdt */
-            amount_bdt?: string | number | null;
-            /** Counterparty */
-            counterparty?: string | null;
-            /** Payment Method */
-            payment_method?: string | null;
-            /** Payment Status */
-            payment_status?: string | null;
-            /** Due Date */
-            due_date?: string | null;
-            /** Note */
-            note?: string | null;
-            /** Source */
-            source?: string | null;
-            /** Extraction Confidence */
-            extraction_confidence?: number | null;
-        };
-        /** DailySaveIn */
-        DailySaveIn: {
-            /** Rows */
-            rows: components["schemas"]["DailyRowIn"][];
-            /**
-             * Delete Missing
-             * @description Draft rows not sent are deleted.
-             * @default true
-             */
-            delete_missing: boolean;
-        };
-        /** DailySheetOut */
-        DailySheetOut: {
-            /** Sheet Id */
-            sheet_id: string;
-            /** Merchant Id */
-            merchant_id: string;
-            /** Business Date */
-            business_date: string;
-            /** Fsr User Id */
-            fsr_user_id: string;
-            /** Fsr Name */
-            fsr_name: string | null;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "draft" | "submitted" | "returned" | "accepted";
-            /** Submitted At */
-            submitted_at: string | null;
-            /** Returned Reason */
-            returned_reason: string | null;
-            /** Drafts */
-            drafts: number;
-            /** Submitted */
-            submitted: number;
-            /** Totals */
-            totals: {
-                [key: string]: number;
-            };
-        };
-        /**
          * Decision
          * @description One row of GET /decisions. Decisions are append-only.
          */
@@ -3296,31 +3207,8 @@ export interface components {
             department: string | null;
             /** Employee Id */
             employee_id: string | null;
-            /** Territory */
-            territory: string | null;
             /** Registered At */
             registered_at: string;
-            /** Assigned Shops */
-            assigned_shops: number;
-        };
-        /** EntryTypeOut */
-        EntryTypeOut: {
-            /** Key */
-            key: string;
-            /** En */
-            en: string;
-            /** Bn */
-            bn: string;
-            /** Scored */
-            scored: boolean;
-            /** Fields */
-            fields: string[];
-            /** Required */
-            required: string[];
-            /** Labels */
-            labels: {
-                [key: string]: string;
-            };
         };
         /**
          * EvidenceGroup
@@ -3462,56 +3350,21 @@ export interface components {
              */
             value?: string | null;
         };
-        /** FsrDetailOut */
-        FsrDetailOut: {
-            employee: components["schemas"]["EmployeeOut"];
-            /** Shops */
-            shops: components["schemas"]["ShopAssignmentOut"][];
-            /** Recent Sheets */
-            recent_sheets: components["schemas"]["SubmissionOut"][];
-            /** Drafts Open */
-            drafts_open: number;
-            /** Returned Open */
-            returned_open: number;
-        };
-        /** FsrOverviewOut */
-        FsrOverviewOut: {
-            /** Territory */
-            territory: string | null;
-            /** Employee Id */
-            employee_id: string | null;
-            /** Today */
-            today: string;
-            /** Shops */
-            shops: components["schemas"]["FsrShopOut"][];
-            /** Returned */
-            returned: number;
-            /** Pending Drafts */
-            pending_drafts: number;
-            /** Submitted Today */
-            submitted_today: number;
-        };
-        /** FsrShopOut */
-        FsrShopOut: {
-            /** Merchant Id */
-            merchant_id: string;
-            /** Shop Name */
-            shop_name: string | null;
-            /** Area */
-            area: string | null;
-            /** District */
-            district: string | null;
-            /** Today Status */
-            today_status: string | null;
-            /** Today Drafts */
-            today_drafts: number;
-            /** Last Submitted */
-            last_submitted: string | null;
-        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HeaderIn */
+        HeaderIn: {
+            /** Supplier */
+            supplier?: string | null;
+            /** Receipt Date */
+            receipt_date?: string | null;
+            /** Memo No */
+            memo_no?: string | null;
+            /** Stated Total */
+            stated_total?: number | string | null;
         };
         /**
          * HealthResponse
@@ -3786,50 +3639,6 @@ export interface components {
             };
         };
         /**
-         * ImportTableOut
-         * @description A table read from an uploaded file, for the FSR to map, correct and load as drafts.
-         */
-        ImportTableOut: {
-            /** Job Id */
-            job_id: string;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "queued" | "running" | "done" | "failed";
-            /** Method */
-            method?: string | null;
-            /**
-             * Headers
-             * @default []
-             */
-            headers: string[];
-            /**
-             * Rows
-             * @default []
-             */
-            rows: string[][];
-            /**
-             * Confidences
-             * @default []
-             */
-            confidences: number[];
-            /**
-             * Notes
-             * @default []
-             */
-            notes: string[];
-            /**
-             * Suggested Mapping
-             * @default {}
-             */
-            suggested_mapping: {
-                [key: string]: number;
-            };
-            /** Error */
-            error?: string | null;
-        };
-        /**
          * InputPoints
          * @description One model input on a score card, whether or not it is among the top reasons.
          */
@@ -3878,7 +3687,7 @@ export interface components {
              * Role
              * @enum {string}
              */
-            role: "fsr" | "credit_officer";
+            role: "records_officer" | "credit_officer";
             /** Days */
             days?: number | null;
             /**
@@ -3886,8 +3695,6 @@ export interface components {
              * @default 1
              */
             max_uses: number;
-            /** Default Territory */
-            default_territory?: string | null;
             /** Label */
             label?: string | null;
         };
@@ -3908,8 +3715,6 @@ export interface components {
             role: string;
             /** Label */
             label: string | null;
-            /** Default Territory */
-            default_territory: string | null;
             /**
              * Code Hint
              * @description The last four characters; the full code is shown once.
@@ -3945,8 +3750,6 @@ export interface components {
             organization_name: string;
             /** Role */
             role: string;
-            /** Default Territory */
-            default_territory: string | null;
         };
         /** InvitationUseOut */
         InvitationUseOut: {
@@ -3985,17 +3788,70 @@ export interface components {
              * Role
              * @enum {string}
              */
-            role: "fsr" | "credit_officer";
+            role: "records_officer" | "credit_officer";
             /**
              * Employee Id
              * @default
              */
             employee_id: string;
-            /**
-             * Territory
-             * @default
-             */
-            territory: string;
+        };
+        /** LineIn */
+        LineIn: {
+            /** Line Id */
+            line_id?: string | null;
+            /** Item */
+            item?: string | null;
+            /** Quantity */
+            quantity?: number | string | null;
+            /** Unit */
+            unit?: string | null;
+            /** Unit Price */
+            unit_price?: number | string | null;
+            /** Amount Bdt */
+            amount_bdt?: number | string | null;
+            /** Line Date */
+            line_date?: string | null;
+            /** Due Date */
+            due_date?: string | null;
+            /** Outcome */
+            outcome?: string | null;
+            /** Reference */
+            reference?: string | null;
+        };
+        /** LineOut */
+        LineOut: {
+            /** Line Id */
+            line_id: string;
+            /** Row No */
+            row_no: number;
+            /** Status */
+            status: string;
+            /** Item */
+            item: string | null;
+            /** Quantity */
+            quantity: number | null;
+            /** Unit */
+            unit: string | null;
+            /** Unit Price */
+            unit_price: number | null;
+            /** Amount Bdt */
+            amount_bdt: number | null;
+            /** Line Date */
+            line_date: string | null;
+            /** Due Date */
+            due_date: string | null;
+            /** Outcome */
+            outcome: string | null;
+            /** Reference */
+            reference: string | null;
+            /** Confidence */
+            confidence: {
+                [key: string]: number;
+            };
+            /** Flags */
+            flags: components["schemas"]["CellFlag"][];
+            /** Edited */
+            edited: boolean;
         };
         /** LoginIn */
         LoginIn: {
@@ -4077,10 +3933,25 @@ export interface components {
             /** Environment */
             environment: ("benchmark" | "pilot" | "production") | null;
             /**
-             * Fsr Label
-             * @description What the company calls its Field Sales Representatives.
+             * Merchant Id
+             * @description A merchant's own shop.
              */
-            fsr_label?: string | null;
+            merchant_id?: string | null;
+        };
+        /** MerchantAccessOut */
+        MerchantAccessOut: {
+            /** Merchant Id */
+            merchant_id: string;
+            /** Shop Name */
+            shop_name: string | null;
+            /** Owner Name */
+            owner_name: string | null;
+            /** Portal Id */
+            portal_id: string;
+            /** Portal Open */
+            portal_open: boolean;
+            /** Sign In Hint */
+            sign_in_hint: string;
         };
         /**
          * MerchantCreate
@@ -4140,6 +4011,19 @@ export interface components {
             has_outcome: boolean;
             /** Repayment Allowed */
             repayment_allowed: boolean;
+        };
+        /**
+         * MerchantLoginIn
+         * @description POST /auth/merchant-login: a shop owner signs in with the Merchant ID and their name.
+         */
+        MerchantLoginIn: {
+            /**
+             * Merchant Id
+             * @description Merchant ID from the slip.
+             */
+            merchant_id: string;
+            /** Owner Name */
+            owner_name: string;
         };
         /**
          * MerchantProfile
@@ -4373,15 +4257,11 @@ export interface components {
             status: string;
             /** Environment */
             environment: string;
-            /** Fsr Label */
-            fsr_label: string | null;
             /** Created At */
             created_at: string;
         };
         /** OrganizationProfilePatch */
         OrganizationProfilePatch: {
-            /** Fsr Label */
-            fsr_label?: string | null;
             /** Contact Number */
             contact_number?: string | null;
             /** Website */
@@ -4428,35 +4308,30 @@ export interface components {
              */
             documents_to_review: number;
             /**
-             * Fsrs Total
+             * Receipts To Check
              * @default 0
              */
-            fsrs_total: number;
+            receipts_to_check: number;
             /**
-             * Fsrs Active
+             * Receipts Published
              * @default 0
              */
-            fsrs_active: number;
+            receipts_published: number;
             /**
-             * Merchants Unassigned
+             * Lines Disputed
              * @default 0
              */
-            merchants_unassigned: number;
+            lines_disputed: number;
             /**
-             * Submissions Today
+             * Merchant Reports Open
              * @default 0
              */
-            submissions_today: number;
+            merchant_reports_open: number;
             /**
-             * Sheets Returned
+             * Applications From Merchants
              * @default 0
              */
-            sheets_returned: number;
-            /**
-             * Sheets With Drafts
-             * @default 0
-             */
-            sheets_with_drafts: number;
+            applications_from_merchants: number;
             evidence?: components["schemas"]["EvidenceOverview"] | null;
         };
         /**
@@ -4491,8 +4366,8 @@ export interface components {
             created_at: string;
             /** Credit Officers */
             credit_officers: number;
-            /** Fsrs */
-            fsrs: number;
+            /** Records Officers */
+            records_officers: number;
             /** Merchants */
             merchants: number;
         };
@@ -4535,6 +4410,127 @@ export interface components {
             approved_by: string | null;
             /** Approved At */
             approved_at: string | null;
+        };
+        /** PortalLine */
+        PortalLine: {
+            /** Line Id */
+            line_id: string;
+            /** Row No */
+            row_no: number;
+            /** Status */
+            status: string;
+            /** Item */
+            item: string | null;
+            /** Quantity */
+            quantity: number | null;
+            /** Unit */
+            unit: string | null;
+            /** Unit Price */
+            unit_price: number | null;
+            /** Amount Bdt */
+            amount_bdt: number | null;
+            /** Line Date */
+            line_date: string | null;
+            /** Due Date */
+            due_date: string | null;
+            /** Outcome */
+            outcome: string | null;
+            /** Reference */
+            reference: string | null;
+            /** Confidence */
+            confidence: {
+                [key: string]: number;
+            };
+            /** Flags */
+            flags: components["schemas"]["CellFlag"][];
+            /** Edited */
+            edited: boolean;
+            /**
+             * Shown State
+             * @description checked | reported | corrected | kept
+             */
+            shown_state: string;
+            /** Answer */
+            answer?: string | null;
+        };
+        /** PortalMe */
+        PortalMe: {
+            /** Shop Name */
+            shop_name: string | null;
+            /** Owner Name */
+            owner_name: string | null;
+            /** Area */
+            area: string | null;
+            /** Consent Valid */
+            consent_valid: boolean;
+            /** Receipts Published */
+            receipts_published: number;
+            /** Reports Open */
+            reports_open: number;
+            /** Has Application */
+            has_application: boolean;
+        };
+        /** PortalReceipt */
+        PortalReceipt: {
+            /** Receipt Id */
+            receipt_id: string;
+            /** Kind */
+            kind: string;
+            /** Supplier */
+            supplier: string | null;
+            /** Receipt Date */
+            receipt_date: string | null;
+            /** Memo No */
+            memo_no: string | null;
+            /** Stated Total */
+            stated_total: number | null;
+            /** Lines Total */
+            lines_total: number;
+            /** Confirmed */
+            confirmed: boolean;
+            /** Has Picture */
+            has_picture: boolean;
+            /** Lines */
+            lines: components["schemas"]["PortalLine"][];
+        };
+        /** PortalReport */
+        PortalReport: {
+            /** Flag Id */
+            flag_id: string;
+            /** Status */
+            status: string;
+            /** Receipt Id */
+            receipt_id: string;
+            /** Supplier */
+            supplier: string | null;
+            /** Item */
+            item: string | null;
+            /** Recorded Amount Bdt */
+            recorded_amount_bdt: number | null;
+            /** Claimed Amount Bdt */
+            claimed_amount_bdt: number | null;
+            /** Note */
+            note: string;
+            /** Answer */
+            answer: string | null;
+            /** Raised At */
+            raised_at: string;
+            /** Resolved At */
+            resolved_at: string | null;
+        };
+        /** ProofOut */
+        ProofOut: {
+            /** Document Id */
+            document_id: string;
+        };
+        /** PublishIn */
+        PublishIn: {
+            /**
+             * Acknowledged
+             * @description The officer compared the highlighted cells with the paper.
+             * @default false
+             */
+            acknowledged: boolean;
         };
         /**
          * PurchaseCreate
@@ -4909,6 +4905,54 @@ export interface components {
             /** Simulated */
             simulated: boolean;
         };
+        /** ReceiptOut */
+        ReceiptOut: {
+            /** Receipt Id */
+            receipt_id: string;
+            /** Merchant Id */
+            merchant_id: string;
+            /** Shop Name */
+            shop_name: string | null;
+            /** Kind */
+            kind: string;
+            /** Status */
+            status: string;
+            /** Method */
+            method: string;
+            /**
+             * Reading
+             * @description none | queued | running | done | failed
+             */
+            reading: string;
+            /** Reading Error */
+            reading_error: string | null;
+            /** Supplier */
+            supplier: string | null;
+            /** Receipt Date */
+            receipt_date: string | null;
+            /** Memo No */
+            memo_no: string | null;
+            /** Stated Total */
+            stated_total: number | null;
+            /** Lines Total */
+            lines_total: number;
+            /** Notes */
+            notes: string[];
+            /** Lines */
+            lines: components["schemas"]["LineOut"][];
+            /** Has Document */
+            has_document: boolean;
+            /** Uploaded At */
+            uploaded_at: string;
+            /** Published At */
+            published_at: string | null;
+            /** Merchant Confirmed At */
+            merchant_confirmed_at: string | null;
+            /** Reject Reason */
+            reject_reason: string | null;
+            /** Cells To Check */
+            cells_to_check: number;
+        };
         /**
          * ReceiptRecord
          * @description One thing recorded about the shop, as the receipt shows it.
@@ -4939,6 +4983,40 @@ export interface components {
              * @description Real time it was saved (UTC).
              */
             entered_at: string;
+        };
+        /** ReceiptRow */
+        ReceiptRow: {
+            /** Receipt Id */
+            receipt_id: string;
+            /** Merchant Id */
+            merchant_id: string;
+            /** Shop Name */
+            shop_name: string | null;
+            /** Kind */
+            kind: string;
+            /** Status */
+            status: string;
+            /** Reading */
+            reading: string;
+            /** Supplier */
+            supplier: string | null;
+            /** Receipt Date */
+            receipt_date: string | null;
+            /** Lines */
+            lines: number;
+            /** Cells To Check */
+            cells_to_check: number;
+            /** Lines Total */
+            lines_total: number;
+            /** Uploaded At */
+            uploaded_at: string;
+        };
+        /** ReceiptSaveIn */
+        ReceiptSaveIn: {
+            /** @default {} */
+            header: components["schemas"]["HeaderIn"];
+            /** Lines */
+            lines: components["schemas"]["LineIn"][];
         };
         /**
          * RecordSaved
@@ -5090,6 +5168,11 @@ export interface components {
             can_verify: boolean;
             job: components["schemas"]["ExtractionJobOut"] | null;
         };
+        /** RejectIn */
+        RejectIn: {
+            /** Reason */
+            reason: string;
+        };
         /**
          * RepaymentCreate
          * @description POST /merchants/{id}/repayments: an instalment of one of the shop's earlier loans.
@@ -5105,6 +5188,61 @@ export interface components {
             amount_due_bdt: number;
             /** Amount Paid Bdt */
             amount_paid_bdt: number;
+        };
+        /** ReportIn */
+        ReportIn: {
+            /** Note */
+            note: string;
+            /** Claimed Amount Bdt */
+            claimed_amount_bdt?: number | null;
+            /** Proof Document Id */
+            proof_document_id?: string | null;
+        };
+        /** ReportOut */
+        ReportOut: {
+            /** Flag Id */
+            flag_id: string;
+            /** Status */
+            status: string;
+            /** Merchant Id */
+            merchant_id: string;
+            /** Shop Name */
+            shop_name: string | null;
+            /** Receipt Id */
+            receipt_id: string;
+            /** Receipt Kind */
+            receipt_kind: string;
+            /** Supplier */
+            supplier: string | null;
+            /** Receipt Date */
+            receipt_date: string | null;
+            /** Line No */
+            line_no: number;
+            /** Item */
+            item: string | null;
+            /** Recorded Amount Bdt */
+            recorded_amount_bdt: number | null;
+            /** Claimed Amount Bdt */
+            claimed_amount_bdt: number | null;
+            /** Note */
+            note: string;
+            /** Has Proof */
+            has_proof: boolean;
+            /** Raised At */
+            raised_at: string;
+            /** Resolution Note */
+            resolution_note: string | null;
+            /** Resolved At */
+            resolved_at: string | null;
+        };
+        /** ResolveIn */
+        ResolveIn: {
+            /** Accept */
+            accept: boolean;
+            /** Amount Bdt */
+            amount_bdt?: number | null;
+            /** Note */
+            note: string;
         };
         /**
          * ReviewRecord
@@ -5284,25 +5422,6 @@ export interface components {
             code: string;
             /** Password */
             password: string;
-        };
-        /** ShopAssignmentOut */
-        ShopAssignmentOut: {
-            /** Merchant Id */
-            merchant_id: string;
-            /** Shop Name */
-            shop_name: string | null;
-            /** Area */
-            area: string | null;
-            /** District */
-            district: string | null;
-            /** Fsr User Id */
-            fsr_user_id: string | null;
-            /** Fsr Name */
-            fsr_name: string | null;
-            /** Assigned At */
-            assigned_at: string | null;
-            /** Assigned By */
-            assigned_by: string | null;
         };
         /**
          * SourceConnectionOut
@@ -5538,38 +5657,6 @@ export interface components {
             /** Error Message */
             error_message: string | null;
         };
-        /** SubmissionOut */
-        SubmissionOut: {
-            /** Sheet Id */
-            sheet_id: string;
-            /** Merchant Id */
-            merchant_id: string;
-            /** Shop Name */
-            shop_name: string | null;
-            /** Business Date */
-            business_date: string;
-            /** Fsr User Id */
-            fsr_user_id: string;
-            /** Fsr Name */
-            fsr_name: string | null;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "draft" | "submitted" | "returned" | "accepted";
-            /** Rows */
-            rows: number;
-            /** Drafts */
-            drafts: number;
-            /** Totals */
-            totals: {
-                [key: string]: number;
-            };
-            /** Submitted At */
-            submitted_at: string | null;
-            /** Returned Reason */
-            returned_reason: string | null;
-        };
         /**
          * TimelineEvent
          * @description One event on the merchant's unified timeline.
@@ -5596,6 +5683,11 @@ export interface components {
              * @description What the event is. An application is on the loan stream (it is scored through a loan-shaped row) but it is a request, not an issued loan; its amount is the amount requested.
              */
             kind?: ("purchase" | "delivery" | "payment" | "loan" | "application") | null;
+        };
+        /** TypedReceiptIn */
+        TypedReceiptIn: {
+            /** Kind */
+            kind: string;
         };
         /** UnmatchedMerchant */
         UnmatchedMerchant: {
@@ -5728,6 +5820,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["LoginIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    merchant_login_auth_merchant_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MerchantLoginIn"];
             };
         };
         responses: {
@@ -6185,184 +6310,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InvitationCreatedOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_assignments_org_assignments_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ShopAssignmentOut"][];
-                };
-            };
-        };
-    };
-    assign_org_assignments_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AssignIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ShopAssignmentOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    end_assignment_org_assignments__merchant_id__end_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                merchant_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    assign_many_org_assignments_bulk_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BulkAssignIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ShopAssignmentOut"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    assignment_history_org_assignments_history_get: {
-        parameters: {
-            query?: {
-                merchant_id?: string | null;
-                fsr_id?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AssignmentHistoryOut"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    fsr_detail_org_fsrs__user_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                user_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FsrDetailOut"];
                 };
             };
             /** @description Validation Error */
@@ -7632,433 +7579,6 @@ export interface operations {
             };
         };
     };
-    entry_types_daily_entry_types_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EntryTypeOut"][];
-                };
-            };
-        };
-    };
-    get_day_merchants__merchant_id__daily__business_date__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                merchant_id: string;
-                business_date: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DailyDayOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    save_day_merchants__merchant_id__daily__business_date__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                merchant_id: string;
-                business_date: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DailySaveIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DailyDayOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    submit_day_merchants__merchant_id__daily__business_date__submit_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                merchant_id: string;
-                business_date: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DailyDayOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    amend_merchants__merchant_id__daily_entries__entry_id__amend_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                merchant_id: string;
-                entry_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AmendIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DailyEntryOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    return_day_merchants__merchant_id__daily__business_date__return_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                merchant_id: string;
-                business_date: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    [key: string]: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DailyDayOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    accept_day_merchants__merchant_id__daily__business_date__accept_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                merchant_id: string;
-                business_date: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DailyDayOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    history_merchants__merchant_id__daily_get: {
-        parameters: {
-            query?: {
-                date_from?: string | null;
-                date_to?: string | null;
-                entry_type?: string | null;
-                status?: string | null;
-                q?: string | null;
-            };
-            header?: never;
-            path: {
-                merchant_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DailyListOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    submissions_submissions_get: {
-        parameters: {
-            query?: {
-                status?: string | null;
-                fsr?: string | null;
-                date_from?: string | null;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SubmissionOut"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    fsr_overview_fsr_overview_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FsrOverviewOut"];
-                };
-            };
-        };
-    };
-    notifications_notifications_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NotificationOut"][];
-                };
-            };
-        };
-    };
-    read_all_notifications_read_all_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    import_upload_merchants__merchant_id__daily_import_post: {
-        parameters: {
-            query?: {
-                name?: string;
-                entry_type?: string;
-            };
-            header?: never;
-            path: {
-                merchant_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/octet-stream": string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ImportTableOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    import_result_merchants__merchant_id__daily_import__job_id__get: {
-        parameters: {
-            query?: {
-                entry_type?: string;
-            };
-            header?: never;
-            path: {
-                merchant_id: string;
-                job_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ImportTableOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     list_assessments_merchants__merchant_id__assessments_get: {
         parameters: {
             query?: never;
@@ -8265,6 +7785,720 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    upload_receipt_merchants__merchant_id__receipts_post: {
+        parameters: {
+            query?: {
+                kind?: string;
+                name?: string;
+            };
+            header?: never;
+            path: {
+                merchant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    typed_receipt_merchants__merchant_id__receipts_typed_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                merchant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TypedReceiptIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_receipts_receipts_get: {
+        parameters: {
+            query?: {
+                status?: string | null;
+                merchant_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptRow"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    receipt_detail_receipts__receipt_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_receipt_receipts__receipt_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceiptSaveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    receipt_document_receipts__receipt_id__document_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_receipt_receipts__receipt_id__publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublishIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_receipt_receipts__receipt_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_reports_merchant_reports_get: {
+        parameters: {
+            query?: {
+                status?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_report_merchant_reports__flag_id__resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                flag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_proof_merchant_reports__flag_id__proof_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                flag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    merchant_access_info_merchants__merchant_id__access_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                merchant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantAccessOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reissue_merchant_id_merchants__merchant_id__access_reissue_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                merchant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantAccessOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    portal_me_portal_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalMe"];
+                };
+            };
+        };
+    };
+    portal_records_portal_records_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalReceipt"][];
+                };
+            };
+        };
+    };
+    portal_picture_portal_receipts__receipt_id__picture_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    portal_confirm_portal_receipts__receipt_id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalMe"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    portal_proof_portal_proof_post: {
+        parameters: {
+            query?: {
+                name?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    portal_report_portal_lines__line_id__report_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                line_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    portal_reports_portal_reports_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalReport"][];
+                };
+            };
+        };
+    };
+    portal_application_portal_application_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationStatus"];
+                };
+            };
+        };
+    };
+    portal_apply_portal_application_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    notifications_notifications_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationOut"][];
+                };
+            };
+        };
+    };
+    read_all_notifications_read_all_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

@@ -158,6 +158,9 @@ def create_merchant(
                 entered_at=now,
             )
         )
+        from src.accounts.merchant_access import create_access
+
+        create_access(session, merchant_id, org_of(actor, config))
         add_provenance(
             session,
             record_type="merchant",

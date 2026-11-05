@@ -14,7 +14,8 @@ Roles:
   never an organisation's merchants, records or documents.
 - `credit_officer`: an organisation's officer. The first officer who registered the company
   is its owner (`is_owner`) and also manages invitations, staff and assignments.
-- `fsr`: Field Sales Representative, limited to the shops assigned to them.
+- `records_officer`: the Records Desk, which processes receipts for the company's shops.
+- `merchant`: a shop owner, limited to their own shop.
 - `auditor`: reads an organisation's records and audit log; changes nothing.
 
 No caller: 401. A role that may not do the thing: 403.
@@ -39,7 +40,7 @@ PLATFORM_ADMIN = "platform_admin"
 ACCOUNT_ROLES = db.STAFF_ROLES
 # Every role that works inside an organisation: never the platform administrator.
 EVERY_ROLE = ACCOUNT_ROLES
-# Everyone in an organisation except the FSR, whose work is limited to assigned shops.
+# The company's decision makers and reviewers.
 READERS = ("credit_officer", "auditor")
 # Every signed-in account, platform administrators included (who am I, change password).
 ANY_ACCOUNT = ACCOUNT_ROLES + (PLATFORM_ADMIN,)
@@ -60,6 +61,7 @@ class CurrentUser:
     organization_id: str | None = None  # empty: a platform admin, or the benchmark organisation
     display_name: str | None = None
     is_owner: bool = False
+    merchant_id: str | None = None  # a merchant's own shop
 
     @property
     def is_platform(self) -> bool:
@@ -101,6 +103,7 @@ def _identify(session: Session, request: Request, config: dict) -> tuple[Current
             organization_id=membership.organization_id,
             display_name=user.display_name,
             is_owner=bool(membership.is_owner),
+            merchant_id=membership.merchant_id,
         ),
         "",
     )

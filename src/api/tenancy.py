@@ -57,14 +57,10 @@ def org_merchant_ids(session: Session, org: str, config: dict[str, Any]) -> set[
 
 def merchant_scope(session: Session, user: CurrentUser, config: dict[str, Any]):
     """SQL condition on db.Merchant: the merchants this caller may see. The organisation's,
-    and for a sales representative only the shops assigned to them."""
+    and for a merchant only their own shop."""
     condition = merchant_in_org(org_of(user, config), config)
-    if user.role == "fsr":
-        from src.accounts.service import assigned_merchant_ids
-
-        condition = condition & db.Merchant.merchant_id.in_(
-            list(assigned_merchant_ids(session, user.user_id))
-        )
+    if user.role == "merchant":
+        condition = condition & (db.Merchant.merchant_id == (user.merchant_id or ""))
     return condition
 
 
@@ -74,16 +70,14 @@ def may_see(
     """May this caller see this merchant (the merchant guard's rule)."""
     if not same_org(merchant, org_of(user, config), config):
         return False
-    if user.role == "fsr":
-        from src.accounts.service import assigned_merchant_ids
-
-        return merchant.merchant_id in assigned_merchant_ids(session, user.user_id)
+    if user.role == "merchant":
+        return merchant.merchant_id == user.merchant_id
     return True
 
 
 def merchant_guard(request: Request) -> None:
     """On a path naming a merchant: answer 404 unless the caller may see it (their
-    organisation's merchant; for a sales representative, a shop assigned to them).
+    organisation's merchant; for a merchant, their own shop).
     Without a caller nothing is decided here; the endpoint's own role check answers 401.
     """
     merchant_id = request.path_params.get("merchant_id")

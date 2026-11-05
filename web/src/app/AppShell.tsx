@@ -50,23 +50,13 @@ export function LanguageSwitch({ tone = 'light' }: { tone?: 'light' | 'compact' 
   )
 }
 
-/** The one-line context every page carries: whose company, and that the tool supports a
- * person's decision. The model's training provenance is shown where a score is, not here. */
+/** The company's name at the top of every page. */
 function ContextLine({ compact = false }: { compact?: boolean }) {
   const t = useT()
   const { me } = useSession()
-  const env = me?.environment
-  const envWords = env ? { benchmark: t('Benchmark', 'বেঞ্চমার্ক'), pilot: t('Pilot', 'পাইলট'), production: t('Production', 'প্রোডাকশন') }[env] : null
   return (
-    <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]', compact ? 'text-muted-2' : 'text-ink-2')} role="note">
-      <span className="font-semibold text-ink">{me?.organization_name ?? t('CredLens platform', 'CredLens প্ল্যাটফর্ম')}</span>
-      {envWords && (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-chip bg-amber-panel px-2.5 py-0.5 font-semibold text-amber-text">
-          <span className="size-1.5 rounded-full bg-amber" aria-hidden="true" />
-          {envWords}
-        </span>
-      )}
-      <span className="text-muted-2">{t('Decision support only.', 'শুধু সিদ্ধান্তে সহায়তা।')}</span>
+    <div className={cn('flex items-center text-[14px]', compact ? 'text-muted-2' : 'text-ink-2')} role="note">
+      <span className="font-semibold text-ink">{me?.organization_name ?? t('CredLens', 'CredLens')}</span>
     </div>
   )
 }
@@ -88,7 +78,7 @@ function PhoneTabs({ onMenu }: { onMenu: () => void }) {
             key={item.to}
             to={item.to}
             aria-current={active ? 'page' : undefined}
-            className={cn('flex min-h-14 flex-col items-center justify-center gap-0.5 px-1 text-[11px] leading-tight no-underline', active ? 'font-semibold text-lens-dark' : 'text-muted-2')}
+            className={cn('flex min-h-16 flex-col items-center justify-center gap-0.5 px-1 text-[11.5px] leading-tight no-underline transition-colors active:bg-ground', active ? 'font-semibold text-lens-dark' : 'text-muted-2')}
           >
             <item.icon size={20} strokeWidth={active ? 2.2 : 1.8} aria-hidden="true" />
             <span className="max-w-full truncate">{t(item.label, item.labelBn)}</span>

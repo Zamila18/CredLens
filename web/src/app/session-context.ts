@@ -25,6 +25,8 @@ export type Session = {
   isOwner: boolean
   /** Sign in (sets the session cookie) or out. */
   signIn: (identifier: string, password: string) => Promise<MeOut>
+  /** A merchant signs in with the Merchant ID from their slip and the owner's name. */
+  signInMerchant: (merchantId: string, ownerName: string) => Promise<MeOut>
   signOut: () => Promise<void>
   lang: Lang
   setLang: (lang: Lang) => void

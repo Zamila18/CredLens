@@ -21,7 +21,6 @@ from PIL import Image, ImageDraw
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from src.accounts import service
 from src.accounts.bootstrap_platform_admins import bootstrap
 from src.config import load_config
 from src.db import models as db
@@ -29,6 +28,7 @@ from src.db.models import create_tables, make_engine
 from src.extraction.engine import Box, FakeOcrEngine
 from src.extraction.service import process_job
 from src.intake.consent import consent_state
+from src.intake.policy import real_today
 from src.onboarding import consent_text as text
 from tests.test_accounts_phase1 import STRONG, client, company_body, join_body, sign_in
 
@@ -81,7 +81,7 @@ def world(tmp_path_factory):
 
 @pytest.fixture(scope="module")
 def team(world):
-    """Padma: an owner officer, a second officer, an FSR. Sagar: one officer only."""
+    """Padma: an owner officer, a second officer, a Records Desk officer. Sagar: one officer."""
     anon = client()
     assert anon.post("/auth/register/company", json=company_body()).status_code == 201
     owner = sign_in("rina@padma.example")
@@ -93,11 +93,10 @@ def team(world):
         email="nasrin@padma.example",
         mobile="01733333333",
         employee_id="E-2001",
-        territory="",
     )
     assert anon.post("/auth/register/join", json=second).status_code == 201
-    fsr_code = owner.post("/org/invitations", json={"role": "fsr"}).json()["code"]
-    assert anon.post("/auth/register/join", json=join_body(fsr_code)).status_code == 201
+    desk_code = owner.post("/org/invitations", json={"role": "records_officer"}).json()["code"]
+    assert anon.post("/auth/register/join", json=join_body(desk_code)).status_code == 201
     assert (
         anon.post(
             "/auth/register/company",
@@ -121,7 +120,7 @@ def team(world):
         {
             "owner": owner,
             "second": sign_in("nasrin@padma.example"),
-            "fsr": sign_in("karim@padma.example"),
+            "desk": sign_in("karim@padma.example"),
             "solo": sign_in("joya@sagar.example"),
         },
     )
@@ -161,7 +160,7 @@ def test_registration_draft_makes_a_merchant_without_consent(world, team):
         merchant = session.get(db.Merchant, reg["merchant_id"])
         profile = session.get(db.MerchantProfile, reg["merchant_id"])
         assert merchant.organization_id and profile.owner_name == "Abdul Karim"
-        valid, _ = consent_state(session, reg["merchant_id"], service.now().date())
+        valid, _ = consent_state(session, reg["merchant_id"], real_today(world.config))
         assert not valid  # nobody is assessable before the signed form is verified
 
 
@@ -239,7 +238,7 @@ def test_signed_form_is_read_compared_reviewed_and_verified_by_another_officer(w
         and "no-store" in doc.headers["cache-control"]
     )
     assert team.solo.get(f"/registrations/{rid}/document").status_code == 404
-    assert team.fsr.get(f"/registrations/{rid}/document").status_code == 403
+    assert team.desk.get(f"/registrations/{rid}/document").status_code == 403
 
     # the uploader cannot verify while another Credit Officer exists
     body = {
@@ -267,7 +266,7 @@ def test_signed_form_is_read_compared_reviewed_and_verified_by_another_officer(w
     assert done["status"] == "active" and done["verification_mode"] == "distinct"
     assert done["optional_consents"] == ["questionnaire"] and done["signer_name"] == "Abdul Karim"
     with Session(world.engine) as session:
-        valid, categories = consent_state(session, reg["merchant_id"], service.now().date())
+        valid, categories = consent_state(session, reg["merchant_id"], real_today(world.config))
         assert valid and set(categories) >= {"purchases", "deliveries", "payments", "questionnaire"}
         event = session.scalars(
             select(db.ConsentEvent).where(db.ConsentEvent.merchant_id == reg["merchant_id"])
@@ -354,8 +353,8 @@ def test_withdrawal_ends_the_consent_and_blocks_new_assessment(world, team):
         },
     )
     with Session(world.engine) as session:
-        assert consent_state(session, merchant, service.now().date())[0]
-    assert team.fsr.post(
+        assert consent_state(session, merchant, real_today(world.config))[0]
+    assert team.desk.post(
         f"/merchants/{merchant}/consent/withdraw", json={"reason": "phone call"}
     ).status_code in (403, 404)
     ended = team.owner.post(
@@ -363,7 +362,7 @@ def test_withdrawal_ends_the_consent_and_blocks_new_assessment(world, team):
     )
     assert ended.status_code == 200 and ended.json() == {"consents_ended": 1}
     with Session(world.engine) as session:
-        assert not consent_state(session, merchant, service.now().date())[0]
+        assert not consent_state(session, merchant, real_today(world.config))[0]
     assert team.owner.get(f"/registrations/{rid}").json()["status"] == "withdrawn"
     again = team.owner.post(f"/merchants/{merchant}/consent/withdraw", json={"reason": "Again"})
     assert again.status_code == 409
@@ -479,7 +478,7 @@ def test_a_blank_form_has_its_own_serial_and_comes_back_filled(world, team):
     )
     assert verified.status_code == 200 and verified.json()["status"] == "active"
     with Session(world.engine) as session:
-        assert consent_state(session, fixed.json()["merchant_id"], service.now().date())[0]
+        assert consent_state(session, fixed.json()["merchant_id"], real_today(world.config))[0]
 
 
 def test_a_reading_failure_is_recorded_and_the_case_can_still_be_reviewed(world, team):
@@ -529,7 +528,7 @@ def test_in_production_only_an_approved_template_can_be_issued(world, team, monk
     listing = admin.get("/platform/consent-templates").json()
     assert listing[0]["version"] == text.VERSION and listing[0]["status"] == "draft"
     assert "legal" in listing[0]["note"].lower()
-    for who in (team.owner, team.fsr):
+    for who in (team.owner, team.desk):
         assert who.get("/platform/consent-templates").status_code == 403
     no_ref = admin.post(
         f"/platform/consent-templates/{text.VERSION}/status", json={"status": "approved"}
@@ -548,7 +547,7 @@ def test_in_production_only_an_approved_template_can_be_issued(world, team, monk
 
 def test_roles_and_files_are_guarded(world, team):
     for path in ("/registrations", "/registration-forms/blank"):
-        assert team.fsr.get(path).status_code == 403
+        assert team.desk.get(path).status_code == 403
     assert client().get("/registrations").status_code == 401
     big = team.owner.post(
         "/registrations/from-form",
@@ -559,3 +558,25 @@ def test_roles_and_files_are_guarded(world, team):
     assert team.owner.post("/registrations/from-form", content=b"not a picture").status_code == 415
     assert team.owner.post("/registrations/from-form", content=b"").status_code == 422
     json.dumps(STRONG)  # (the password helper is shared with phase 1)
+
+
+def active_merchant(team, world, name: str) -> str:  # noqa: F811
+    """A merchant registered, signed, read and verified, so it has a valid consent."""
+    reg = team.owner.post("/registrations", json={**DETAILS, "shop_name": name}).json()
+    rid = reg["reg_id"]
+    form = team.owner.get(f"/registrations/{rid}/consent.pdf").content
+    team.owner.post(
+        f"/registrations/{rid}/signed", content=form, headers={"Content-Type": "application/pdf"}
+    )
+    read_queued(world, rid)
+    done = team.second.post(
+        f"/registrations/{rid}/verify",
+        json={
+            "categories": ["purchases", "deliveries", "payments"],
+            "signer_name": "Abdul Karim",
+            "signature_checked": True,
+            "reference_matches": True,
+        },
+    )
+    assert done.status_code == 200, done.text
+    return reg["merchant_id"]

@@ -127,7 +127,7 @@ def _refuse_if_taken(session: Session, email: str | None, mobile: str | None) ->
         raise taken
 
 
-JOB_TITLES = {"credit_officer": "Credit Officer", "fsr": "Field Sales Representative"}
+JOB_TITLES = {"credit_officer": "Credit Officer", "records_officer": "Records Officer"}
 
 
 def _slug(text: str) -> str:
@@ -261,16 +261,11 @@ def register_join(
     if invitation is not None:
         chosen = _text(data, "role")
         if chosen != invitation.role:
-            fsr = invitation.role == "fsr"
-            kind = "a Field Sales Representative" if fsr else "a Credit Officer"
+            desk = invitation.role == "records_officer"
+            kind = "a Records Desk officer" if desk else "a Credit Officer"
             errors["role"] = f"This code is for {kind}. Choose the matching role."
-        if invitation.role == "fsr":
-            if not employee_id:
-                errors["employee_id"] = "Give your employee or staff ID."
-            if not (_text(data, "territory") or invitation.default_territory):
-                errors["territory"] = "Give your assigned territory or area."
-            if not _text(data, "department"):
-                errors["department"] = "Give your department or sales team."
+        if invitation.role == "records_officer" and not employee_id:
+            errors["employee_id"] = "Give your employee or staff ID."
         if employee_id and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 ._/-]{0,39}", employee_id):
             errors["employee_id"] = "Use letters, digits and - _ . / only (up to 40)."
     if errors:
@@ -306,9 +301,6 @@ def register_join(
             department=_text(data, "department") or None,
             employee_id=employee_id or None,
             employee_id_norm=employee_norm,
-            territory=(_text(data, "territory") or invitation.default_territory)
-            if invitation.role == "fsr"
-            else None,
             mobile=mobile,
             created_at=now(),
         )

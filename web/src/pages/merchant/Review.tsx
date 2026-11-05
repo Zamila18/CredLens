@@ -62,7 +62,7 @@ export function ReviewSummary({ review, score }: { review: ReviewStatus; score?:
           ) : mode === 'account' ? (
             <span className="text-[15px] font-normal text-body">{t('No application yet', 'এখনও আবেদন নেই')}</span>
           ) : (
-            <span className="text-[15px] font-normal text-body">{t('The loan under review is from the synthetic loan records', 'পর্যালোচনার ঋণটি সিনথেটিক ঋণের রেকর্ড থেকে')}</span>
+            <span className="text-[15px] font-normal text-body">{t('The loan under review is the shop’s application', 'পর্যালোচনার ঋণটি দোকানের আবেদন')}</span>
           )}
         </Fact>
         <Fact label={t('Model result', 'মডেলের ফল')}>
@@ -70,11 +70,6 @@ export function ReviewSummary({ review, score }: { review: ReviewStatus; score?:
             <>
               <span className="tabular">{t(`Score ${score.score}`, `স্কোর ${score.score}`)}</span>
               <BandChip band={score.band} lowScoreWarning={score.low_score_warning} />
-              {mode === 'account' && (
-                <span className="block w-full text-[12.5px] font-normal text-muted-2">
-                  {t('Experimental: the model was trained on synthetic data only, not yet checked against real repayments.', 'পরীক্ষামূলক: মডেলটি শুধু সিনথেটিক ডেটায় শেখা, আসল পরিশোধের সাথে এখনও যাচাই হয়নি।')}
-                </span>
-              )}
             </>
           ) : assessment ? (
             <StatusTag status={assessment} />
