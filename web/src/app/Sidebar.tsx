@@ -22,11 +22,13 @@ function Item({ item }: { item: NavItem }) {
       to={item.to}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'flex min-h-10 items-center gap-3 rounded-[9px] px-3 text-[14.5px] no-underline transition-colors',
-        active ? 'bg-[#1d2d63] font-semibold text-white hover:text-white' : 'font-medium text-[#b9c3e0] hover:bg-deep-2 hover:text-white',
+        'group flex min-h-12 items-center gap-3 rounded-[11px] px-3.5 text-[15.5px] no-underline transition-all duration-200 ease-out motion-reduce:transition-none',
+        active
+          ? 'bg-[#1d2d63] font-semibold text-white shadow-[inset_3px_0_0_#7fd1b9] hover:text-white'
+          : 'font-medium text-[#b9c3e0] hover:translate-x-0.5 hover:bg-deep-2 hover:text-white motion-reduce:hover:translate-x-0',
       )}
     >
-      <item.icon size={18} strokeWidth={1.8} aria-hidden="true" className={cn('shrink-0', active ? 'text-[#7fd1b9]' : '')} />
+      <item.icon size={20} strokeWidth={1.8} aria-hidden="true" className={cn('shrink-0 transition-transform duration-200 group-hover:scale-110 motion-reduce:transition-none', active ? 'text-[#7fd1b9]' : '')} />
       <span className="min-w-0 flex-1">{t(item.label, item.labelBn)}</span>
     </Link>
   )

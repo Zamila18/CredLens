@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 from src.accounts.service import now
 from src.db import models as db
 from src.extraction import forms
-from src.extraction.engine import OcrEngine
+from src.extraction.engine import Box, OcrEngine
 from src.extraction.pages import load_pages
 from src.onboarding.registrations import read_document
 
@@ -42,7 +42,7 @@ def process_job(session: Session, config: dict[str, Any], engine: OcrEngine, job
     )
     session.commit()
     try:
-        (_read_table if job.purpose == "table" else _read)(session, config, engine, job)
+        (_read_receipt if job.purpose == "receipt" else _read)(session, config, engine, job)
         job.status = "done"
     except Exception as error:  # noqa: BLE001 - recorded on the job for the officer to see
         log.exception("Reading job %s failed", job_id)
@@ -53,16 +53,32 @@ def process_job(session: Session, config: dict[str, Any], engine: OcrEngine, job
     session.commit()
 
 
-def _read_table(
+def _read_receipt(
     session: Session, config: dict[str, Any], engine: OcrEngine, job: db.ExtractionJob
 ) -> None:
-    """A table import (daily records): read the document into rows and keep them on the job."""
-    from src.daily.imports import from_document
+    """A receipt: read every page, build the header and table, and write them to the receipt."""
+    from src.intake.policy import real_today
+    from src.receipts import parse, prepare, service
 
+    receipt = session.scalar(select(db.Receipt).where(db.Receipt.job_id == job.job_id))
     doc = session.get(db.Document, job.document_id)
     data = read_document(config, doc)
-    table = from_document(data, doc.mime, engine, float(config["ocr"]["render_scale"]))
-    job.result = json.dumps(table.as_json(), ensure_ascii=False)
+    pages = load_pages(data, doc.mime, float(config["ocr"]["render_scale"]), wanted="all")
+    boxes, offset = [], 0.0
+    for page in pages:
+        found = (
+            page.native_boxes
+            if page.native_boxes is not None
+            else engine.read(prepare.straighten(page.image))
+        )
+        boxes.extend(
+            Box(b.text, b.conf, b.x0, b.y0 + offset, b.x1, b.y1 + offset) for b in found
+        )
+        offset += page.image.height
+    low = float(config["ocr"]["low_confidence_below"])
+    parsed = parse.parse_receipt(boxes, receipt.kind, real_today(config), low)
+    service.apply_parsed(session, receipt, parsed)
+    job.pages = len(pages)
     session.commit()
 
 

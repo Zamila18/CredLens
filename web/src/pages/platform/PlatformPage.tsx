@@ -61,7 +61,7 @@ export function PlatformPage() {
                   {[o.legal_name, o.org_type, o.city].filter(Boolean).join(' · ')} · {t('registered', 'নিবন্ধিত')} {fmtDate(o.created_at)}
                 </span>
                 <span className="text-[13px] text-muted-2">
-                  {t(`${o.credit_officers} credit officers · ${o.fsrs} FSRs · ${o.merchants} merchants`, `${o.credit_officers} ক্রেডিট অফিসার · ${o.fsrs} FSR · ${o.merchants} মার্চেন্ট`)}
+                  {t(`${o.credit_officers} credit officers · ${o.records_officers} Records Desk · ${o.merchants} merchants`, `${o.credit_officers} ক্রেডিট অফিসার · ${o.records_officers} FSR · ${o.merchants} মার্চেন্ট`)}
                 </span>
               </span>
               <span className="flex flex-wrap items-center gap-2">

@@ -21,8 +21,7 @@ from sqlalchemy.orm import Session
 from src.assessment import range_engine
 from src.db import models as db
 from src.intake.policy import real_today
-from tests.test_daily_phase345 import active_merchant
-from tests.test_registration_phase2 import team, world  # noqa: F401
+from tests.test_registration_phase2 import active_merchant, team, world  # noqa: F401
 
 POLICY = {
     "window_days": 90,
@@ -110,7 +109,7 @@ def add_purchases(world, merchant: str, today: date) -> None:
 
 def test_policy_lifecycle_belongs_to_the_owner(team):
     assert team.second.post("/org/range-policies", json={"parameters": POLICY}).status_code == 403
-    assert team.fsr.get("/org/range-policies").status_code == 403
+    assert team.desk.get("/org/range-policies").status_code == 403
     bad = team.owner.post("/org/range-policies", json={"parameters": {"window_days": 90}})
     assert bad.status_code == 422 and bad.json()["detail"]["code"] == "invalid_policy"
     first = team.owner.post("/org/range-policies", json={"parameters": POLICY, "note": "v1"}).json()
@@ -137,7 +136,7 @@ def test_an_assessment_is_stored_and_recomputes_to_the_same_answer(world, team):
         json={"requested_amount_bdt": 40000, "purpose": "inventory_restock"},
     ).status_code in (200, 201)
     add_purchases(world, merchant, today)
-    assert team.fsr.post(f"/merchants/{merchant}/assessments").status_code in (403, 404)
+    assert team.desk.post(f"/merchants/{merchant}/assessments").status_code in (403, 404)
     assert team.solo.post(f"/merchants/{merchant}/assessments").status_code == 404
 
     run = team.owner.post(f"/merchants/{merchant}/assessments")

@@ -355,18 +355,27 @@ def login(
     credential.locked_until = None
     if needs_rehash(credential.password_hash):  # an older scrypt (or weaker Argon2) hash
         credential.password_hash = hash_password(password)
+    token, row = start_session(session, config, credential.user_id, membership)
+    return token, row, membership
+
+
+def start_session(
+    session: Session, config: dict[str, Any], user_id: str, membership: db.Membership | None
+) -> tuple[str, db.AuthSession]:
+    """Open a session for an account that has already been checked. The raw token is returned
+    once (for the cookie); only its hash is stored."""
     token = new_token()
     started = now()
     row = db.AuthSession(
         token_hash=session_hash(token),
-        user_id=credential.user_id,
+        user_id=user_id,
         membership_id=membership.membership_id if membership else None,
         created_at=started,
         last_seen_at=started,
-        expires_at=started + timedelta(hours=int(rules["session_max_hours"])),
+        expires_at=started + timedelta(hours=int(settings(config)["session_max_hours"])),
     )
     session.add(row)
-    return token, row, membership
+    return token, row
 
 
 def resolve_session(
@@ -415,71 +424,3 @@ def revoke_all_sessions(session: Session, user_id: str) -> None:
 def disable_account(session: Session, membership: db.Membership) -> None:
     membership.status = "disabled"
     revoke_all_sessions(session, membership.user_id)
-
-
-# --- shop assignments -------------------------------------------------------------------
-
-
-def assigned_merchant_ids(session: Session, fsr_user_id: str) -> set[str]:
-    return set(
-        session.scalars(
-            select(db.ShopAssignment.merchant_id).where(
-                db.ShopAssignment.fsr_user_id == fsr_user_id, db.ShopAssignment.ended_at.is_(None)
-            )
-        )
-    )
-
-
-def current_assignment(session: Session, merchant_id: str) -> db.ShopAssignment | None:
-    return session.scalar(
-        select(db.ShopAssignment).where(
-            db.ShopAssignment.merchant_id == merchant_id, db.ShopAssignment.ended_at.is_(None)
-        )
-    )
-
-
-def assign_shop(
-    session: Session,
-    organization_id: str,
-    merchant_id: str,
-    fsr_user_id: str,
-    actor: str,
-    default_org: str | None = None,
-) -> db.ShopAssignment:
-    """Give a shop to an FSR of the same organisation. A shop has one FSR at a time: an earlier
-    assignment is ended (kept, with who ended it). `default_org`: the organisation of
-    merchants whose row names none (the reserved benchmark organisation)."""
-    merchant = session.get(db.Merchant, merchant_id)
-    if merchant is None or (merchant.organization_id or default_org) != organization_id:
-        raise AccountError(
-            404, "unknown_merchant", f"No shop {merchant_id!r} in your organisation."
-        )
-    membership = active_membership(session, fsr_user_id)
-    if (
-        membership is None
-        or membership.organization_id != organization_id
-        or membership.role != "fsr"
-    ):
-        raise AccountError(404, "unknown_fsr", "No active field sales representative with that id.")
-    previous = current_assignment(session, merchant_id)
-    if previous is not None:
-        if previous.fsr_user_id == fsr_user_id:
-            return previous
-        previous.ended_at, previous.ended_by = now(), actor
-    row = db.ShopAssignment(
-        assignment_id=f"SA-{uuid.uuid4().hex[:24]}",
-        organization_id=organization_id,
-        merchant_id=merchant_id,
-        fsr_user_id=fsr_user_id,
-        assigned_by=actor,
-        assigned_at=now(),
-    )
-    session.add(row)
-    return row
-
-
-def end_assignment(session: Session, organization_id: str, merchant_id: str, actor: str) -> None:
-    row = current_assignment(session, merchant_id)
-    if row is None or row.organization_id != organization_id:
-        raise AccountError(404, "no_assignment", "This shop is not assigned.")
-    row.ended_at, row.ended_by = now(), actor

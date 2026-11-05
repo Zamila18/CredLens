@@ -1,124 +1,113 @@
 /**
- * Demo settings: the rules this demo runs on, read from the API (GET /demo/settings,
- * GET /health, GET /model/card). Read-only for every role: the settings live in
- * config/default.yaml and nothing here can change them.
+ * Settings: who is signed in, the language, and the password (POST /auth/password). A merchant
+ * has no password (they sign in with their Merchant ID), so that part is hidden for them.
  */
-import type { ReactNode } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router'
 
-import type { DemoSettings, Health, ModelCard, OrganizationOut } from '@/api/types'
-import { useApi } from '@/api/useApi'
-import { ErrorCallout, LoadingState } from '@/components/ErrorCallout'
+import { api, ApiError } from '@/api/client'
+import { useSession } from '@/app/session-context'
+import { LanguageSwitch } from '@/app/AppShell'
+import { ROLE_NAMES } from '@/app/navigation'
+import { Field, TextInput } from '@/components/form'
 import { Page, PageHeader } from '@/components/Page'
-import { count, fmtDate, taka } from '@/lib/format'
-import { CATEGORY_WORDS, METHOD_WORDS, wordsFor } from '@/lib/fieldWords'
-import { MODE_TEXT, pick, useLang, useT } from '@/lib/i18n'
-
-function Row({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="grid gap-1 border-t border-line py-3 first:border-t-0 sm:grid-cols-[260px_minmax(0,1fr)] sm:gap-6">
-      <dt className="text-sm text-muted-2">{label}</dt>
-      <dd className="m-0 text-[15px] text-ink">{children}</dd>
-    </div>
-  )
-}
-
-function Block({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="flex flex-col gap-1 rounded-card border border-card-line bg-card p-4 sm:p-5">
-      <h2 className="m-0 pb-1 text-[17px] font-semibold">{title}</h2>
-      <dl className="m-0">{children}</dl>
-    </section>
-  )
-}
+import { Button } from '@/components/ui/button'
+import { pick, useT } from '@/lib/i18n'
 
 export function SettingsPage() {
   const t = useT()
-  const lang = useLang()
-  const settings = useApi<DemoSettings>('/demo/settings')
-  const health = useApi<Health>('/health')
-  const card = useApi<ModelCard>(health.data ? '/model/card' : null)
-  const org = useApi<OrganizationOut>('/organization')
-  const s = settings.data
+  const { me, role, lang, isOwner } = useSession()
+  const [current, setCurrent] = useState('')
+  const [next, setNext] = useState('')
+  const [again, setAgain] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState<{ tone: 'ok' | 'bad'; text: string } | null>(null)
+
+  const change = async () => {
+    setMessage(null)
+    if (next !== again) {
+      setMessage({ tone: 'bad', text: t('The two new passwords are not the same.', 'নতুন পাসওয়ার্ড দুটি একই নয়।') })
+      return
+    }
+    setBusy(true)
+    try {
+      await api('/auth/password', { method: 'POST', json: { current, new: next } })
+      setMessage({ tone: 'ok', text: t('Your password was changed.', 'আপনার পাসওয়ার্ড বদলানো হয়েছে।') })
+      setCurrent('')
+      setNext('')
+      setAgain('')
+    } catch (err) {
+      setMessage({ tone: 'bad', text: err instanceof ApiError ? err.message : String(err) })
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <Page>
-      <PageHeader
-        title={t('Settings', 'সেটিংস')}
-        description={t('Your organisation and the rules this installation runs on. Read-only: they are set in the API’s configuration.', 'আপনার প্রতিষ্ঠান আর এই ইনস্টলেশনের নিয়ম। শুধু দেখার জন্য: এগুলো API-র কনফিগারেশনে ঠিক করা।')}
-      />
-      {settings.error ? (
-        <ErrorCallout error={settings.error} />
-      ) : !s ? (
-        <LoadingState title={t('Loading the settings…', 'সেটিংস আসছে…')} />
-      ) : (
-        <>
-          {org.data && (
-            <Block title={t('Organisation', 'প্রতিষ্ঠান')}>
-              <Row label={t('Name', 'নাম')}>
-                {org.data.name} <span className="font-mono text-[13px] text-muted-2">({org.data.organization_id})</span>
-              </Row>
-              <Row label={t('Environment', 'পরিবেশ')}>
-                {org.data.environment === 'benchmark'
-                  ? t('Benchmark: offline synthetic data, never a real company', 'বেঞ্চমার্ক: অফলাইন সিনথেটিক ডেটা, কোনো আসল প্রতিষ্ঠান নয়')
-                  : org.data.environment}
-              </Row>
-              <Row label={t('Country', 'দেশ')}>{org.data.country}</Row>
-              <Row label={t('Languages', 'ভাষা')}>{org.data.languages.join(', ')}</Row>
-              <Row label={t('Currency', 'মুদ্রা')}>{org.data.currency}</Row>
-              <Row label={t('Time zone', 'সময় অঞ্চল')}>{org.data.timezone}</Row>
-              <Row label={t('Data access', 'ডেটা প্রবেশাধিকার')}>{t('Only this organisation’s merchants, records and decisions', 'শুধু এই প্রতিষ্ঠানের মার্চেন্ট, রেকর্ড ও সিদ্ধান্ত')}</Row>
-            </Block>
-          )}
-          <Block title={t('Environment', 'পরিবেশ')}>
-            <Row label={t('Data source', 'ডেটার উৎস')}>
-              {health.data ? (
-                <>
-                  {pick(MODE_TEXT[health.data.data_mode], lang)} <span className="font-mono text-[13px] text-muted-2">({health.data.data_mode})</span>
-                </>
-              ) : (
-                '—'
-              )}
-            </Row>
-            <Row label={t('Model in use', 'ব্যবহৃত মডেল')}>
-              {card.data ? <span className="font-mono text-[13px] break-all">{card.data.model_version}</span> : '—'}{' '}
-              <Link to="/app/model" className="text-sm">
-                {t('Model card', 'মডেল কার্ড')}
-              </Link>
-            </Row>
-            <Row label={t('New records', 'নতুন রেকর্ড')}>
-              {s.synthetic_only
-                ? t('Accepted as synthetic demo records only', 'শুধু সিনথেটিক ডেমো রেকর্ড হিসেবে নেওয়া হয়')
-                : t('Refused: synthetic-only mode is off, and there is no real-data path', 'বন্ধ: শুধু-সিনথেটিক মোড বন্ধ, আর আসল ডেটার কোনো পথ নেই')}
-            </Row>
-            <Row label={t('Sign-in', 'সাইন-ইন')}>{t('Demo roles only (a token per role). No passwords and no real identity check.', 'শুধু ডেমো ভূমিকা (প্রতি ভূমিকায় একটি টোকেন)। কোনো পাসওয়ার্ড বা আসল পরিচয়-যাচাই নেই।')}</Row>
-          </Block>
-          <Block title={t('Calendar', 'ক্যালেন্ডার')}>
-            <Row label={t('Last business day', 'শেষ ব্যবসার দিন')}>{fmtDate(s.calendar_end)}</Row>
-            <Row label={t('Dates after it', 'এর পরের তারিখ')}>{t('Refused for every record', 'সব রেকর্ডে বাতিল')}</Row>
-            <Row label={t('Real time of saving', 'সংরক্ষণের আসল সময়')}>{t('Kept separately on every record', 'প্রতিটি রেকর্ডে আলাদা রাখা হয়')}</Row>
-          </Block>
-          <Block title={t('Consent', 'অনুমতি')}>
-            <Row label={t('Kind', 'ধরন')}>{t('Simulated consent (synthetic demo): not a legal authorisation', 'সিমুলেটেড অনুমতি (সিনথেটিক ডেমো): আইনি অনুমোদন নয়')}</Row>
-            <Row label={t('Wording version', 'লেখার সংস্করণ')}>
-              <span className="font-mono text-[13px]">{s.consent_wording_version}</span>
-            </Row>
-            <Row label={t('Categories', 'ধরনসমূহ')}>{s.consent_categories.map((c) => wordsFor(CATEGORY_WORDS, c, lang)).join(', ')}</Row>
-            <Row label={t('How an answer is given', 'উত্তর কীভাবে দেওয়া হয়')}>{s.consent_methods.map((m) => wordsFor(METHOD_WORDS, m, lang)).join(', ')}</Row>
-            <Row label={t('Valid for', 'বৈধতা')}>{t(`${count(s.consent_valid_days)} days from its business date`, `ব্যবসার তারিখ থেকে ${count(s.consent_valid_days)} দিন`)}</Row>
-          </Block>
-          <Block title={t('Applications and records', 'আবেদন ও রেকর্ড')}>
-            <Row label={t('Applications per shop', 'প্রতি দোকানে আবেদন')}>{t('One, ever (this prototype)', 'একটি, চিরকাল (এই প্রোটোটাইপে)')}</Row>
-            <Row label={t('Largest request accepted', 'সর্বোচ্চ গ্রহণযোগ্য অনুরোধ')}>
-              {taka(s.max_requested_bdt)} <span className="text-sm text-muted-2">{t('(a guard against typing errors, not a credit policy)', '(টাইপের ভুল ঠেকাতে, ঋণনীতি নয়)')}</span>
-            </Row>
-            <Row label={t('Excel purchase import', 'এক্সেল কেনাকাটা আমদানি')}>{t(`Up to ${s.import_max_file_mb} MB and ${count(s.import_max_rows)} rows per sheet`, `সর্বোচ্চ ${s.import_max_file_mb} MB ও প্রতি শিটে ${count(s.import_max_rows)}টি সারি`)}</Row>
-            <Row label={t('Credit range guidance', 'ঋণের পরিসীমার নির্দেশনা')}>
-              {s.range_policy_enabled
-                ? t('A policy is switched on, but no formula has been approved, so no amount is shown', 'একটি নীতি চালু, কিন্তু কোনো সূত্র অনুমোদিত হয়নি, তাই কোনো অঙ্ক দেখানো হয় না')
-                : t('Not configured: no amount is ever shown', 'ঠিক করা হয়নি: কোনো অঙ্ক দেখানো হয় না')}
-            </Row>
-          </Block>
-        </>
+      <PageHeader title={t('Settings', 'সেটিংস')} description={t('Your account and your language.', 'আপনার অ্যাকাউন্ট ও ভাষা।')} />
+      <section className="flex flex-col gap-3 rounded-card border border-card-line bg-card p-5">
+        <h2 className="m-0 text-[18px] font-semibold">{t('Your account', 'আপনার অ্যাকাউন্ট')}</h2>
+        <dl className="m-0 grid gap-3 sm:grid-cols-2">
+          {[
+            [t('Name', 'নাম'), me?.display_name ?? '—'],
+            [t('Role', 'ভূমিকা'), pick(ROLE_NAMES[role], lang)],
+            [t('Company', 'প্রতিষ্ঠান'), me?.organization_name ?? '—'],
+          ].map(([label, value]) => (
+            <div key={String(label)} className="rounded-[10px] border border-line px-3 py-2.5">
+              <dt className="text-[13px] text-muted-2">{label}</dt>
+              <dd className="m-0 text-[16px] font-semibold text-ink">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+      <section className="flex flex-col gap-3 rounded-card border border-card-line bg-card p-5">
+        <h2 className="m-0 text-[18px] font-semibold">{t('Language', 'ভাষা')}</h2>
+        <div>
+          <LanguageSwitch />
+        </div>
+      </section>
+      {isOwner && (
+        <section className="flex flex-col gap-2 rounded-card border border-card-line bg-card p-5">
+          <h2 className="m-0 text-[18px] font-semibold">{t('Loan range rule (owner only)', 'ঋণের পরিসীমার নিয়ম (শুধু মালিক)')}</h2>
+          <p className="m-0 text-[15px] text-body">
+            {t(
+              'The rule behind each suggested loan range. Your officers do not need to open it.',
+              'প্রতিটি প্রস্তাবিত ঋণ-পরিসীমার পেছনের নিয়ম। আপনার কর্মকর্তাদের এটি খুলতে হয় না।',
+            )}
+          </p>
+          <div>
+            <Link to="/app/range-policy" className="font-semibold">
+              {t('Open the range rule', 'পরিসীমার নিয়ম খুলুন')}
+            </Link>
+          </div>
+        </section>
+      )}
+      {role !== 'merchant' && (
+        <form
+          className="flex max-w-[520px] flex-col gap-4 rounded-card border border-card-line bg-card p-5"
+          onSubmit={(e) => {
+            e.preventDefault()
+            void change()
+          }}
+        >
+          <h2 className="m-0 text-[18px] font-semibold">{t('Change your password', 'পাসওয়ার্ড বদলান')}</h2>
+          <Field label={t('Current password', 'বর্তমান পাসওয়ার্ড')} required>
+            <TextInput type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} />
+          </Field>
+          <Field label={t('New password', 'নতুন পাসওয়ার্ড')} required hint={t('At least 12 characters with upper and lower case letters, a digit and a symbol.', 'কমপক্ষে ১২ অক্ষর: বড় ও ছোট হাতের অক্ষর, একটি সংখ্যা ও একটি চিহ্ন।')}>
+            <TextInput type="password" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} />
+          </Field>
+          <Field label={t('New password again', 'নতুন পাসওয়ার্ড আবার')} required>
+            <TextInput type="password" autoComplete="new-password" value={again} onChange={(e) => setAgain(e.target.value)} />
+          </Field>
+          {message && <p role="status" className={`m-0 rounded-[10px] px-4 py-3 text-[14.5px] ${message.tone === 'ok' ? 'bg-strong-chip text-lens-dark' : 'bg-error-panel text-error'}`}>{message.text}</p>}
+          <div>
+            <Button type="submit" size="lg" disabled={busy || !current || !next || !again}>
+              {t('Change password', 'পাসওয়ার্ড বদলান')}
+            </Button>
+          </div>
+        </form>
       )}
     </Page>
   )

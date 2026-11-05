@@ -52,7 +52,7 @@ from src.model.scoring import Scorer, UnknownMerchant
 router = APIRouter(tags=["merchants"])
 
 ANY_ROLE = require_roles(*EVERY_ROLE)
-OFFICER_ONLY = require_roles("credit_officer", "fsr")
+OFFICER_ONLY = require_roles("credit_officer")
 # The benchmark review queue: not for a sales representative (assigned shops only).
 QUEUE_READERS = require_roles(*READERS)
 

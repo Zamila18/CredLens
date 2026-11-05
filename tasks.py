@@ -8,6 +8,8 @@ Usage:
     python tasks.py setup
     python tasks.py data [--mode <mode>] [--strength 0|0.5|1] [--all-strengths] [--reset-db]
     python tasks.py train | api | app | test | lint | backup
+    python tasks.py demo [--fast]       (the ShopUp demonstration database)
+    python tasks.py api --demo          (serve it)
 
 This file uses the standard library only, so it runs before the virtual
 environment exists. Every other command runs inside `.venv`.
@@ -133,9 +135,26 @@ def task_train(args: argparse.Namespace) -> int:
     return run_in_venv(card)
 
 
-def task_api(_: argparse.Namespace) -> int:
-    """Run the FastAPI app on port 8000."""
-    return run_in_venv(["-m", "uvicorn", "src.api.main:app", "--port", "8000"])
+DEMO_DB_URL = "sqlite:///data/credlens_demo.db"
+
+
+def task_api(args: argparse.Namespace) -> int:
+    """Run the FastAPI app on port 8000. `--demo` serves the ShopUp demonstration database
+    (data/credlens_demo.db) instead of the real one."""
+    env = {**os.environ, "DATABASE_URL": DEMO_DB_URL} if args.demo else None
+    if args.demo and not (ROOT / "data" / "credlens_demo.db").exists():
+        print("No demonstration database yet. Build it first: python tasks.py demo")
+        return 1
+    return run_in_venv(["-m", "uvicorn", "src.api.main:app", "--port", "8000"], env=env)
+
+
+def task_demo(args: argparse.Namespace) -> int:
+    """Build the ShopUp demonstration database (data/credlens_demo.db; the real one is never
+    touched). --fast skips the slow real receipt reader."""
+    extra = (["--fast"] if args.fast else []) + ["--seed", str(args.seed)]
+    if args.guide_only:
+        extra.append("--guide-only")
+    return run_in_venv(["-m", "src.demo.shopup", *extra])
 
 
 def task_app(_: argparse.Namespace) -> int:
@@ -210,7 +229,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--all-modes", action="store_true", help="train the synthetic data and all public modes"
     )
     train.set_defaults(func=task_train)
-    tasks.add_parser("api", help="run FastAPI on :8000").set_defaults(func=task_api)
+    api = tasks.add_parser("api", help="run FastAPI on :8000")
+    api.add_argument("--demo", action="store_true", help="serve the ShopUp demonstration database")
+    api.set_defaults(func=task_api)
+    demo = tasks.add_parser("demo", help="build the ShopUp demonstration database")
+    demo.add_argument("--fast", action="store_true", help="skip the real receipt reader")
+    demo.add_argument("--seed", type=int, default=5, help="random seed for the generated history")
+    demo.add_argument(
+        "--guide-only", action="store_true", help="rewrite the demo guide, build nothing"
+    )
+    demo.set_defaults(func=task_demo)
     tasks.add_parser("app", help="run the React dashboard on :5173").set_defaults(func=task_app)
     tasks.add_parser("test", help="run pytest").set_defaults(func=task_test)
     tasks.add_parser("lint", help="run ruff").set_defaults(func=task_lint)

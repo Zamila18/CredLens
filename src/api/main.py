@@ -36,13 +36,15 @@ from src.api.routes_admin import router as admin_router
 from src.api.routes_assessments import router as assessments_router
 from src.api.routes_auth import router as auth_router
 from src.api.routes_consents import router as consents_router
-from src.api.routes_daily import router as daily_router
 from src.api.routes_decisions import router as decisions_router
 from src.api.routes_intake import router as intake_router
 from src.api.routes_merchants import router as merchants_router
+from src.api.routes_notifications import router as notifications_router
 from src.api.routes_org import router as org_router
 from src.api.routes_platform import router as platform_router
+from src.api.routes_portal import router as portal_router
 from src.api.routes_quality import router as quality_router
+from src.api.routes_receipts import router as receipts_router
 from src.api.routes_registrations import router as registrations_router
 from src.api.routes_sources import router as sources_router
 from src.api.routes_workspace import router as workspace_router
@@ -115,8 +117,10 @@ def create_app(production: bool = False, cors_origins: list[str] | None = None) 
     app.include_router(platform_router)
     app.include_router(intake_router)
     app.include_router(registrations_router)
-    app.include_router(daily_router)
     app.include_router(assessments_router)
+    app.include_router(receipts_router)
+    app.include_router(portal_router)
+    app.include_router(notifications_router)
     app.include_router(workspace_router)
     app.include_router(sources_router)
     app.include_router(quality_router)

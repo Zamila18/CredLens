@@ -75,31 +75,32 @@ export const BANNER_BN: Record<DataMode, string> = {
 /** The officer's four actions. There is no approve or decline. */
 export const ACTION_TEXT: Record<OfficerAction, { label: Pair; short: Pair; hint: Pair }> = {
   accept: {
-    label: { en: 'Accept suggestion', bn: 'পরামর্শ মেনে নিন' },
-    short: { en: 'Accept', bn: 'মেনে নেওয়া' },
-    hint: { en: 'Agree with the band', bn: 'ব্যান্ডের সাথে একমত' },
+    label: { en: 'Go with the suggestion', bn: 'প্রস্তাব অনুযায়ী এগোন' },
+    short: { en: 'Agreed', bn: 'একমত' },
+    hint: { en: 'I agree with the summary above', bn: 'উপরের সারসংক্ষেপের সাথে একমত' },
   },
   override_up: {
-    label: { en: 'Override: raise', bn: 'পরিবর্তন: বাড়ান' },
-    short: { en: 'Override: raise', bn: 'পরিবর্তন: বাড়ানো' },
-    hint: { en: 'You see more strength than the score', bn: 'স্কোরের চেয়ে বেশি শক্তি দেখছেন' },
+    label: { en: 'Lend more than suggested', bn: 'প্রস্তাবের চেয়ে বেশি দিন' },
+    short: { en: 'Lend more', bn: 'বেশি দিন' },
+    hint: { en: 'I see more strength than the summary', bn: 'সারসংক্ষেপের চেয়ে বেশি শক্তি দেখছি' },
   },
   override_down: {
-    label: { en: 'Override: lower', bn: 'পরিবর্তন: কমান' },
-    short: { en: 'Override: lower', bn: 'পরিবর্তন: কমানো' },
-    hint: { en: 'You see risk the score misses', bn: 'স্কোরে ধরা পড়েনি এমন ঝুঁকি দেখছেন' },
+    label: { en: 'Lend less than suggested', bn: 'প্রস্তাবের চেয়ে কম দিন' },
+    short: { en: 'Lend less', bn: 'কম দিন' },
+    hint: { en: 'I see a risk the summary misses', bn: 'সারসংক্ষেপে ধরা পড়েনি এমন ঝুঁকি দেখছি' },
   },
   needs_more_info: {
-    label: { en: 'Needs more info', bn: 'আরও তথ্য প্রয়োজন' },
-    short: { en: 'Needs more info', bn: 'আরও তথ্য প্রয়োজন' },
-    hint: { en: 'Collect more evidence first', bn: 'আগে আরও প্রমাণ সংগ্রহ করুন' },
+    label: { en: 'Ask for more records', bn: 'আরও রেকর্ড চান' },
+    short: { en: 'More records asked', bn: 'আরও রেকর্ড চাওয়া' },
+    hint: { en: 'Wait for more receipts first', bn: 'আগে আরও রসিদ আসুক' },
   },
 }
 
 export const ROLE_TEXT: Record<Role, Pair> = {
   platform_admin: { en: 'Platform admin', bn: 'প্ল্যাটফর্ম অ্যাডমিন' },
   credit_officer: { en: 'Credit officer', bn: 'ক্রেডিট অফিসার' },
-  fsr: { en: 'FSR', bn: 'ফিল্ড সেলস রিপ্রেজেন্টেটিভ' },
+  records_officer: { en: 'Records Desk', bn: 'রেকর্ড ডেস্ক' },
+  merchant: { en: 'Merchant', bn: 'ব্যবসায়ী' },
   auditor: { en: 'Auditor', bn: 'অডিটর' },
 }
 

@@ -1,22 +1,23 @@
 /**
- * The four officer actions. There is no approve or decline: the officer accepts the
- * suggestion, overrides it (with a written reason), or asks for more information.
+ * The four officer actions, in plain words. There is no approve or decline: the officer goes
+ * with the suggestion, lends more or less than it suggests (with a written reason), or asks for
+ * more records. The codes (accept, override_up, ...) are what the server stores.
  */
 import type { OfficerAction } from '@/api/types'
 
 export const ACTIONS: { value: OfficerAction; label: string; hint: string }[] = [
-  { value: 'accept', label: 'Accept suggestion', hint: 'Agree with the band' },
-  { value: 'override_up', label: 'Override: raise', hint: 'You see more strength than the score' },
-  { value: 'override_down', label: 'Override: lower', hint: 'You see risk the score misses' },
-  { value: 'needs_more_info', label: 'Needs more info', hint: 'Collect more evidence first' },
+  { value: 'accept', label: 'Go with the suggestion', hint: 'I agree with the summary above' },
+  { value: 'override_up', label: 'Lend more than suggested', hint: 'I see more strength than the summary' },
+  { value: 'override_down', label: 'Lend less than suggested', hint: 'I see a risk the summary misses' },
+  { value: 'needs_more_info', label: 'Ask for more records', hint: 'Wait for more receipts first' },
 ]
 
-/** Short names for chips and filters ("Accept", not "Accept suggestion"). */
+/** Short names for chips and filters. */
 export const ACTION_SHORT: Record<OfficerAction, string> = {
-  accept: 'Accept',
-  override_up: 'Override: raise',
-  override_down: 'Override: lower',
-  needs_more_info: 'Needs more info',
+  accept: 'Agreed',
+  override_up: 'Lend more',
+  override_down: 'Lend less',
+  needs_more_info: 'More records asked',
 }
 
 export function isOverride(action: OfficerAction | null | undefined): boolean {

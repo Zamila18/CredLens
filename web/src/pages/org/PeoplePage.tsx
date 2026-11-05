@@ -84,11 +84,6 @@ export function PeoplePage() {
                 {pick(ROLE_NAMES[p.role as keyof typeof ROLE_NAMES], lang)}
                 {p.is_owner && <span className="ml-1 font-semibold text-lens-dark">· {t('owner', 'মালিক')}</span>}
                 {p.employee_id && <span className="block text-[12.5px] text-muted-2">ID {p.employee_id}</span>}
-                {p.role === 'fsr' && (
-                  <span className="block text-[12.5px] text-muted-2">
-                    {[p.territory, t(`${p.assigned_shops} shops`, `${p.assigned_shops}টি দোকান`)].filter(Boolean).join(' · ')}
-                  </span>
-                )}
               </span>
               <span className="text-[13.5px]">
                 {p.status === 'disabled' ? (

@@ -28,10 +28,9 @@ const STATE_WORDS: Record<string, [string, string]> = {
 export function InvitationsPage() {
   const t = useT()
   const list = useApi<InvitationOut[]>('/org/invitations', undefined, { noCache: true })
-  const [role, setRole] = useState('fsr')
+  const [role, setRole] = useState('records_officer')
   const [days, setDays] = useState('14')
   const [maxUses, setMaxUses] = useState('5')
-  const [territory, setTerritory] = useState('')
   const [label, setLabel] = useState('')
   const [fresh, setFresh] = useState<InvitationCreatedOut | null>(null)
   const [copied, setCopied] = useState(false)
@@ -42,7 +41,7 @@ export function InvitationsPage() {
     const made = await create.submit(() =>
       api<InvitationCreatedOut>('/org/invitations', {
         method: 'POST',
-        json: { role, days: Number(days), max_uses: Number(maxUses), default_territory: territory || null, label: label || null },
+        json: { role, days: Number(days), max_uses: Number(maxUses), label: label || null },
       }),
     )
     if (made) {
@@ -91,7 +90,7 @@ export function InvitationsPage() {
               value={role}
               onChange={(e) => setRole(e.target.value)}
               options={[
-                { value: 'fsr', label: t('Field Sales Representatives', 'ফিল্ড সেলস রিপ্রেজেন্টেটিভ') },
+                { value: 'records_officer', label: t('Records Desk officers', 'রেকর্ড ডেস্কের সদস্য') },
                 { value: 'credit_officer', label: t('Another Credit Officer', 'আরেকজন ক্রেডিট অফিসার') },
               ]}
             />
@@ -102,11 +101,6 @@ export function InvitationsPage() {
           <Field label={t('How many people may use it', 'কতজন ব্যবহার করতে পারবেন')} required>
             <TextInput inputMode="numeric" value={maxUses} onChange={(e) => setMaxUses(e.target.value)} />
           </Field>
-          {role === 'fsr' && (
-            <Field label={t('Default territory (optional)', 'ডিফল্ট এলাকা (ঐচ্ছিক)')}>
-              <TextInput value={territory} onChange={(e) => setTerritory(e.target.value)} />
-            </Field>
-          )}
           <Field label={t('Note for yourself (optional)', 'নিজের জন্য নোট (ঐচ্ছিক)')}>
             <TextInput value={label} onChange={(e) => setLabel(e.target.value)} maxLength={80} />
           </Field>
@@ -133,12 +127,11 @@ export function InvitationsPage() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="flex flex-col">
                     <span className="font-semibold text-ink">
-                      {inv.role === 'fsr' ? t('Field Sales Representatives', 'ফিল্ড সেলস রিপ্রেজেন্টেটিভ') : t('Credit Officer', 'ক্রেডিট অফিসার')} · …{inv.code_hint}
+                      {inv.role === 'records_officer' ? t('Records Desk officer', 'রেকর্ড ডেস্কের সদস্য') : t('Credit Officer', 'ক্রেডিট অফিসার')} · …{inv.code_hint}
                       {inv.label ? ` · ${inv.label}` : ''}
                     </span>
                     <span className="text-[13px] text-muted-2">
                       {t(STATE_WORDS[inv.state][0], STATE_WORDS[inv.state][1])} · {inv.use_count}/{inv.max_uses} {t('used', 'ব্যবহৃত')} · {t('until', 'পর্যন্ত')} {fmtDate(inv.expires_at)}
-                      {inv.default_territory ? ` · ${inv.default_territory}` : ''}
                     </span>
                   </span>
                   <span className="flex gap-2">

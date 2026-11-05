@@ -110,6 +110,24 @@ def build_services(config: dict[str, Any] | None = None) -> Services:
             "The database has not been created. Create it with: python tasks.py init-db"
         )
     if services.database_error is None:
+        table = inspect(engine).has_table("memberships")
+        if table:
+            with engine.connect() as conn:
+                from sqlalchemy import text
+
+                made_for = (
+                    conn.execute(
+                        text("select sql from sqlite_master where name = 'memberships'")
+                    ).scalar()
+                    if engine.dialect.name == "sqlite"
+                    else None
+                )
+            if made_for and "records_officer" not in made_for:
+                services.database_error = (
+                    "This database was made for an older version of CredLens. Delete "
+                    "data/credlens.db, then run: python tasks.py init-db and python tasks.py admins"
+                )
+    if services.database_error is None:
         # Read the last day of the data now, so the first profile request is not the slow one.
         with Session(engine) as session:
             services.data_today(session)

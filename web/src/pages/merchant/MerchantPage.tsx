@@ -15,7 +15,7 @@
  * Without consent the API refuses the score (consent_required): the page then shows the
  * locked state, with no evidence, no reasons, no habits and no decision form.
  */
-import { CircleCheck, Lock, MapPinned, ReceiptText } from 'lucide-react'
+import { CircleCheck, Lock } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 
@@ -34,8 +34,9 @@ import { ConsentPanel } from './ConsentPanel'
 import { DecisionForm, DecisionHistory, NoPendingLoanNote, ReadOnlyDecisionNote } from './DecisionPanels'
 import { EvidenceCards, LoansPanel, Timeline } from './Evidence'
 import { AssessmentPanel } from './AssessmentPanel'
+import { CreditSummary } from './CreditSummary'
+import { MerchantIdCard } from './MerchantIdCard'
 import { QuestionnaireForm } from './QuestionnaireForm'
-import { MerchantQualityNote } from '@/pages/quality/MerchantQualityNote'
 import { EvidenceRequestsPanel, RangePanel, ReadinessPanel, RecordsPanel, ReviewSummary } from './Review'
 import { HabitsPanel, NoConsentScore, ReadinessOverview, WhyMightThisBeWrong, WhyThisScore } from './ScorePanels'
 
@@ -58,13 +59,11 @@ function Fact({ label, value }: { label: string; value: string }) {
 }
 
 function Header({ profile, consent, status }: { profile: MerchantProfile; consent?: ConsentView; status: 'waiting' | 'decided' | null }) {
-  const { lang, role } = useSession()
+  const { lang } = useSession()
   const t = useT()
   const until = consent?.valid ? validUntil(consent) : null
   const consentValid = consent ? consent.valid : profile.consent_valid
   const place = [profile.area, profile.district, profile.town_tier && valueText(profile.town_tier, lang)].filter(Boolean).join(' · ')
-  const fieldShop = role === 'credit_officer' && Boolean(profile.shop_name)
-  const base = `/app/field/shops/${encodeURIComponent(profile.merchant_id)}`
 
   return (
     <header className="mint-wash flex flex-col gap-5 rounded-card border border-mint-line p-5 sm:p-6">
@@ -73,7 +72,7 @@ function Header({ profile, consent, status }: { profile: MerchantProfile; consen
           <h1 className="m-0 text-[30px] leading-9 font-bold tracking-[-0.02em] break-words sm:text-[34px] sm:leading-10">{profile.shop_name ?? profile.merchant_id}</h1>
           <span className="flex flex-wrap items-center gap-2 text-sm text-body">
             <span className="rounded bg-white/80 px-1.5 py-0.5 font-mono text-[13px] text-ink-2">{profile.merchant_id}</span>
-            {profile.shop_name ? t('Shop added in the app', 'অ্যাপে যোগ করা দোকান') : t('Synthetic benchmark merchant', 'সিনথেটিক বেঞ্চমার্ক মার্চেন্ট')}
+            {profile.area ? <span>{[profile.area, profile.district].filter(Boolean).join(', ')}</span> : null}
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -114,18 +113,6 @@ function Header({ profile, consent, status }: { profile: MerchantProfile; consen
           <CircleCheck size={16} className="shrink-0 text-lens-dark" aria-hidden="true" />
           {t(`Consent covers ${listInWords(consent.data_categories, lang)}.`, `অনুমতিতে আছে: ${listInWords(consent.data_categories, lang)}।`)}
         </p>
-      )}
-      {fieldShop && (
-        <div className="flex flex-wrap gap-2 print:hidden">
-          <Link to={base} className="inline-flex min-h-10 items-center gap-2 rounded-[10px] border border-mint-line bg-white px-3.5 text-sm font-semibold no-underline hover:bg-mint-2">
-            <MapPinned size={16} aria-hidden="true" />
-            {t('Field work for this shop', 'এই দোকানের মাঠের কাজ')}
-          </Link>
-          <Link to={`${base}/receipt`} className="inline-flex min-h-10 items-center gap-2 rounded-[10px] border border-mint-line bg-white px-3.5 text-sm font-semibold no-underline hover:bg-mint-2">
-            <ReceiptText size={16} aria-hidden="true" />
-            {t('Data receipt', 'তথ্যের রসিদ')}
-          </Link>
-        </div>
       )}
     </header>
   )
@@ -257,112 +244,75 @@ function MerchantView({ merchantId }: { merchantId: string }) {
     <Page>
       {breadcrumb}
       <Header profile={profile.data} consent={consent.data} status={status} />
-      {review.error ? (
-        <ErrorCallout error={review.error} />
-      ) : review.data ? (
-        <ReviewSummary review={review.data} score={score.data} />
-      ) : (
-        <Loading what={t('Loading the review…', 'পর্যালোচনা আসছে…')} />
-      )}
 
-      <div className="@container flex flex-col gap-6 xl:grid xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
-        <div className="contents xl:@container xl:flex xl:min-w-0 xl:flex-col xl:gap-6">
-          {noConsent ? (
-            <div className="order-2 flex flex-col gap-6">
-              <NoConsentScore />
-              {score.error && score.error.code !== 'consent_required' && <ErrorCallout error={score.error} />}
-            </div>
-          ) : notAssessed ? (
-            <Card className="order-2 flex flex-col gap-2 p-5 sm:p-6">
-              <span className="font-display text-xl font-bold text-ink">{t('Not assessed yet', 'এখনও মূল্যায়ন হয়নি')}</span>
-              <span className="text-[15px] text-body">
-                {t(
-                      'This shop has no application and no loan, so there is nothing to assess. The records below are kept; an assessment runs once an application is created in Field work.',
-                      'এই দোকানের কোনো আবেদন বা ঋণ নেই, তাই মূল্যায়নের কিছু নেই। নিচের রেকর্ডগুলো রাখা আছে; মাঠের কাজে আবেদন তৈরি হলে মূল্যায়ন হবে।',
-                    )}
-              </span>
-            </Card>
-          ) : score.error ? (
-            <div className="order-2">
-              <ErrorCallout error={score.error} />
-            </div>
-          ) : !score.data ? (
-            <div className="order-2">
-              <Loading what={t('Loading the score…', 'স্কোর আসছে…')} />
-            </div>
-          ) : (
-            <>
-              <div className="order-2 min-w-0">
-                <ReadinessOverview score={score.data} lang={lang} outcome={outcome} />
-              </div>
-              <div className="order-4 min-w-0">
-                <EvidenceCards profile={profile.data} />
-              </div>
-            </>
-          )}
-          {!noConsent && review.data && <RecordsPanel review={review.data} className="order-4 min-w-0" />}
-          {!noConsent && loans.data && loans.data.length > 0 && (
-            <div className="order-4 min-w-0">
-              <LoansPanel loans={loans.data} />
-            </div>
-          )}
-          {scoreReady && (
-            <>
-              <div className="order-5 min-w-0">
-                <WhyThisScore score={score.data!} lang={lang} />
-              </div>
-              <div className="order-5 min-w-0">
-                <Timeline events={profile.data.timeline ?? []} />
-              </div>
-              <div className="order-5 min-w-0">
-                <HabitsPanel merchantId={merchantId} questionnaire={questionnaire} action={habitsAction}>
-                  {answering && (
-                    <QuestionnaireForm
-                      merchantId={merchantId}
-                      lang={lang}
-                      onCancel={() => setAnswering(false)}
-                      onSaved={(summary) => {
-                        setSavedAnswers(summary)
-                        setAnswering(false)
-                        setJustSaved(true)
-                      }}
-                    />
-                  )}
-                </HabitsPanel>
-              </div>
-              <div className="order-5 min-w-0">
-                <WhyMightThisBeWrong />
-              </div>
-            </>
-          )}
-          <div className="order-6 min-w-0">
-            {consent.error ? (
-              <ErrorCallout error={consent.error} />
-            ) : consent.data ? (
-              <ConsentPanel consent={consent.data} />
-            ) : (
-              <Loading what={t('Loading the consent record…', 'অনুমতির রেকর্ড আসছে…')} />
-            )}
-          </div>
-        </div>
+      {noConsent ? <NoConsentScore /> : <CreditSummary merchantId={merchantId} canRun={isOfficer} nothingToScore={notAssessed} />}
 
-        <div className="contents xl:@container xl:flex xl:min-w-0 xl:flex-col xl:gap-6">
-          {review.data && <ReadinessPanel review={review.data} className="order-1" />}
-          {rowsAllowed && <MerchantQualityNote merchantId={merchantId} className="order-2" />}
-          {review.data && !noConsent && <EvidenceRequestsPanel review={review.data} className="order-3" />}
-          {review.data && <RangePanel review={review.data} className="order-3" />}
-          {!noConsent && <AssessmentPanel merchantId={merchantId} canRun={isOfficer} className="order-3" />}
-          {/* No decision without a score, and none when no loan is waiting. */}
-          {scoreReady && (
-            <div className="order-7 min-w-0">
-              {!isOfficer ? <ReadOnlyDecisionNote /> : loanWaiting ? <DecisionForm merchantId={merchantId} score={score.data!} onRecorded={decisions.reload} /> : <NoPendingLoanNote />}
-            </div>
-          )}
-          <div className="order-8 min-w-0">
-            <DecisionHistory decisions={decisions.data} error={decisions.error} />
-          </div>
-        </div>
+      {/* The decision sits right under the summary. None without a score, and none when no loan is waiting. */}
+      {scoreReady && (!isOfficer ? <ReadOnlyDecisionNote /> : loanWaiting ? <DecisionForm merchantId={merchantId} onRecorded={decisions.reload} /> : <NoPendingLoanNote />)}
+
+      <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
+        <DecisionHistory decisions={decisions.data} error={decisions.error} />
+        {isOfficer && <MerchantIdCard merchantId={merchantId} />}
       </div>
+
+      <details className="group rounded-card border border-card-line bg-card">
+        <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 rounded-card px-5 py-3 text-[16px] font-semibold text-ink transition-colors hover:bg-ground">
+          {t('Receipts, loans and consent', 'রসিদ, ঋণ ও অনুমতি')}
+          <span className="text-[13.5px] font-normal text-muted-2 group-open:hidden">{t('Show', 'দেখুন')}</span>
+          <span className="hidden text-[13.5px] font-normal text-muted-2 group-open:inline">{t('Hide', 'লুকান')}</span>
+        </summary>
+        <div className="flex min-w-0 flex-col gap-6 border-t border-line p-5">
+          {!noConsent && review.data && <RecordsPanel review={review.data} className="min-w-0" />}
+          {!noConsent && loans.data && loans.data.length > 0 && <LoansPanel loans={loans.data} />}
+          {consent.error ? (
+            <ErrorCallout error={consent.error} />
+          ) : consent.data ? (
+            <ConsentPanel consent={consent.data} />
+          ) : (
+            <Loading what={t('Loading the consent record…', 'অনুমতির রেকর্ড আসছে…')} />
+          )}
+        </div>
+      </details>
+
+      <details className="group rounded-card border border-card-line bg-card">
+        <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 rounded-card px-5 py-3 text-[16px] font-semibold text-ink transition-colors hover:bg-ground">
+          {t('Technical details for analysts', 'বিশ্লেষকদের জন্য কারিগরি তথ্য')}
+          <span className="text-[13.5px] font-normal text-muted-2 group-open:hidden">{t('Show', 'দেখুন')}</span>
+          <span className="hidden text-[13.5px] font-normal text-muted-2 group-open:inline">{t('Hide', 'লুকান')}</span>
+        </summary>
+        <div className="flex flex-col gap-6 border-t border-line p-5">
+          {review.data ? <ReviewSummary review={review.data} score={score.data} /> : review.error ? <ErrorCallout error={review.error} /> : null}
+          {review.data && <ReadinessPanel review={review.data} />}
+          {review.data && !noConsent && <EvidenceRequestsPanel review={review.data} />}
+          {review.data && <RangePanel review={review.data} />}
+          {!noConsent && <AssessmentPanel merchantId={merchantId} canRun={false} />}
+          {scoreReady && (
+            <>
+              <ReadinessOverview score={score.data!} lang={lang} outcome={outcome} />
+              <WhyThisScore score={score.data!} lang={lang} />
+              <EvidenceCards profile={profile.data} />
+              <Timeline events={profile.data.timeline ?? []} />
+              <HabitsPanel merchantId={merchantId} questionnaire={questionnaire} action={habitsAction}>
+                {answering && (
+                  <QuestionnaireForm
+                    merchantId={merchantId}
+                    lang={lang}
+                    onCancel={() => setAnswering(false)}
+                    onSaved={(summary) => {
+                      setSavedAnswers(summary)
+                      setAnswering(false)
+                      setJustSaved(true)
+                    }}
+                  />
+                )}
+              </HabitsPanel>
+              <WhyMightThisBeWrong />
+            </>
+          )}
+          {notAssessed && <p className="m-0 text-[15px] text-body">{t('This shop has no application and no loan yet, so there is nothing to assess.', 'এই দোকানের এখনও কোনো আবেদন বা ঋণ নেই, তাই মূল্যায়নের কিছু নেই।')}</p>}
+          {score.error && score.error.code !== 'consent_required' && score.error.code !== 'unknown_merchant' && <ErrorCallout error={score.error} />}
+        </div>
+      </details>
     </Page>
   )
 }

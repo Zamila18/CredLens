@@ -23,7 +23,8 @@ from src.config import VALID_MODES, load_config
 # The data modes of the project: one list (src/config.py), so a new mode needs no change here.
 DataMode = Literal[VALID_MODES]
 Band = Literal["Strong", "Review", "Needs more info"]
-Role = str  # credit_officer | fsr | auditor | platform_admin (older rows: officer, admin, viewer)
+# credit_officer | records_officer | merchant | auditor | platform_admin (older: officer, admin)
+Role = str
 OfficerAction = Literal["accept", "override_up", "override_down", "needs_more_info"]
 
 OVERRIDE_ACTIONS = ("override_up", "override_down")
@@ -632,6 +633,7 @@ class ApplicationOut(BaseModel):
     business_date: str
     entered_at: str
     created_by: str
+    submitted_by_merchant: bool = False
     assessment_status: Literal["current", "not_updated", "not_scored"]
     note: str = "This is an application: the amount requested, not an issued loan."
 
@@ -901,6 +903,7 @@ class ApplicationRow(BaseModel):
         default=None, description="The latest officer decision recorded after the application."
     )
     decided_at: str | None = None
+    submitted_by_merchant: bool = False
 
 
 class DirectoryRow(BaseModel):
@@ -1011,12 +1014,11 @@ class Overview(BaseModel):
     # the company's field operation (counted from its own records)
     registrations_open: int = 0
     documents_to_review: int = 0
-    fsrs_total: int = 0
-    fsrs_active: int = 0
-    merchants_unassigned: int = 0
-    submissions_today: int = 0
-    sheets_returned: int = 0
-    sheets_with_drafts: int = 0
+    receipts_to_check: int = 0
+    receipts_published: int = 0
+    lines_disputed: int = 0
+    merchant_reports_open: int = 0
+    applications_from_merchants: int = 0
     evidence: EvidenceOverview | None = None
 
 
@@ -1253,6 +1255,13 @@ class LoginIn(BaseModel):
     password: str = Field(min_length=1, max_length=200)
 
 
+class MerchantLoginIn(BaseModel):
+    """POST /auth/merchant-login: a shop owner signs in with the Merchant ID and their name."""
+
+    merchant_id: str = Field(min_length=6, max_length=24, description="Merchant ID from the slip.")
+    owner_name: str = Field(min_length=2, max_length=120)
+
+
 class SetupPasswordIn(BaseModel):
     identifier: str = Field(min_length=3, max_length=254)
     code: str = Field(
@@ -1277,9 +1286,7 @@ class MeOut(BaseModel):
     organization_id: str | None = Field(description="None for a platform administrator.")
     organization_name: str | None
     environment: Literal["benchmark", "pilot", "production"] | None
-    fsr_label: str | None = Field(
-        default=None, description="What the company calls its Field Sales Representatives."
-    )
+    merchant_id: str | None = Field(default=None, description="A merchant's own shop.")
 
 
 class RegistrationPerson(BaseModel):
@@ -1316,9 +1323,8 @@ class JoinRegisterIn(RegistrationPerson):
     """POST /auth/register/join: an employee joining with a company invitation code."""
 
     invitation_code: str = Field(max_length=40)
-    role: Literal["fsr", "credit_officer"]
+    role: Literal["records_officer", "credit_officer"]
     employee_id: str = Field(default="", max_length=40)
-    territory: str = Field(default="", max_length=120)
 
 
 class RegisteredOut(BaseModel):
@@ -1334,16 +1340,14 @@ class InvitationPreviewOut(BaseModel):
 
     organization_name: str
     role: str
-    default_territory: str | None
 
 
 class InvitationCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    role: Literal["fsr", "credit_officer"]
+    role: Literal["records_officer", "credit_officer"]
     days: int | None = Field(default=None, ge=1, le=365)
     max_uses: int = Field(default=1, ge=1, le=1000)
-    default_territory: str | None = Field(default=None, max_length=120)
     label: str | None = Field(default=None, max_length=80)
 
 
@@ -1358,7 +1362,6 @@ class InvitationOut(BaseModel):
     invitation_id: str
     role: str
     label: str | None
-    default_territory: str | None
     code_hint: str = Field(description="The last four characters; the full code is shown once.")
     state: Literal["active", "revoked", "expired", "used_up"]
     expires_at: str
@@ -1387,9 +1390,7 @@ class EmployeeOut(BaseModel):
     job_title: str | None
     department: str | None
     employee_id: str | None
-    territory: str | None
     registered_at: str
-    assigned_shops: int
 
 
 class SetupCodeOut(BaseModel):
@@ -1417,14 +1418,12 @@ class OrganizationProfileOut(BaseModel):
     website: str | None
     status: str
     environment: str
-    fsr_label: str | None
     created_at: str
 
 
 class OrganizationProfilePatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    fsr_label: str | None = Field(default=None, max_length=48)
     contact_number: str | None = Field(default=None, max_length=32)
     website: str | None = Field(default=None, max_length=200)
     address: str | None = Field(default=None, max_length=400)
@@ -1440,7 +1439,7 @@ class PlatformOrgOut(BaseModel):
     environment: str
     created_at: str
     credit_officers: int
-    fsrs: int
+    records_officers: int
     merchants: int
 
 
@@ -1448,22 +1447,6 @@ class PlatformOrgStatusIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     status: Literal["active", "suspended"]
-
-
-class ShopAssignmentOut(BaseModel):
-    merchant_id: str
-    shop_name: str | None
-    area: str | None
-    district: str | None
-    fsr_user_id: str | None
-    fsr_name: str | None
-    assigned_at: str | None
-    assigned_by: str | None
-
-
-class AssignIn(BaseModel):
-    merchant_id: str = Field(min_length=1, max_length=32)
-    fsr_user_id: str = Field(min_length=1, max_length=32)
 
 
 # --- merchant registration and paper consent (Phase 2) ------------------------------------
@@ -1590,200 +1573,3 @@ class ConsentTemplateStatusIn(BaseModel):
     legal_review_ref: str | None = Field(default=None, max_length=200)
 
 
-# --- daily records, submissions, notifications (Phases 4 and 5) ---------------------------
-
-
-class DailyRowIn(BaseModel):
-    """One row of a daily sheet as the grid sends it. Dates are YYYY-MM-DD; numbers may be text."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    entry_id: str | None = None
-    entry_type: str
-    txn_date: str | None = None
-    category: str | None = None
-    description: str | None = None
-    quantity: str | float | None = None
-    unit: str | None = None
-    unit_price: str | float | None = None
-    amount_bdt: str | float | None = None
-    counterparty: str | None = None
-    payment_method: str | None = None
-    payment_status: str | None = None
-    due_date: str | None = None
-    note: str | None = None
-    source: str | None = None
-    extraction_confidence: float | None = None
-
-
-class DailySaveIn(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    rows: list[DailyRowIn]
-    delete_missing: bool = Field(default=True, description="Draft rows not sent are deleted.")
-
-
-class AmendIn(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    reason: str = Field(max_length=300)
-    txn_date: str | None = None
-    category: str | None = None
-    description: str | None = None
-    quantity: str | float | None = None
-    unit: str | None = None
-    unit_price: str | float | None = None
-    amount_bdt: str | float | None = None
-    counterparty: str | None = None
-    payment_method: str | None = None
-    payment_status: str | None = None
-    due_date: str | None = None
-    note: str | None = None
-
-
-class DailyEntryOut(BaseModel):
-    entry_id: str
-    sheet_id: str
-    business_date: str
-    row_no: int
-    entry_type: str
-    status: Literal["draft", "submitted", "superseded"]
-    txn_date: str | None
-    category: str | None
-    description: str | None
-    quantity: float | None
-    unit: str | None
-    unit_price: float | None
-    amount_bdt: float | None
-    counterparty: str | None
-    payment_method: str | None
-    payment_status: str | None
-    due_date: str | None
-    note: str | None
-    source: str
-    extraction_confidence: float | None
-    supersedes_entry_id: str | None
-    amend_reason: str | None
-    scored: bool = Field(description="True when this kind of row is also used by the assessment.")
-    created_by: str
-
-
-class DailySheetOut(BaseModel):
-    sheet_id: str
-    merchant_id: str
-    business_date: str
-    fsr_user_id: str
-    fsr_name: str | None
-    status: Literal["draft", "submitted", "returned", "accepted"]
-    submitted_at: str | None
-    returned_reason: str | None
-    drafts: int
-    submitted: int
-    totals: dict[str, float]
-
-
-class DailyDayOut(BaseModel):
-    """GET and PUT /merchants/{id}/daily/{date}: the sheet, its rows, and row problems."""
-
-    sheet: DailySheetOut | None
-    entries: list[DailyEntryOut]
-    errors: dict[str, dict[str, str]] = {}
-
-
-class EntryTypeOut(BaseModel):
-    key: str
-    en: str
-    bn: str
-    scored: bool
-    fields: list[str]
-    required: list[str]
-    labels: dict[str, str]
-
-
-class DailyListOut(BaseModel):
-    sheets: list[DailySheetOut]
-    entries: list[DailyEntryOut]
-
-
-class SubmissionOut(BaseModel):
-    sheet_id: str
-    merchant_id: str
-    shop_name: str | None
-    business_date: str
-    fsr_user_id: str
-    fsr_name: str | None
-    status: Literal["draft", "submitted", "returned", "accepted"]
-    rows: int
-    drafts: int
-    totals: dict[str, float]
-    submitted_at: str | None
-    returned_reason: str | None
-
-
-class FsrShopOut(BaseModel):
-    merchant_id: str
-    shop_name: str | None
-    area: str | None
-    district: str | None
-    today_status: str | None
-    today_drafts: int
-    last_submitted: str | None
-
-
-class FsrOverviewOut(BaseModel):
-    territory: str | None
-    employee_id: str | None
-    today: str
-    shops: list[FsrShopOut]
-    returned: int
-    pending_drafts: int
-    submitted_today: int
-
-
-class NotificationOut(BaseModel):
-    notification_id: str
-    kind: str
-    text: str
-    link: str | None
-    created_at: str
-    read: bool
-
-
-class AssignmentHistoryOut(BaseModel):
-    merchant_id: str
-    shop_name: str | None
-    fsr_user_id: str
-    fsr_name: str | None
-    assigned_at: str
-    assigned_by: str
-    ended_at: str | None
-    ended_by: str | None
-
-
-class BulkAssignIn(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    merchant_ids: list[str] = Field(min_length=1, max_length=200)
-    fsr_user_id: str
-
-
-class FsrDetailOut(BaseModel):
-    employee: EmployeeOut
-    shops: list[ShopAssignmentOut]
-    recent_sheets: list[SubmissionOut]
-    drafts_open: int
-    returned_open: int
-
-
-class ImportTableOut(BaseModel):
-    """A table read from an uploaded file, for the FSR to map, correct and load as drafts."""
-
-    job_id: str
-    status: Literal["queued", "running", "done", "failed"]
-    method: str | None = None
-    headers: list[str] = []
-    rows: list[list[str]] = []
-    confidences: list[float] = []
-    notes: list[str] = []
-    suggested_mapping: dict[str, int] = {}
-    error: str | None = None

@@ -2,7 +2,7 @@
 
 Purpose: a company runs itself. Its owner (the Credit Officer who registered it) invites
     colleagues with a code, sees who joined, resets a password with a one-time code, and
-    disables an account. Any Credit Officer gives shops to Field Sales Representatives (FSRs).
+    disables an account.
 Owner role: D (full-stack).
 Implements: Phase 1 of the unified platform plan (sections 6 and 7).
 
@@ -17,7 +17,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.accounts import invitations, service
@@ -25,11 +25,7 @@ from src.accounts.service import AccountError
 from src.api.auth import CurrentUser, add_audit, require_owner, require_roles
 from src.api.common import api_error
 from src.api.schemas import (
-    AssignIn,
-    AssignmentHistoryOut,
-    BulkAssignIn,
     EmployeeOut,
-    FsrDetailOut,
     InvitationCreate,
     InvitationCreatedOut,
     InvitationOut,
@@ -37,10 +33,9 @@ from src.api.schemas import (
     OrganizationProfileOut,
     OrganizationProfilePatch,
     SetupCodeOut,
-    ShopAssignmentOut,
 )
 from src.api.state import Services, get_services, get_session
-from src.api.tenancy import merchant_in_org, org_of
+from src.api.tenancy import org_of
 from src.db import models as db
 
 router = APIRouter(tags=["company administration"])
@@ -89,7 +84,6 @@ def _profile_out(org: db.Organization) -> OrganizationProfileOut:
         website=org.website,
         status=org.status,
         environment=org.environment,
-        fsr_label=org.fsr_label,
         created_at=_iso(org.created_at),
     )
 
@@ -131,14 +125,6 @@ def _employee_out(session: Session, membership: db.Membership) -> EmployeeOut:
     user = session.get(db.User, membership.user_id)
     credential = session.get(db.UserCredential, membership.user_id)
     profile = session.get(db.StaffProfile, membership.user_id)
-    shops = session.scalar(
-        select(func.count())
-        .select_from(db.ShopAssignment)
-        .where(
-            db.ShopAssignment.fsr_user_id == membership.user_id,
-            db.ShopAssignment.ended_at.is_(None),
-        )
-    )
     return EmployeeOut(
         user_id=user.user_id,
         full_name=(profile.full_name if profile else user.display_name),
@@ -150,9 +136,7 @@ def _employee_out(session: Session, membership: db.Membership) -> EmployeeOut:
         job_title=profile.job_title if profile else None,
         department=profile.department if profile else None,
         employee_id=profile.employee_id if profile else None,
-        territory=profile.territory if profile else None,
         registered_at=_iso(membership.created_at),
-        assigned_shops=int(shops or 0),
     )
 
 
@@ -213,12 +197,6 @@ def disable_employee(
         raise api_error(409, "cannot_disable_self", "You cannot disable your own account.")
     membership = _membership(session, org, user_id)
     service.disable_account(session, membership)
-    for row in session.scalars(
-        select(db.ShopAssignment).where(
-            db.ShopAssignment.fsr_user_id == user_id, db.ShopAssignment.ended_at.is_(None)
-        )
-    ):
-        row.ended_at, row.ended_by = service.now(), owner.user_id
     add_audit(session, owner, "disable_account")
     session.commit()
     return _employee_out(session, membership)
@@ -239,7 +217,6 @@ def _invitation_out(session: Session, row: db.Invitation) -> InvitationOut:
         invitation_id=row.invitation_id,
         role=row.role,
         label=row.label,
-        default_territory=row.default_territory,
         code_hint=row.code_hint,
         state=invitations.state_of(row),
         expires_at=_iso(row.expires_at),
@@ -280,7 +257,7 @@ def create_invitation(
     services: Services = Depends(get_services),
     session: Session = Depends(get_session),
 ) -> InvitationCreatedOut:
-    """Make an invitation code for FSRs or for another Credit Officer. The code is returned
+    """Make an invitation code for a Records Desk officer or a Credit Officer. The code is returned
     once; copy it and share it with the right people."""
     try:
         row, code = invitations.create_invitation(
@@ -291,7 +268,6 @@ def create_invitation(
             owner.user_id,
             days=body.days,
             max_uses=body.max_uses,
-            default_territory=body.default_territory,
             label=body.label,
         )
     except AccountError as error:
@@ -331,7 +307,7 @@ def regenerate_invitation(
     services: Services = Depends(get_services),
     session: Session = Depends(get_session),
 ) -> InvitationCreatedOut:
-    """Revoke a code and make a new one with the same role, limits and territory."""
+    """Revoke a code and make a new one with the same role and limits."""
     try:
         old = invitations.get_for_org(session, org, invitation_id)
         row, code = invitations.regenerate_invitation(session, services.config, old, owner.user_id)
@@ -340,223 +316,3 @@ def regenerate_invitation(
     add_audit(session, owner, "regenerate_invitation")
     session.commit()
     return InvitationCreatedOut(invitation=_invitation_out(session, row), code=code)
-
-
-# --- shop assignments -------------------------------------------------------------------
-
-
-@router.get("/org/assignments", response_model=list[ShopAssignmentOut])
-def list_assignments(
-    org: str = Depends(officer_org),
-    services: Services = Depends(get_services),
-    session: Session = Depends(get_session),
-) -> list[ShopAssignmentOut]:
-    """Every shop of the organisation with its current FSR (if any)."""
-    rows = session.execute(
-        select(db.Merchant, db.MerchantProfile)
-        .join(db.MerchantProfile, db.MerchantProfile.merchant_id == db.Merchant.merchant_id)
-        .where(merchant_in_org(org, services.config))
-        .order_by(db.MerchantProfile.shop_name)
-    ).all()
-    out = []
-    for merchant, profile in rows:
-        current = service.current_assignment(session, merchant.merchant_id)
-        fsr = session.get(db.User, current.fsr_user_id) if current else None
-        out.append(
-            ShopAssignmentOut(
-                merchant_id=merchant.merchant_id,
-                shop_name=profile.shop_name,
-                area=profile.area,
-                district=merchant.district,
-                fsr_user_id=current.fsr_user_id if current else None,
-                fsr_name=fsr.display_name if fsr else None,
-                assigned_at=_iso(current.assigned_at) if current else None,
-                assigned_by=current.assigned_by if current else None,
-            )
-        )
-    return out
-
-
-@router.post("/org/assignments", response_model=ShopAssignmentOut)
-def assign(
-    body: AssignIn,
-    officer: CurrentUser = Depends(OFFICER),
-    org: str = Depends(officer_org),
-    services: Services = Depends(get_services),
-    session: Session = Depends(get_session),
-) -> ShopAssignmentOut:
-    """Give a shop to an FSR (it leaves its earlier FSR, if any; the history is kept)."""
-    try:
-        row = service.assign_shop(
-            session,
-            org,
-            body.merchant_id,
-            body.fsr_user_id,
-            officer.user_id,
-            default_org=services.config["organization"]["id"],
-        )
-    except AccountError as error:
-        raise _refused(error) from None
-    add_audit(session, officer, "assign_shop", body.merchant_id)
-    session.commit()
-    profile = session.get(db.MerchantProfile, body.merchant_id)
-    merchant = session.get(db.Merchant, body.merchant_id)
-    fsr = session.get(db.User, row.fsr_user_id)
-    return ShopAssignmentOut(
-        merchant_id=body.merchant_id,
-        shop_name=profile.shop_name if profile else None,
-        area=profile.area if profile else None,
-        district=merchant.district,
-        fsr_user_id=row.fsr_user_id,
-        fsr_name=fsr.display_name,
-        assigned_at=_iso(row.assigned_at),
-        assigned_by=row.assigned_by,
-    )
-
-
-@router.post("/org/assignments/{merchant_id}/end", status_code=204)
-def end_assignment(
-    merchant_id: str,
-    officer: CurrentUser = Depends(OFFICER),
-    org: str = Depends(officer_org),
-    session: Session = Depends(get_session),
-) -> None:
-    """Take a shop away from its FSR. The history stays."""
-    try:
-        service.end_assignment(session, org, merchant_id, officer.user_id)
-    except AccountError as error:
-        raise _refused(error) from None
-    add_audit(session, officer, "end_assignment", merchant_id)
-    session.commit()
-
-
-@router.post("/org/assignments/bulk", response_model=list[ShopAssignmentOut])
-def assign_many(
-    body: BulkAssignIn,
-    officer: CurrentUser = Depends(OFFICER),
-    org: str = Depends(officer_org),
-    services: Services = Depends(get_services),
-    session: Session = Depends(get_session),
-) -> list[ShopAssignmentOut]:
-    """Give several shops to one FSR at once (all or none)."""
-    out = []
-    try:
-        for merchant_id in dict.fromkeys(body.merchant_ids):
-            row = service.assign_shop(
-                session,
-                org,
-                merchant_id,
-                body.fsr_user_id,
-                officer.user_id,
-                default_org=services.config["organization"]["id"],
-            )
-            add_audit(session, officer, "assign_shop", merchant_id)
-            out.append(row)
-    except AccountError as error:
-        session.rollback()
-        raise _refused(error) from None
-    session.commit()
-    return [_assignment_out(session, row) for row in out]
-
-
-def _assignment_out(session: Session, row: db.ShopAssignment) -> ShopAssignmentOut:
-    profile = session.get(db.MerchantProfile, row.merchant_id)
-    merchant = session.get(db.Merchant, row.merchant_id)
-    fsr = session.get(db.User, row.fsr_user_id)
-    return ShopAssignmentOut(
-        merchant_id=row.merchant_id,
-        shop_name=profile.shop_name if profile else None,
-        area=profile.area if profile else None,
-        district=merchant.district if merchant else None,
-        fsr_user_id=row.fsr_user_id,
-        fsr_name=fsr.display_name if fsr else None,
-        assigned_at=_iso(row.assigned_at),
-        assigned_by=row.assigned_by,
-    )
-
-
-@router.get("/org/assignments/history", response_model=list[AssignmentHistoryOut])
-def assignment_history(
-    merchant_id: str | None = None,
-    fsr_id: str | None = None,
-    org: str = Depends(officer_org),
-    session: Session = Depends(get_session),
-) -> list[AssignmentHistoryOut]:
-    """Who had which shop and when, newest first. Ended assignments stay in the history."""
-    query = select(db.ShopAssignment).where(db.ShopAssignment.organization_id == org)
-    if merchant_id:
-        query = query.where(db.ShopAssignment.merchant_id == merchant_id)
-    if fsr_id:
-        query = query.where(db.ShopAssignment.fsr_user_id == fsr_id)
-    out = []
-    for row in session.scalars(query.order_by(db.ShopAssignment.assigned_at.desc()).limit(500)):
-        profile = session.get(db.MerchantProfile, row.merchant_id)
-        fsr = session.get(db.User, row.fsr_user_id)
-        out.append(
-            AssignmentHistoryOut(
-                merchant_id=row.merchant_id,
-                shop_name=profile.shop_name if profile else None,
-                fsr_user_id=row.fsr_user_id,
-                fsr_name=fsr.display_name if fsr else None,
-                assigned_at=_iso(row.assigned_at),
-                assigned_by=row.assigned_by,
-                ended_at=_iso(row.ended_at) if row.ended_at else None,
-                ended_by=row.ended_by,
-            )
-        )
-    return out
-
-
-@router.get("/org/fsrs/{user_id}", response_model=FsrDetailOut)
-def fsr_detail(
-    user_id: str,
-    org: str = Depends(officer_org),
-    session: Session = Depends(get_session),
-) -> FsrDetailOut:
-    """One FSR: their details, their current shops, and what they have been submitting."""
-    from src.api.routes_daily import SubmissionOut, _sheet_out
-
-    membership = _membership(session, org, user_id)
-    if membership.role != "fsr":
-        raise api_error(404, "unknown_employee", "No such FSR in your company.")
-    shops = [
-        _assignment_out(session, row)
-        for row in session.scalars(
-            select(db.ShopAssignment).where(
-                db.ShopAssignment.fsr_user_id == user_id, db.ShopAssignment.ended_at.is_(None)
-            )
-        )
-    ]
-    sheets = session.scalars(
-        select(db.DailySheet)
-        .where(db.DailySheet.fsr_user_id == user_id)
-        .order_by(db.DailySheet.business_date.desc())
-        .limit(30)
-    ).all()
-    recent = []
-    for sheet in sheets:
-        info = _sheet_out(session, sheet)
-        profile = session.get(db.MerchantProfile, sheet.merchant_id)
-        recent.append(
-            SubmissionOut(
-                sheet_id=sheet.sheet_id,
-                merchant_id=sheet.merchant_id,
-                shop_name=profile.shop_name if profile else None,
-                business_date=info.business_date,
-                fsr_user_id=user_id,
-                fsr_name=info.fsr_name,
-                status=sheet.status,
-                rows=info.drafts + info.submitted,
-                drafts=info.drafts,
-                totals=info.totals,
-                submitted_at=info.submitted_at,
-                returned_reason=sheet.returned_reason,
-            )
-        )
-    return FsrDetailOut(
-        employee=_employee_out(session, membership),
-        shops=shops,
-        recent_sheets=recent,
-        drafts_open=sum(1 for s in sheets if s.status == "draft"),
-        returned_open=sum(1 for s in sheets if s.status == "returned"),
-    )

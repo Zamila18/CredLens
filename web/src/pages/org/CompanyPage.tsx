@@ -21,7 +21,6 @@ export function CompanyPage() {
   const t = useT()
   const { isOwner } = useSession()
   const profile = useApi<OrganizationProfileOut>('/org/profile', undefined, { noCache: true })
-  const [label, setLabel] = useState<string | null>(null)
   const [contact, setContact] = useState<string | null>(null)
   const save = useSubmit<OrganizationProfileOut>()
 
@@ -55,9 +54,6 @@ export function CompanyPage() {
       {isOwner ? (
         <section className="flex flex-col gap-4 rounded-card border border-card-line bg-card p-5">
           <h2 className="m-0 text-[18px] font-semibold">{t('What you can change', 'যা বদলাতে পারেন')}</h2>
-          <Field label={t('What your company calls an FSR', 'আপনার প্রতিষ্ঠান FSR-কে কী বলে')} hint={t('For example Sales Representative, Sales Officer, Territory Sales Representative.', 'যেমন সেলস রিপ্রেজেন্টেটিভ, সেলস অফিসার, টেরিটরি সেলস রিপ্রেজেন্টেটিভ।')}>
-            <TextInput value={label ?? p.fsr_label ?? ''} onChange={(e) => setLabel(e.target.value)} maxLength={48} />
-          </Field>
           <Field label={t('Contact number', 'যোগাযোগ নম্বর')}>
             <TextInput value={contact ?? p.contact_number ?? ''} onChange={(e) => setContact(e.target.value)} />
           </Field>
@@ -68,7 +64,7 @@ export function CompanyPage() {
               disabled={save.pending}
               onClick={() =>
                 void save
-                  .submit(() => api<OrganizationProfileOut>('/org/profile', { method: 'PATCH', json: { fsr_label: label ?? p.fsr_label, contact_number: contact ?? p.contact_number } }))
+                  .submit(() => api<OrganizationProfileOut>('/org/profile', { method: 'PATCH', json: { contact_number: contact ?? p.contact_number } }))
                   .then(() => profile.reload())
               }
             >

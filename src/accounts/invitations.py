@@ -48,7 +48,6 @@ def create_invitation(
     *,
     days: int | None = None,
     max_uses: int = 1,
-    default_territory: str | None = None,
     label: str | None = None,
 ) -> tuple[db.Invitation, str]:
     """A new invitation and its code (returned once; only a hash is stored)."""
@@ -69,7 +68,6 @@ def create_invitation(
         role=role,
         code_hash=_hash(code),
         code_hint=clean_code(code)[-4:],
-        default_territory=(default_territory or "").strip() or None,
         label=(label or "").strip()[:80] or None,
         expires_at=now() + timedelta(days=days),
         max_uses=int(max_uses),
@@ -108,7 +106,7 @@ def revoke_invitation(session: Session, row: db.Invitation, actor: str) -> None:
 def regenerate_invitation(
     session: Session, config: dict[str, Any], row: db.Invitation, actor: str
 ) -> tuple[db.Invitation, str]:
-    """Revoke the invitation and make a new one with the same role, limits and territory."""
+    """Revoke the invitation and make a new one with the same role and limits."""
     revoke_invitation(session, row, actor)
     remaining_days = max(1, (row.expires_at - row.created_at).days)
     return create_invitation(
@@ -119,7 +117,6 @@ def regenerate_invitation(
         actor,
         days=min(remaining_days, int(config["auth"]["invitation_max_days"])),
         max_uses=row.max_uses,
-        default_territory=row.default_territory,
         label=row.label,
     )
 

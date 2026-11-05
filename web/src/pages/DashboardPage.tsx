@@ -7,18 +7,18 @@
  * GET /applications, for administrators GET /import-batches. Every tile links to the list its
  * number comes from, and every chart writes its numbers out. Nothing is estimated.
  */
-import { FileSpreadsheet, KeyRound, MapPinned, UserRoundCog } from 'lucide-react'
+import { KeyRound, MapPinned, UserRoundCog } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 
-import type { ApplicationRow, EmployeeOut, ImportBatchOut, Overview } from '@/api/types'
+import type { ApplicationRow, Overview } from '@/api/types'
 import { useApi } from '@/api/useApi'
 import { useSession } from '@/app/session-context'
 import { ErrorCallout, LoadingState } from '@/components/ErrorCallout'
 import { Page, PageHeader } from '@/components/Page'
 import { StatusTag } from '@/components/StatusTag'
 import { ActivityList, MetricTile, Panel } from '@/components/Workspace'
-import { fmtBdTime, fmtDate, taka } from '@/lib/format'
+import { fmtDate, taka } from '@/lib/format'
 import { useT } from '@/lib/i18n'
 import { READINESS } from '@/lib/statuses'
 
@@ -63,47 +63,17 @@ function WaitingApplications({ rows }: { rows: ApplicationRow[] }) {
   )
 }
 
-function RecentImports({ rows }: { rows: ImportBatchOut[] }) {
-  const t = useT()
-  if (!rows.length) return <p className="m-0 text-sm text-body">{t('No spreadsheet has been imported yet.', 'এখনও কোনো স্প্রেডশিট আমদানি হয়নি।')}</p>
-  return (
-    <ul className="m-0 flex list-none flex-col p-0">
-      {rows.slice(0, 5).map((b) => (
-        <li key={b.batch_id} className="border-t border-line first:border-t-0">
-          <Link to={`/app/imports/${encodeURIComponent(b.batch_id)}`} className="flex flex-wrap items-center justify-between gap-2 py-3 no-underline hover:bg-row-hover sm:px-1">
-            <span className="flex min-w-0 items-center gap-2.5">
-              <FileSpreadsheet size={18} aria-hidden="true" className="shrink-0 text-lens-dark" />
-              <span className="flex min-w-0 flex-col">
-                <span className="truncate text-[14.5px] font-medium text-ink">{b.file_name}</span>
-                <span className="text-[12.5px] text-muted-2">
-                  {b.shop_name ?? b.merchant_id} · {fmtBdTime(b.uploaded_at)}
-                </span>
-              </span>
-            </span>
-            <span className="text-[13px] text-body tabular">
-              {t(`${b.rows_added} added · ${b.rows_skipped} skipped · ${b.rows_rejected} not read`, `${b.rows_added} যোগ · ${b.rows_skipped} বাদ · ${b.rows_rejected} পড়া যায়নি`)}
-            </span>
-          </Link>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
 export function DashboardPage() {
   const t = useT()
   const { role, isOwner } = useSession()
   const officer = role === 'credit_officer'
   const overview = useApi<Overview>('/overview', undefined, { noCache: true })
   const applications = useApi<ApplicationRow[]>('/applications', undefined, { noCache: true })
-  const imports = useApi<ImportBatchOut[]>(officer ? '/import-batches' : null, undefined, { noCache: true })
-  const people = useApi<EmployeeOut[]>(officer ? '/org/employees' : null, undefined, { noCache: true })
   const o = overview.data
 
   if (overview.error) return <Page><ErrorCallout error={overview.error} /></Page>
   if (!o) return <Page><LoadingState title={t('Loading the overview…', 'সারসংক্ষেপ আসছে…')} /></Page>
 
-  const fsrs = (people.data ?? []).filter((p) => p.role === 'fsr' && p.status === 'active')
   const empty = o.merchants_total === 0 && o.applications_total === 0
   const waiting = (applications.data ?? []).filter((r) => !r.decision).length
 
@@ -111,7 +81,7 @@ export function DashboardPage() {
     <Page>
       <PageHeader
         title={t('Overview', 'সারসংক্ষেপ')}
-        description={t('What is happening in your company: merchants, field work, applications and decisions.', 'আপনার প্রতিষ্ঠানে কী চলছে: মার্চেন্ট, মাঠের কাজ, আবেদন ও সিদ্ধান্ত।')}
+        description={t('What is happening in your company: merchants, receipts, applications and decisions.', 'আপনার প্রতিষ্ঠানে কী চলছে: মার্চেন্ট, রসিদ, আবেদন ও সিদ্ধান্ত।')}
       />
       {empty ? (
         <Panel title={t('Get started', 'শুরু করুন')}>
@@ -119,24 +89,24 @@ export function DashboardPage() {
             {t('Your company has no merchants yet. These three steps get the field team working; nothing on this page is made up.', 'আপনার প্রতিষ্ঠানে এখনও কোনো মার্চেন্ট নেই। এই তিন ধাপে মাঠকর্মীরা কাজ শুরু করতে পারবেন; এই পাতায় কিছুই বানানো নয়।')}
           </p>
           <div className="grid gap-3 sm:grid-cols-3">
-            {isOwner && <QuickAction to="/app/invitations" icon={<KeyRound size={19} aria-hidden="true" />} title={t('1. Invite your FSRs', '১. FSR-দের আমন্ত্রণ করুন')} text={t('Make an invitation code and share it', 'একটি আমন্ত্রণ কোড বানিয়ে দিন')} />}
-            <QuickAction to="/app/registrations/new" icon={<MapPinned size={19} aria-hidden="true" />} title={t('2. Add the first merchant', '২. প্রথম মার্চেন্ট যোগ করুন')} text={t('Register a shop with a signed consent form', 'সই করা সম্মতিপত্রসহ দোকান নিবন্ধন')} />
-            <QuickAction to="/app/assignments" icon={<UserRoundCog size={19} aria-hidden="true" />} title={t('3. Assign it to an FSR', '৩. FSR-কে দিন')} text={t('The FSR then records daily business', 'FSR প্রতিদিনের ব্যবসা রাখবেন')} />
+            {isOwner && <QuickAction to="/app/invitations" icon={<KeyRound size={19} aria-hidden="true" />} title={t('1. Invite your Records Desk', '১. রেকর্ড ডেস্ককে আমন্ত্রণ করুন')} text={t('Make an invitation code and share it', 'একটি আমন্ত্রণ কোড বানিয়ে পাঠান')} />}
+            <QuickAction to="/app/registrations/new" icon={<MapPinned size={19} aria-hidden="true" />} title={t('2. Add the first merchant', '২. প্রথম মার্চেন্ট যোগ করুন')} text={t('Register the shop and print its consent form', 'দোকান নিবন্ধন করে সম্মতিপত্র ছাপুন')} />
+            <QuickAction to="/app/applications" icon={<UserRoundCog size={19} aria-hidden="true" />} title={t('3. Receipts come in', '৩. রসিদ আসবে')} text={t('The Records Desk uploads and checks receipts; the merchant reviews them', 'রেকর্ড ডেস্ক রসিদ আপলোড ও যাচাই করে; ব্যবসায়ী দেখে নেন')} />
           </div>
         </Panel>
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <MetricTile label={t('Merchants', 'মার্চেন্ট')} value={o.merchants_total} hint={t(`${o.shops_created_in_app} registered in the app`, `${o.shops_created_in_app}টি অ্যাপে নিবন্ধিত`)} to="/app/merchants" />
+            <MetricTile label={t('Merchants', 'মার্চেন্ট')} value={o.merchants_total} hint={t(`${o.shops_created_in_app} registered`, `${o.shops_created_in_app}টি নিবন্ধিত`)} to="/app/merchants" />
             <MetricTile label={t('Applications', 'আবেদন')} value={o.applications_total} hint={t(`${waiting} waiting for a decision`, `${waiting}টি সিদ্ধান্তের অপেক্ষায়`)} to="/app/applications" tone={waiting ? 'attention' : 'neutral'} />
             <MetricTile label={t('Assessments to redo', 'আবার করার মূল্যায়ন')} value={o.assessments_not_updated} to="/app/applications" tone={o.assessments_not_updated ? 'attention' : 'neutral'} />
             <MetricTile label={t('Decisions recorded', 'রাখা সিদ্ধান্ত')} value={o.decisions_total} to="/app/decisions" />
           </div>
           {officer && (
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <MetricTile label={t('Active FSRs', 'সক্রিয় FSR')} value={fsrs.length} to="/app/team" />
-              <MetricTile label={t('FSRs with no shop', 'দোকান ছাড়া FSR')} value={fsrs.filter((p) => p.assigned_shops === 0).length} to="/app/assignments" />
-              <MetricTile label={t('Spreadsheet imports', 'স্প্রেডশিট আমদানি')} value={o.import_batches} to="/app/imports" />
+              <MetricTile label={t('Receipts to check', 'যাচাইয়ের রসিদ')} value={o.receipts_to_check} to="/app/receipts" tone={o.receipts_to_check ? 'attention' : 'neutral'} />
+              <MetricTile label={t('Merchant reports open', 'ব্যবসায়ীর খোলা অভিযোগ')} value={o.merchant_reports_open} to="/app/reports" tone={o.merchant_reports_open ? 'attention' : 'neutral'} />
+              <MetricTile label={t('Applications from merchants', 'ব্যবসায়ীর আবেদন')} value={o.applications_from_merchants} to="/app/applications" />
               <MetricTile label={t('Issued loans on record', 'রেকর্ডে দেওয়া ঋণ')} value={o.issued_loans} hint={t('Applications are not counted', 'আবেদন গোনা হয়নি')} />
             </div>
           )}
@@ -148,11 +118,6 @@ export function DashboardPage() {
               <Panel title={t('Recent activity', 'সাম্প্রতিক কার্যক্রম')}>
                 <ActivityList items={o.recent} />
               </Panel>
-              {officer && imports.data && (
-                <Panel title={t('Recent spreadsheet imports', 'সাম্প্রতিক স্প্রেডশিট আমদানি')} action={{ to: '/app/imports', label: t('All imports', 'সব আমদানি') }}>
-                  <RecentImports rows={imports.data} />
-                </Panel>
-              )}
             </div>
           </div>
         </>

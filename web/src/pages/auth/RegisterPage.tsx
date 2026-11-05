@@ -36,10 +36,10 @@ const ORG_TYPES: [string, string, string][] = [
 ]
 /** The company form sends no invitation fields (the server refuses unknown ones). */
 const companyBody = (values: Values): Values => {
-  const { invitation_code: _code, role: _role, employee_id: _id, territory: _area, ...rest } = values
+  const { invitation_code: _code, role: _role, employee_id: _id, ...rest } = values
   return rest
 }
-const JOIN_KEYS = ['full_name', 'email', 'mobile', 'department', 'password', 'confirm_password', 'invitation_code', 'employee_id', 'territory']
+const JOIN_KEYS = ['full_name', 'email', 'mobile', 'department', 'password', 'confirm_password', 'invitation_code', 'employee_id']
 const joinBody = (values: Values, role: string): Values => ({ ...Object.fromEntries(JOIN_KEYS.filter((k) => values[k] !== undefined).map((k) => [k, values[k]])), role })
 const NUMBER_REQUIRED = ['bank', 'nbfi', 'mfi', 'cooperative', 'fintech_lender']
 
@@ -130,8 +130,8 @@ export function RegisterPage() {
         <Field label={t('Full legal name', 'পূর্ণ নাম')} required error={err('full_name')}>{text('full_name', { autoComplete: 'name' })}</Field>
         <Field label={t('Work email', 'অফিসের ইমেইল')} required error={err('email')} hint={t('You sign in with this. It is not verified by a code.', 'এটি দিয়ে সাইন ইন করবেন। কোড দিয়ে যাচাই হয় না।')}>{text('email', { type: 'email', autoComplete: 'email' })}</Field>
         <Field label={t('Mobile number', 'মোবাইল নম্বর')} required error={err('mobile')}>{text('mobile', { inputMode: 'tel', autoComplete: 'tel' })}</Field>
-        {(tab === 'company' || role === 'fsr') && (
-          <Field label={tab === 'join' ? t('Department or sales team', 'বিভাগ বা সেলস টিম') : t('Department (optional)', 'বিভাগ (ঐচ্ছিক)')} required={tab === 'join'} error={err('department')}>{text('department')}</Field>
+        {tab === 'company' && (
+          <Field label={t('Department (optional)', 'বিভাগ (ঐচ্ছিক)')} required={false} error={err('department')}>{text('department')}</Field>
         )}
       </fieldset>
     </>
@@ -165,27 +165,23 @@ export function RegisterPage() {
                 onChange={set('role')}
                 placeholder={t('Choose your role', 'আপনার ভূমিকা বাছুন')}
                 options={[
-                  { value: 'fsr', label: t('Field Sales Representative (FSR)', 'ফিল্ড সেলস রিপ্রেজেন্টেটিভ (FSR)') },
+                  { value: 'records_officer', label: t('Records Desk officer', 'রেকর্ড ডেস্কের সদস্য') },
                   { value: 'credit_officer', label: t('Credit Officer', 'ক্রেডিট অফিসার') },
                 ]}
               />
             </Field>
             {preview && (
               <Notice tone="success" title={t(`This code opens ${preview.organization_name}`, `এই কোড ${preview.organization_name} খোলে`)}>
-                {t(`You will join as ${preview.role === 'fsr' ? 'a Field Sales Representative' : 'a Credit Officer'}. The code shows your link to the company; it is not a legal check of the company.`, `আপনি ${preview.role === 'fsr' ? 'ফিল্ড সেলস রিপ্রেজেন্টেটিভ' : 'ক্রেডিট অফিসার'} হিসেবে যোগ দেবেন। কোডটি শুধু কোম্পানির সাথে আপনার সম্পর্ক দেখায়; এটি কোম্পানির আইনি যাচাই নয়।`)}
+                {t(`You will join as ${preview.role === 'records_officer' ? 'a Records Desk officer' : 'a Credit Officer'}. The code shows your link to the company; it is not a legal check of the company.`, `আপনি ${preview.role === 'records_officer' ? 'রেকর্ড ডেস্কের সদস্য' : 'ক্রেডিট অফিসার'} হিসেবে যোগ দেবেন। কোডটি শুধু কোম্পানির সাথে আপনার সম্পর্ক দেখায়; এটি কোম্পানির আইনি যাচাই নয়।`)}
               </Notice>
             )}
           </fieldset>
         )}
         {person}
-        {tab === 'join' && role === 'fsr' && (
+        {tab === 'join' && role === 'records_officer' && (
           <fieldset className="m-0 flex flex-col gap-4 border-0 p-0">
             <legend className="mb-1 p-0 text-[13px] font-semibold tracking-[0.06em] text-muted-2 uppercase">{t('Employment', 'কর্মসংক্রান্ত')}</legend>
             <Field label={t('Employee or staff ID', 'কর্মী আইডি')} required error={err('employee_id')}>{text('employee_id')}</Field>
-            {(
-
-              <Field label={t('Assigned territory or area', 'নির্ধারিত এলাকা')} error={err('territory')} hint={preview?.default_territory ? t(`Default: ${preview.default_territory}`, `ডিফল্ট: ${preview.default_territory}`) : undefined}>{text('territory')}</Field>
-            )}
           </fieldset>
         )}
         {tab === 'company' && (

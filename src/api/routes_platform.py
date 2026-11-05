@@ -65,7 +65,7 @@ def _org_out(session: Session, org: db.Organization) -> PlatformOrgOut:
         environment=org.environment,
         created_at=org.created_at.isoformat(timespec="seconds"),
         credit_officers=_count(session, org.organization_id, "credit_officer"),
-        fsrs=_count(session, org.organization_id, "fsr"),
+        records_officers=_count(session, org.organization_id, "records_officer"),
         merchants=int(merchants or 0),
     )
 
