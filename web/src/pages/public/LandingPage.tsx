@@ -3,9 +3,9 @@
  * evidence and responsible credit assessment.
  *
  * Honesty rules for this page: the shop picture is an illustration and says so; the app
- * window shows a real screenshot of this build (synthetic data); every data-source status
- * comes from catalog.ts and states what works today; no statistics, partners, customers,
- * certifications or accuracy claims.
+ * window shows a real screenshot of this build (synthetic data); no statistics, partners,
+ * customers, certifications or accuracy claims. (The data-source status list lives on the
+ * /sources page, from catalog.ts.)
  */
 import { ArrowRight, Check, Globe2, Languages, ScrollText, ShieldCheck } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -13,10 +13,11 @@ import { Link } from 'react-router'
 
 import heroLarge from '@/assets/hero-shop-1400.webp'
 import heroSmall from '@/assets/hero-shop-800.webp'
+import workflowLarge from '@/assets/loan-workflow-2172.webp'
+import workflowSmall from '@/assets/loan-workflow-1400.webp'
 import { Reveal } from '@/components/Motion'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { AVAILABILITY, SOURCES } from './catalog'
 import { PublicLayout } from './PublicLayout'
 
 function Eyebrow({ children, light = false }: { children: ReactNode; light?: boolean }) {
@@ -155,28 +156,27 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Data-source ecosystem */}
-      <section className="mx-auto max-w-[1200px] px-4 py-20 sm:px-6">
-        <Reveal className="flex flex-wrap items-end justify-between gap-6">
-          <Heading
-            eyebrow={t('Data sources', 'ডেটার উৎস')}
-            title={t('Independent of any one provider.', 'কোনো একক প্রোভাইডারের ওপর নির্ভরশীল নয়।')}
-            lead={t('Start with your own field teams and files. Add connected systems when they are authorised.', 'নিজের মাঠকর্মী ও ফাইল দিয়ে শুরু করুন। অনুমোদন পেলে সংযুক্ত সিস্টেম যোগ করুন।')}
-          />
-          <Link to="/sources" className="inline-flex items-center gap-1.5 font-semibold no-underline">
-            {t('All sources and their status', 'সব উৎস ও তাদের অবস্থা')}
-            <ArrowRight size={16} aria-hidden="true" />
-          </Link>
-        </Reveal>
-        <ul className="m-0 mt-10 grid list-none gap-3 p-0 sm:grid-cols-2 lg:grid-cols-5">
-          {SOURCES.map((s, i) => (
-            <Reveal as="li" key={s.en} delay={(i % 5) * 60} className="flex flex-col gap-3 rounded-[16px] border border-line bg-white p-4">
-              <s.icon size={22} aria-hidden="true" className={s.status === 'planned' ? 'text-muted-2' : 'text-lens-dark'} />
-              <span className="text-[15px] font-semibold text-ink">{t(s.en, s.bn)}</span>
-              <span className={cn('self-start rounded-full border px-2.5 py-0.5 text-[12px] font-semibold', AVAILABILITY[s.status].tone)}>{t(AVAILABILITY[s.status].en, AVAILABILITY[s.status].bn)}</span>
-            </Reveal>
-          ))}
-        </ul>
+      {/* End-to-end workflow: full width, touching the block above (the picture's own cream is the background) */}
+      <section className="m-0 bg-[#fdfbfa] px-5 py-0 sm:px-10 lg:px-16">
+        <figure className="m-0 p-0">
+          <div className="overflow-x-auto">
+            <img
+              src={workflowLarge}
+              srcSet={`${workflowSmall} 1400w, ${workflowLarge} 2172w`}
+              sizes="100vw"
+              width={2172}
+              height={724}
+              alt={t(
+                'End-to-end business loan workflow in seven steps: the merchant starts an application, submits it to the organisation, an assessment is prepared, a credit officer reviews it, the officer takes the final decision, the loan is disbursed, and the merchant repays over the agreed period.',
+                'ব্যবসায়িক ঋণের সাত ধাপ: মার্চেন্ট আবেদন শুরু করেন, প্রতিষ্ঠানে জমা দেন, মূল্যায়ন তৈরি হয়, ক্রেডিট অফিসার যাচাই করেন, অফিসার চূড়ান্ত সিদ্ধান্ত নেন, ঋণ বিতরণ হয়, এবং মার্চেন্ট নির্ধারিত সময়ে পরিশোধ করেন।',
+              )}
+              className="m-0 block h-auto w-full min-w-[900px] p-0"
+            />
+          </div>
+          <figcaption className="pb-3 text-[12px] text-muted-2">
+            {t('Illustration of the workflow. The figures shown are examples.', 'কাজের ধাপের চিত্র। দেখানো সংখ্যাগুলো উদাহরণ।')}
+          </figcaption>
+        </figure>
       </section>
 
       {/* Trust */}
